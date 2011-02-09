@@ -14,7 +14,7 @@ errormator.server = Instance/Server Name
 
 [pipeline:main]
 pipeline =
-    errormator_client
+    errormator_client(replaces other error middleware)
     .....your pipeline.... 
     app_name
 
