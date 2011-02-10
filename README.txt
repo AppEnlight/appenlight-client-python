@@ -23,7 +23,7 @@ for pylons app you can modify config/middleware.py:
 in place of normal error middleware add:
 
 if asbool(config.get('errormator')):    
-    cb = ErrormatorCatcher(app, config)
+    app = ErrormatorCatcher(app, config)
 
 and add in your ini:
 errormator = true
