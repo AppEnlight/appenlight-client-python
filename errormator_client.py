@@ -31,6 +31,7 @@ except (ImportError,), e:
     import simplejson as json
 
 from paste import request as paste_req
+from paste.util.converters import asbool
 import sys
 import urllib
 import threading
@@ -100,7 +101,7 @@ class ErrormatorCallback(object):
         self.config = config_dict.copy()
          
     def __call__(self, traceback, environ):
-        if self.config.get('errormator') not in ['t', 'true', 'True', True]:
+        if asbool(self.config.get('errormator')) is False:
             return 
         exception_text = traceback.exception
         traceback_text = traceback.plaintext          
@@ -129,7 +130,7 @@ class ErrormatorCallback(object):
         async_report = AsyncReport()
         async_report.report = report
         async_report.config = self.config
-        async_report.run()
+        async_report.start()
         
         
 # the code below is shamelessly ripped (and slightly altered) 
@@ -552,9 +553,7 @@ class ErrormatorCatcher(TracebackCatcher):
     def __init__(self, app, config):
         self.app = app
         self.callback = ErrormatorCallback(config)
-        print config.get('errormator.catch_callback')
-        if config.get('errormator.catch_callback') in ['f', 'false',
-                                                           'False', False]:
+        if asbool(config.get('errormator.catch_callback')) is False:
             self.catch_callback = False
         else:
             self.catch_callback = True
