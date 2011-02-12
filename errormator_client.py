@@ -122,10 +122,17 @@ class ErrormatorCallback(object):
             except:
                 # this CAN go wrong
                 pass
+        
+        if environ.get("HTTP_X_REAL_IP"):
+            remote_addr = environ.get("HTTP_X_REAL_IP") 
+        elif environ.get("HTTP_X_FORWARDED_FOR"):
+            remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[0].strip()
+        else:
+            remote_addr = environ.get('REMOTE_ADDR')
         report = Report()
         report.payload['http_status'] = 500
         report.payload['priority'] = 5
-        report.payload['ip'] = environ.get('REMOTE_ADDR')
+        report.payload['ip'] = remote_addr
         report.payload['user_agent'] = environ.get('HTTP_USER_AGENT')
         report.payload['url'] = paste_req.construct_url(environ)
         report.payload['error_type'] = exception_text
