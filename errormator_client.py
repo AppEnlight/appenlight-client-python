@@ -42,6 +42,8 @@ except:
     from email.MIMEText import MIMEText
 import smtplib
 
+import logging
+
 class ErrormatorException(Exception):
     def _get_message(self): 
         return self._message
@@ -72,13 +74,18 @@ class Report(object):
                 post_data.append((k, v,))
         post_data.append(('api_key', api_key,))
         post_data = urllib.urlencode(post_data)
+        message = '%s:Error logged: %s' % (datetime.datetime.now(),
+                                           self.payload['error_type'],)
+        logging.error(message)
+        if self.payload.get('traceback'):
+            message = 'Traceback:\n %s' % self.payload['traceback']
+            logging.error(message)
+        
         server_url = '%s%s' % (server_url, default_path)
         try:
             conn = urllib.urlopen(server_url, post_data)
             if conn.getcode() != 200:
                 if exception_on_failure:
-                    message = 'Http code: %s' % conn.getcode()
-                    print message
                     raise ErrormatorException(message)
         except (IOError,), e:
             if exception_on_failure:
