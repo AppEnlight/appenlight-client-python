@@ -85,9 +85,11 @@ class Report(object):
         try:
             conn = urllib.urlopen(server_url, post_data)
             if conn.getcode() != 200:
+                logging.error('Errormator response code: %s' % conn.getcode())
                 if exception_on_failure:
                     raise ErrormatorException(message)
         except (IOError,), e:
+            logging.error('Errormator problem: %s' % e)
             if exception_on_failure:
                 raise ErrormatorException(*e)
 
