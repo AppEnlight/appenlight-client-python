@@ -8,7 +8,7 @@ in your ini add:
 use = egg:errormator_client#error_catcher
 debug = false
 errormator = true
-errormator.server_url = http://api.errormator.com
+errormator.server_url = https://api.errormator.com
 errormator.api_key = YOUR_API_KEY
 errormator.server = Instance/Server Name
 
@@ -27,7 +27,7 @@ if asbool(config.get('errormator')):
 
 and add in your ini:
 errormator = true
-errormator.server_url = http://api.errormator.com
+errormator.server_url = https://api.errormator.com
 errormator.api_key = YOUR_API_KEY
 errormator.server = Instance/Server Name
 
