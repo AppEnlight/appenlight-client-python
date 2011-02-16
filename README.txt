@@ -14,13 +14,15 @@ errormator.server = Instance/Server Name
 
 [pipeline:main]
 pipeline =
-    errormator_client(replaces other error middleware)
+	weberror
+    errormator_client
     .....your pipeline.... 
     app_name
 
 
 for pylons app you can modify config/middleware.py:
-in place of normal error middleware add:
+add this line:
+# CUSTOM MIDDLEWARE HERE (filtered by error handling middlewares)
 
 if asbool(config.get('errormator')):    
     app = ErrormatorCatcher(app, config)

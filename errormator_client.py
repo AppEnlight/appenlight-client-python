@@ -77,10 +77,6 @@ class Report(object):
         message = '%s:Error logged: %s' % (datetime.datetime.now(),
                                            self.payload['error_type'],)
         logging.error(message)
-        if self.payload.get('traceback'):
-            message = 'Traceback:\n %s' % self.payload['traceback']
-            logging.error(message)
-        
         server_url = '%s%s' % (server_url, default_path)
         try:
             conn = urllib.urlopen(server_url, post_data)
@@ -110,7 +106,7 @@ class ErrormatorCallback(object):
         self.config = config_dict.copy()
          
     def __call__(self, traceback, environ):
-        if asbool(self.config.get('errormator')) is False:
+        if not asbool(self.config.get('errormator')):
             return 
         exception_text = traceback.exception
         traceback_text = traceback.plaintext          
@@ -143,10 +139,14 @@ class ErrormatorCallback(object):
         report.payload['traceback'] = traceback_text
         report.payload['request'] = u'\n'.join(request_text)
         report.payload['username'] = environ.get('REMOTE_USER')
-        async_report = AsyncReport()
-        async_report.report = report
-        async_report.config = self.config
-        async_report.start()
+        if asbool(self.config.get('errormator.async', True)):
+            report.submit(self.config.get('errormator.api_key'),
+                          self.config.get('errormator.server_url'))
+        else:
+            async_report = AsyncReport()
+            async_report.report = report
+            async_report.config = self.config
+            async_report.start()
         
         
 # the code below is shamelessly ripped (and slightly altered) 
@@ -523,6 +523,7 @@ class TracebackCatcher(object):
         self.app = app
         self.callback = callback
         self.catch_callback = catch_callback
+        print catch_callback
 
     def __call__(self, environ, start_response):
         """Run the application and conserve the traceback frames."""
@@ -536,6 +537,9 @@ class TracebackCatcher(object):
         except:
             if hasattr(app_iter, 'close'):
                 app_iter.close()
+                
+            #we need that here
+            exc_type, exc_value, tb = sys.exc_info()
             traceback = get_current_traceback(skip=1, show_hidden_frames=True,
                                               ignore_system_exceptions=True)
             if self.catch_callback:
@@ -545,7 +549,9 @@ class TracebackCatcher(object):
                     pass
             else:
                 self.callback(traceback, environ)
-
+            # by default reraise exceptions for app/FW to handle
+            if asbool(self.config.get('errormator.reraise_exceptions', True)):
+                raise exc_type, exc_value, tb                                   
             try:
                 start_response('500 INTERNAL SERVER ERROR', [
                     ('Content-Type', 'text/html; charset=utf-8')
@@ -569,8 +575,9 @@ class ErrormatorCatcher(TracebackCatcher):
     def __init__(self, app, config):
         self.app = app
         self.callback = ErrormatorCallback(config)
-        if asbool(config.get('errormator.catch_callback')) is False:
-            self.catch_callback = False
+        self.config = config
+        if 'errormator.catch_callback' in config:
+            self.catch_callback = asbool(config['errormator.catch_callback'])
         else:
             self.catch_callback = True
 
