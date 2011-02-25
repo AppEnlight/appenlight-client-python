@@ -63,7 +63,7 @@ class Report(object):
         self.payload = payload
 
     def submit(self, api_key, server_url,
-               default_path='/api/reports/create',
+               default_path='/api/reports',
                server=None,
                exception_on_failure=True):
         post_data = []
