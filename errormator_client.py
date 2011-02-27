@@ -74,9 +74,6 @@ class Report(object):
                 post_data.append((k, v,))
         post_data.append(('api_key', api_key,))
         post_data = urllib.urlencode(post_data)
-        message = '%s:Error logged: %s' % (datetime.datetime.now(),
-                                           self.payload['error_type'],)
-        logging.error(message)
         server_url = '%s%s' % (server_url, default_path)
         try:
             conn = urllib.urlopen(server_url, post_data)
@@ -88,6 +85,9 @@ class Report(object):
             logging.error('Errormator problem: %s' % e)
             if exception_on_failure:
                 raise ErrormatorException(*e)
+        message = '%s:Error logged: %s' % (datetime.datetime.now(),
+                                           self.payload['error_type'],)
+        logging.error(message)
 
 class AsyncReport(threading.Thread):
     
@@ -546,6 +546,7 @@ class TracebackCatcher(object):
                 try:
                     self.callback(traceback, environ)
                 except:
+                    logging.error('Exception in logging callback')
                     pass
             else:
                 self.callback(traceback, environ)
