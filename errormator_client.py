@@ -36,6 +36,7 @@ import sys
 import urllib
 import threading
 import datetime
+import socket
 try:
     from email.mime.text import MIMEText
 except:
@@ -103,6 +104,8 @@ class AsyncReport(threading.Thread):
 
 class ErrormatorCallback(object):
     
+    fqdn = socket.getfqdn()
+    
     def __init__(self, config_dict):
         self.config = config_dict.copy()
          
@@ -135,7 +138,8 @@ class ErrormatorCallback(object):
         report.payload['user_agent'] = environ.get('HTTP_USER_AGENT')
         report.payload['url'] = paste_req.construct_url(environ)
         report.payload['error_type'] = exception_text
-        report.payload['server'] = self.config.get('errormator.server')
+        report.payload['server'] = self.config.get('errormator.server')\
+                    or self.fqdn or environ.get('SERVER_NAME','unknown server')
         report.payload['message'] = u''
         report.payload['traceback'] = traceback_text
         report.payload['request'] = u'\n'.join(request_text)
