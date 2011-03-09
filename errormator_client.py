@@ -65,7 +65,7 @@ class Report(object):
 
     def submit(self, api_key, server_url,
                default_path='/api/reports',
-               server=None,
+               errormator_client='python',
                exception_on_failure=True):
         post_data = []
         for k, v in self.payload.items():
@@ -74,8 +74,9 @@ class Report(object):
             else:
                 post_data.append((k, v,))
         post_data.append(('api_key', api_key,))
+        post_data.append(('errormator_client', errormator_client,))
         post_data = urllib.urlencode(post_data)
-        server_url = '%s%s' % (server_url, default_path)
+        server_url = '%s%s' % (server_url, default_path,)
         try:
             conn = urllib.urlopen(server_url, post_data)
             if conn.getcode() != 200:
@@ -99,8 +100,11 @@ class AsyncReport(threading.Thread):
         self.config = {}
           
     def run (self):
-        self.report.submit(self.config.get('errormator.api_key'),
-                           self.config.get('errormator.server_url'))
+        self.report.submit(
+                self.config.get('errormator.api_key'),
+                self.config.get('errormator.server_url'),
+                errormator_client=self.config.get('errormator.client','python')
+                           )
 
 class ErrormatorCallback(object):
     
@@ -146,7 +150,9 @@ class ErrormatorCallback(object):
         report.payload['username'] = environ.get('REMOTE_USER')
         if asbool(self.config.get('errormator.async', True)):
             report.submit(self.config.get('errormator.api_key'),
-                          self.config.get('errormator.server_url'))
+                self.config.get('errormator.server_url'),
+                errormator_client=self.config.get('errormator.client','python')
+                          )
         else:
             async_report = AsyncReport()
             async_report.report = report
