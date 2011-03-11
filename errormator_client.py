@@ -74,7 +74,7 @@ class Report(object):
             else:
                 post_data.append((k, v,))
         post_data.append(('api_key', api_key,))
-        post_data.append(('errormator_client', errormator_client,))
+        post_data.append(('errormator.client', errormator_client,))
         post_data = urllib.urlencode(post_data)
         server_url = '%s%s' % (server_url, default_path,)
         try:
