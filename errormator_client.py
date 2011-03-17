@@ -51,10 +51,6 @@ class ErrormatorException(Exception):
     def _set_message(self, message): 
         self._message = message
     message = property(_get_message, _set_message)
-
-
-class ErrormatorException(Exception):
-    
     def __str__(self):
         return repr(self.args)
 
@@ -506,10 +502,6 @@ class Frame(object):
             return self.sourcelines[self.lineno - 1]
         except IndexError:
             return u''
-
-    @cached_property
-    def console(self):
-        return Console(self.globals, self.locals)
 
     id = property(lambda x: id(x))
 
