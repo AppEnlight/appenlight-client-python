@@ -111,11 +111,15 @@ class ErrormatorCallback(object):
          
     def __call__(self, traceback, environ):
         if not asbool(self.config.get('errormator')):
-            return 
+            return
+        
         exception_text = traceback.exception
         traceback_text = traceback.plaintext          
+        report = Report()
         request_text = []
         for key, value in sorted(environ.items()):
+            if key.startswith('errormator.'):
+                report.payload[key] = value
             try:
                 if hasattr(value, 'decode'):
                     request_text.append(u'%s: %s' % (key, value.decode('utf8'),))
@@ -131,7 +135,6 @@ class ErrormatorCallback(object):
             remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[0].strip()
         else:
             remote_addr = environ.get('REMOTE_ADDR')
-        report = Report()
         report.payload['http_status'] = 500
         report.payload['priority'] = 5
         report.payload['ip'] = remote_addr
