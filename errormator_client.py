@@ -556,9 +556,8 @@ class TracebackCatcher(object):
             if self.catch_callback:
                 try:
                     self.callback(traceback, environ)
-                except:
-                    logging.error('ERRORMATOR: Exception in logging callback')
-                    pass
+                except Exception,e:
+                    logging.error('ERRORMATOR: Exception in logging callback: %s' %e)
             else:
                 self.callback(traceback, environ)
             # by default reraise exceptions for app/FW to handle
@@ -595,7 +594,37 @@ class ErrormatorHTTPCodeSniffer(object):
     def __init__(self, app, config):
         self.app = app
         self.config = config
+        if 'errormator.catch_callback' in config:
+            self.catch_callback = asbool(config['errormator.catch_callback'])
+        else:
+            self.catch_callback = True
 
+    def callback(self, environ):
+        report = Report()
+        request_text, remote_addr = ErrormatorCallback.process_environ(environ)
+        report.payload['http_status'] = 404
+        report.payload['priority'] = 5
+        report.payload['ip'] = remote_addr
+        report.payload['user_agent'] = environ.get('HTTP_USER_AGENT')
+        report.payload['url'] = paste_req.construct_url(environ)
+        report.payload['error_type'] = '404 Not Found'
+        report.payload['server'] = self.config.get('errormator.server')\
+                    or fqdn or environ.get('SERVER_NAME','unknown server')
+        report.payload['message'] = u''
+        report.payload['traceback'] = ''
+        report.payload['request'] = u'\n'.join(request_text)
+        report.payload['username'] = environ.get('REMOTE_USER')
+        if asbool(self.config.get('errormator.async', True)):
+            report.submit(self.config.get('errormator.api_key'),
+                self.config.get('errormator.server_url'),
+                errormator_client=self.config.get('errormator.client','python')
+                          )
+        else:
+            async_report = AsyncReport()
+            async_report.report = report
+            async_report.config = self.config
+            async_report.start()
+    
     def __call__(self, environ, start_response):
         detected_data = []
         def detect_headers(status, headers, *k, **kw):
@@ -608,30 +637,16 @@ class ErrormatorHTTPCodeSniffer(object):
             app_iter.close()
         if detected_data and detected_data[0] == '404' \
                                 and asbool(self.config.get('errormator',True)):
-            report = Report()
-            request_text, remote_addr = ErrormatorCallback.process_environ(environ)
-            report.payload['http_status'] = 404
-            report.payload['priority'] = 5
-            report.payload['ip'] = remote_addr
-            report.payload['user_agent'] = environ.get('HTTP_USER_AGENT')
-            report.payload['url'] = paste_req.construct_url(environ)
-            report.payload['error_type'] = '404 Not Found'
-            report.payload['server'] = self.config.get('errormator.server')\
-                        or fqdn or environ.get('SERVER_NAME','unknown server')
-            report.payload['message'] = u''
-            report.payload['traceback'] = ''
-            report.payload['request'] = u'\n'.join(request_text)
-            report.payload['username'] = environ.get('REMOTE_USER')
-            if asbool(self.config.get('errormator.async', True)):
-                report.submit(self.config.get('errormator.api_key'),
-                    self.config.get('errormator.server_url'),
-                    errormator_client=self.config.get('errormator.client','python')
-                              )
+            if self.catch_callback:
+                try:
+                    self.callback(environ)
+                except Exception,e:
+                    logging.error('ERRORMATOR: Exception in logging callback: %s' %e)
+                    pass
             else:
-                async_report = AsyncReport()
-                async_report.report = report
-                async_report.config = self.config
-                async_report.start()
+                self.callback(environ)
+            
+
 
 def make_catcher_middleware(app, global_config, **kw):
     config = global_config.copy()
