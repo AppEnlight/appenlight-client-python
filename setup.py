@@ -10,5 +10,6 @@ setup(name='errormator_client',
       entry_points="""
       [paste.filter_app_factory]
       error_catcher = errormator_client:make_catcher_middleware
+      header_sniffer = errormator_client:make_sniffer_middleware
       """,
       )

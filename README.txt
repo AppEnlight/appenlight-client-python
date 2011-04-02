@@ -4,13 +4,20 @@ usage (example for pyramid):
 
 in your ini add:
 
+#exception gathering
 [filter:errormator_client]
 use = egg:errormator_client#error_catcher
 debug = false
 errormator = true
 errormator.server_url = https://api.errormator.com
 errormator.api_key = YOUR_API_KEY
-errormator.server = Instance/Server Name
+
+#404 gathering
+[filter:errormator_header_sniffer]
+use = egg:errormator_client#header_sniffer
+errormator = true
+errormator.server_url = https://api.errormator.com
+errormator.api_key = YOUR_API_KEY
 
 [pipeline:main]
 pipeline =
@@ -21,11 +28,13 @@ pipeline =
 
 
 for pylons app you can modify config/middleware.py:
-add this line:
-# CUSTOM MIDDLEWARE HERE (filtered by error handling middlewares)
+import the classes and add this lines:
 
-if asbool(config.get('errormator')):    
-    app = ErrormatorCatcher(app, config)
+#exception gathering
+# CUSTOM MIDDLEWARE HERE (filtered by error handling middlewares)
+  
+app = ErrormatorCatcher(app, config)
+app = ErrormatorHTTPCodeSniffer(app, config)
 
 and add in your ini:
 errormator = true
