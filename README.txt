@@ -23,6 +23,7 @@ errormator.api_key = YOUR_API_KEY
 pipeline =
 	weberror
     errormator_client
+    errormator_header_sniffer
     .....your pipeline.... 
     app_name
 
