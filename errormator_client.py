@@ -102,7 +102,7 @@ class AsyncReport(threading.Thread):
         self.report.submit(
                 self.config.get('errormator.api_key'),
                 self.config.get('errormator.server_url'),
-                errormator_client=self.config.get('errormator.client','python')
+                errormator_client=self.config.get('errormator.client', 'python')
                            )
 
 class ErrormatorCallback(object):
@@ -113,9 +113,10 @@ class ErrormatorCallback(object):
     @classmethod
     def process_environ(cls, environ):
         request_text = []
+        additional_info = []
         for key, value in sorted(environ.items()):
             if key.startswith('errormator.'):
-                report.payload[key] = value
+                additional_info.append((key[11:], value,))
             try:
                 if hasattr(value, 'decode'):
                     request_text.append(u'%s: %s' % (key, value.decode('utf8'),))
@@ -131,16 +132,18 @@ class ErrormatorCallback(object):
             remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[0].strip()
         else:
             remote_addr = environ.get('REMOTE_ADDR')
-        return request_text, remote_addr
+        return request_text, remote_addr, additional_info
          
     def __call__(self, traceback, environ):
-        if not asbool(self.config.get('errormator',True)):
+        if not asbool(self.config.get('errormator', True)):
             return
         
         exception_text = traceback.exception
         traceback_text = traceback.plaintext          
         report = Report()
-        request_text, remote_addr = ErrormatorCallback.process_environ(environ)
+        (request_text,
+         remote_addr,
+         additional_info) = ErrormatorCallback.process_environ(environ)
         report.payload['http_status'] = 500
         report.payload['priority'] = 5
         report.payload['ip'] = remote_addr
@@ -148,15 +151,17 @@ class ErrormatorCallback(object):
         report.payload['url'] = paste_req.construct_url(environ)
         report.payload['error_type'] = exception_text
         report.payload['server'] = self.config.get('errormator.server')\
-                    or fqdn or environ.get('SERVER_NAME','unknown server')
+                    or fqdn or environ.get('SERVER_NAME', 'unknown server')
         report.payload['message'] = u''
         report.payload['traceback'] = traceback_text
         report.payload['request'] = u'\n'.join(request_text)
         report.payload['username'] = environ.get('REMOTE_USER')
+        #lets populate with additional environ data
+        report.payload.update(additional_info)
         if asbool(self.config.get('errormator.async', True)):
             report.submit(self.config.get('errormator.api_key'),
                 self.config.get('errormator.server_url'),
-                errormator_client=self.config.get('errormator.client','python')
+                errormator_client=self.config.get('errormator.client', 'python')
                           )
         else:
             async_report = AsyncReport()
@@ -556,8 +561,8 @@ class TracebackCatcher(object):
             if self.catch_callback:
                 try:
                     self.callback(traceback, environ)
-                except Exception,e:
-                    logging.error('ERRORMATOR: Exception in logging callback: %s' %e)
+                except Exception, e:
+                    logging.error('ERRORMATOR: Exception in logging callback: %s' % e)
             else:
                 self.callback(traceback, environ)
             # by default reraise exceptions for app/FW to handle
@@ -609,7 +614,7 @@ class ErrormatorHTTPCodeSniffer(object):
         report.payload['url'] = paste_req.construct_url(environ)
         report.payload['error_type'] = '404 Not Found'
         report.payload['server'] = self.config.get('errormator.server')\
-                    or fqdn or environ.get('SERVER_NAME','unknown server')
+                    or fqdn or environ.get('SERVER_NAME', 'unknown server')
         report.payload['message'] = u''
         report.payload['traceback'] = ''
         report.payload['request'] = u'\n'.join(request_text)
@@ -617,7 +622,7 @@ class ErrormatorHTTPCodeSniffer(object):
         if asbool(self.config.get('errormator.async', True)):
             report.submit(self.config.get('errormator.api_key'),
                 self.config.get('errormator.server_url'),
-                errormator_client=self.config.get('errormator.client','python')
+                errormator_client=self.config.get('errormator.client', 'python')
                           )
         else:
             async_report = AsyncReport()
@@ -629,19 +634,19 @@ class ErrormatorHTTPCodeSniffer(object):
         detected_data = []
         def detect_headers(status, headers, *k, **kw):
             detected_data[:] = status[:3], headers
-            return start_response(status,headers, *k, **kw)
+            return start_response(status, headers, *k, **kw)
         app_iter = self.app(environ, detect_headers)
         for item in app_iter:
             yield item
         if hasattr(app_iter, 'close'):
             app_iter.close()
         if detected_data and detected_data[0] == '404' \
-                                and asbool(self.config.get('errormator',True)):
+                                and asbool(self.config.get('errormator', True)):
             if self.catch_callback:
                 try:
                     self.callback(environ)
-                except Exception,e:
-                    logging.error('ERRORMATOR: Exception in logging callback: %s' %e)
+                except Exception, e:
+                    logging.error('ERRORMATOR: Exception in logging callback: %s' % e)
                     pass
             else:
                 self.callback(environ)
