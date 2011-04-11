@@ -116,7 +116,7 @@ class ErrormatorCallback(object):
         additional_info = []
         for key, value in sorted(environ.items()):
             if key.startswith('errormator.'):
-                additional_info.append((key[11:], value,))
+                additional_info.append((key[11:], unicode(value),))
             try:
                 if hasattr(value, 'decode'):
                     request_text.append(u'%s: %s' % (key, value.decode('utf8'),))
