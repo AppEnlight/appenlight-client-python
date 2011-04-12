@@ -606,7 +606,9 @@ class ErrormatorHTTPCodeSniffer(object):
 
     def callback(self, environ):
         report = Report()
-        request_text, remote_addr = ErrormatorCallback.process_environ(environ)
+        (request_text,
+         remote_addr,
+         additional_info) = ErrormatorCallback.process_environ(environ)
         report.payload['http_status'] = 404
         report.payload['priority'] = 5
         report.payload['ip'] = remote_addr
