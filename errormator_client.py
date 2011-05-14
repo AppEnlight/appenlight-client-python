@@ -88,7 +88,7 @@ class Report(object):
         server_url = '%s%s?%s' % (server_url, default_path, GET_vars,)
         try:
             req = urllib2.Request(server_url,
-                                  json.dumps([self.payload, self.payload, self.payload])
+                                  json.dumps([self.payload])
                                   )
             #req.headers['Content-Encoding'] = 'gzip'
             req.headers['Content-Type'] = 'application/json'
