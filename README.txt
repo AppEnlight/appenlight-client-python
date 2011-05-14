@@ -11,19 +11,13 @@ debug = false
 errormator = true
 errormator.server_url = https://api.errormator.com
 errormator.api_key = YOUR_API_KEY
-
 #404 gathering
-[filter:errormator_header_sniffer]
-use = egg:errormator_client#header_sniffer
-errormator = true
-errormator.server_url = https://api.errormator.com
-errormator.api_key = YOUR_API_KEY
+errormator.report_404 = true
 
 [pipeline:main]
 pipeline =
 	weberror
     errormator_client
-    errormator_header_sniffer
     .....your pipeline.... 
     app_name
 
@@ -35,14 +29,13 @@ import the classes and add this lines:
 # CUSTOM MIDDLEWARE HERE (filtered by error handling middlewares)
   
 app = ErrormatorCatcher(app, config)
-app = ErrormatorHTTPCodeSniffer(app, config)
 
 and add in your ini:
 errormator = true
 errormator.server_url = https://api.errormator.com
 errormator.api_key = YOUR_API_KEY
 errormator.server = Instance/Server Name
-
+errormator.report_404 = true
 
 errormator_client is BSD licensed, consult LICENSE for details. 
 

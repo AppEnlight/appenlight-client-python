@@ -25,6 +25,15 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import cStringIO
+import datetime
+import gzip
+import urllib
+import urllib2
+import socket
+import sys
+import threading
+
 try:
     import json
 except (ImportError,), e:
@@ -32,16 +41,20 @@ except (ImportError,), e:
 
 from paste import request as paste_req
 from paste.util.converters import asbool
-import sys
-import urllib
-import threading
-import datetime
-import socket
-try:
-    from email.mime.text import MIMEText
-except:
-    from email.MIMEText import MIMEText
-import smtplib
+
+
+def gzipcompress(bytestr):
+    stream = cStringIO.StringIO()
+    gzstream = gzip.GzipFile(fileobj=stream, compresslevel=1, mode='wb')
+    try:
+        try:
+            gzstream.write(bytestr)
+        finally:
+            gzstream.close()
+        return stream.getvalue()
+    finally:
+        stream.close()
+
 
 import logging
 
@@ -59,6 +72,8 @@ class ErrormatorException(Exception):
 
 class Report(object):
     
+    __protocol_version__ = '0.2'
+    
     def __init__(self, payload={}):
         self.payload = payload
 
@@ -66,30 +81,32 @@ class Report(object):
                default_path='/api/reports',
                errormator_client='python',
                exception_on_failure=True):
-        post_data = []
-        for k, v in self.payload.items():
-            if hasattr(v, 'encode'):
-                post_data.append((k, v.encode('utf8'),))
-            else:
-                post_data.append((k, v,))
-        post_data.append(('api_key', api_key,))
-        post_data.append(('errormator.client', errormator_client,))
-        post_data = urllib.urlencode(post_data)
-        server_url = '%s%s' % (server_url, default_path,)
+        self.payload['errormator.client'] = errormator_client
+        GET_vars = urllib.urlencode(
+                        {'api_key':api_key,
+                        'protocol_version':self.__protocol_version__})
+        server_url = '%s%s?%s' % (server_url, default_path, GET_vars,)
         try:
-            conn = urllib.urlopen(server_url, post_data)
+            req = urllib2.Request(server_url,
+                                  json.dumps([self.payload, self.payload, self.payload])
+                                  )
+            #req.headers['Content-Encoding'] = 'gzip'
+            req.headers['Content-Type'] = 'application/json'
+            conn = urllib2.urlopen(req)
             if conn.getcode() != 200:
                 message = 'ERRORMATOR: response code: %s' % conn.getcode()
                 logging.error(message)
                 if exception_on_failure:
                     raise ErrormatorException(message)
         except (IOError,), e:
-            logging.error('ERRORMATOR: problem: %s' % e)
+            message = 'ERRORMATOR: problem: %s' % e
+            logging.error(message)
             if exception_on_failure:
-                raise ErrormatorException(*e)
-        message = '%s:ERRORMATOR: logged: %s' % (datetime.datetime.now(),
-                                           self.payload['error_type'],)
-        logging.error(message)
+                raise ErrormatorException(message)
+        else:
+            message = '%s:ERRORMATOR: logged: %s' % (datetime.datetime.now(),
+                                               self.payload['error_type'],)
+            logging.error(message)
 
 class AsyncReport(threading.Thread):
     
@@ -103,72 +120,7 @@ class AsyncReport(threading.Thread):
                 self.config.get('errormator.api_key'),
                 self.config.get('errormator.server_url'),
                 errormator_client=self.config.get('errormator.client', 'python')
-                           )
-
-class ErrormatorCallback(object):
-    
-    def __init__(self, config_dict):
-        self.config = config_dict.copy()
-    
-    @classmethod
-    def process_environ(cls, environ):
-        request_text = []
-        additional_info = []
-        for key, value in sorted(environ.items()):
-            if key.startswith('errormator.'):
-                additional_info.append((key[11:], unicode(value),))
-            try:
-                if hasattr(value, 'decode'):
-                    request_text.append(u'%s: %s' % (key, value.decode('utf8'),))
-                else:
-                    request_text.append(u'%s: %s' % (key, value,))
-            except:
-                # this CAN go wrong
-                pass
-        
-        if environ.get("HTTP_X_REAL_IP"):
-            remote_addr = environ.get("HTTP_X_REAL_IP") 
-        elif environ.get("HTTP_X_FORWARDED_FOR"):
-            remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[0].strip()
-        else:
-            remote_addr = environ.get('REMOTE_ADDR')
-        return request_text, remote_addr, additional_info
-         
-    def __call__(self, traceback, environ):
-        if not asbool(self.config.get('errormator', True)):
-            return
-        
-        exception_text = traceback.exception
-        traceback_text = traceback.plaintext          
-        report = Report()
-        (request_text,
-         remote_addr,
-         additional_info) = ErrormatorCallback.process_environ(environ)
-        report.payload['http_status'] = 500
-        report.payload['priority'] = 5
-        report.payload['ip'] = remote_addr
-        report.payload['user_agent'] = environ.get('HTTP_USER_AGENT')
-        report.payload['url'] = paste_req.construct_url(environ)
-        report.payload['error_type'] = exception_text
-        report.payload['server'] = self.config.get('errormator.server')\
-                    or fqdn or environ.get('SERVER_NAME', 'unknown server')
-        report.payload['message'] = u''
-        report.payload['traceback'] = traceback_text
-        report.payload['request'] = u'\n'.join(request_text)
-        report.payload['username'] = environ.get('REMOTE_USER')
-        #lets populate with additional environ data
-        report.payload.update(additional_info)
-        if asbool(self.config.get('errormator.async', True)):
-            report.submit(self.config.get('errormator.api_key'),
-                self.config.get('errormator.server_url'),
-                errormator_client=self.config.get('errormator.client', 'python')
-                          )
-        else:
-            async_report = AsyncReport()
-            async_report.report = report
-            async_report.config = self.config
-            async_report.start()
-        
+                           ) 
         
 # the code below is shamelessly ripped (and slightly altered) 
 # from the flickzeug package
@@ -585,17 +537,10 @@ class TracebackCatcher(object):
                 yield 'Server Error'
 
 
-class ErrormatorCatcher(TracebackCatcher):
-    def __init__(self, app, config):
-        self.app = app
-        self.callback = ErrormatorCallback(config)
-        self.config = config
-        if 'errormator.catch_callback' in config:
-            self.catch_callback = asbool(config['errormator.catch_callback'])
-        else:
-            self.catch_callback = True
+#above original Traceback Catcher for reference
 
-class ErrormatorHTTPCodeSniffer(object):
+class ErrormatorCatcher(object):
+    
     def __init__(self, app, config):
         self.app = app
         self.config = config
@@ -603,24 +548,58 @@ class ErrormatorHTTPCodeSniffer(object):
             self.catch_callback = asbool(config['errormator.catch_callback'])
         else:
             self.catch_callback = True
-
-    def callback(self, environ):
+            
+    def process_environ(self, environ):
+        parsed_request = {}
+        additional_info = []
+        for key, value in environ.items():
+            if key.startswith('errormator.'):
+                additional_info.append((key[11:], unicode(value),))
+            try:
+                if hasattr(value, 'decode'):
+                    parsed_request[key] = value.decode('utf8')
+                else:
+                    parsed_request[key] = unicode(value)
+            except:
+                # this CAN go wrong
+                pass
+        if environ.get("HTTP_X_REAL_IP"):
+            remote_addr = environ.get("HTTP_X_REAL_IP") 
+        elif environ.get("HTTP_X_FORWARDED_FOR"):
+            remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[0].strip()
+        else:
+            remote_addr = environ.get('REMOTE_ADDR')
+        return parsed_request, remote_addr, additional_info
+         
+    def report(self, traceback, environ):
+        if not asbool(self.config.get('errormator', True)):
+            return                  
         report = Report()
-        (request_text,
-         remote_addr,
-         additional_info) = ErrormatorCallback.process_environ(environ)
-        report.payload['http_status'] = 404
+        (parsed_request, remote_addr,
+         additional_info) = self.process_environ(environ)
+        report.payload['http_status'] = 500 if traceback else 404
         report.payload['priority'] = 5
-        report.payload['ip'] = remote_addr
-        report.payload['user_agent'] = environ.get('HTTP_USER_AGENT')
-        report.payload['url'] = paste_req.construct_url(environ)
-        report.payload['error_type'] = '404 Not Found'
         report.payload['server'] = self.config.get('errormator.server')\
                     or fqdn or environ.get('SERVER_NAME', 'unknown server')
-        report.payload['message'] = u''
-        report.payload['traceback'] = ''
-        report.payload['request'] = u'\n'.join(request_text)
-        report.payload['username'] = environ.get('REMOTE_USER')
+        report.payload['report_details'] = []
+        detail_entry = {}
+        detail_entry['request'] = parsed_request
+        detail_entry['ip'] = remote_addr
+        detail_entry['user_agent'] = environ.get('HTTP_USER_AGENT')
+        detail_entry['username'] = environ.get('REMOTE_USER', u'')
+        detail_entry['url'] = paste_req.construct_url(environ)
+        detail_entry['message'] = u''
+        report.payload['report_details'].append(detail_entry)
+        if traceback:
+            exception_text = traceback.exception
+            traceback_text = traceback.plaintext
+            report.payload['error_type'] = exception_text
+            report.payload['traceback'] = traceback_text
+        else:
+            report.payload['error_type'] = '404 Not Found'
+        #lets populate with additional environ data
+        report.payload.update(additional_info)
+        
         if asbool(self.config.get('errormator.async', True)):
             report.submit(self.config.get('errormator.api_key'),
                 self.config.get('errormator.server_url'),
@@ -631,29 +610,71 @@ class ErrormatorHTTPCodeSniffer(object):
             async_report.report = report
             async_report.config = self.config
             async_report.start()
-    
+            
+            
     def __call__(self, environ, start_response):
+        """Run the application and conserve the traceback frames.
+        also determine if we got 404
+        """
+        app_iter = None
         detected_data = []
         def detect_headers(status, headers, *k, **kw):
             detected_data[:] = status[:3], headers
             return start_response(status, headers, *k, **kw)
-        app_iter = self.app(environ, detect_headers)
-        for item in app_iter:
-            yield item
-        if hasattr(app_iter, 'close'):
-            app_iter.close()
-        if detected_data and detected_data[0] == '404' \
-                                and asbool(self.config.get('errormator', True)):
+        try:
+            if self.config.get('errormator.report_404'):
+                app_iter = self.app(environ, detect_headers)
+            else:                
+                app_iter = self.app(environ, start_response)
+            for item in app_iter:
+                yield item
+            if hasattr(app_iter, 'close'):
+                app_iter.close()
+
+            if detected_data and detected_data[0] == '404':
+                self.report(None, environ,)
+        except:
+            if hasattr(app_iter, 'close'):
+                app_iter.close()
+                
+            #we need that here
+            exc_type, exc_value, tb = sys.exc_info()
+            traceback = get_current_traceback(skip=1, show_hidden_frames=True,
+                                              ignore_system_exceptions=True)
             if self.catch_callback:
                 try:
-                    self.callback(environ)
+                    self.report(traceback, environ)
                 except Exception, e:
                     logging.error('ERRORMATOR: Exception in logging callback: %s' % e)
-                    pass
             else:
-                self.callback(environ)
-            
+                self.report(traceback, environ)
+            # by default reraise exceptions for app/FW to handle
+            if asbool(self.config.get('errormator.reraise_exceptions', True)):
+                raise exc_type, exc_value, tb                                   
+            try:
+                start_response('500 INTERNAL SERVER ERROR', [
+                    ('Content-Type', 'text/html; charset=utf-8')
+                ])
+            except Exception, err:
+                # if we end up here there has been output but an error
+                # occurred.  in that situation we can do nothing fancy any
+                # more, better log something into the error log and fall
+                # back gracefully.
+                environ['wsgi.errors'].write(
+                    'TracebackCatcher middleware catched exception in streamed '
+                    'response at a point where response headers were already '
+                    'sent.\n')
+            else:
+                yield 'Server Error'
 
+
+#deprecated bw compat
+class ErrormatorHTTPCodeSniffer(object):
+    def __init__(self, app, config):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        return self.app(environ, start_response)
 
 def make_catcher_middleware(app, global_config, **kw):
     config = global_config.copy()
@@ -661,6 +682,5 @@ def make_catcher_middleware(app, global_config, **kw):
     return ErrormatorCatcher(app, config=config)
 
 def make_sniffer_middleware(app, global_config, **kw):
-    config = global_config.copy()
-    config.update(kw)
-    return ErrormatorHTTPCodeSniffer(app, config=config)
+    #deprecated, errormator catcher will handle everything
+    return app
