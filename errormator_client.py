@@ -599,6 +599,9 @@ class ErrormatorCatcher(object):
             report.payload['traceback'] = traceback_text
         else:
             report.payload['error_type'] = '404 Not Found'
+        if report.payload['http_status'] and report.payload['traceback']:
+            #make sure traceback is empty for 404's
+            report.payload['traceback'] = u''
         #lets populate with additional environ data
         report.payload.update(additional_info)
         
