@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import sys
 setup(name='errormator_client',
-      version='0.1',
+      version='0.2',
       description=""" Sample client for Errormator reporting""",
       author='Marcin Lulek',
       author_email='info@webreactor.eu',

@@ -541,6 +541,8 @@ class TracebackCatcher(object):
 
 class ErrormatorCatcher(object):
     
+    __version__ = 0.2
+    
     def __init__(self, app, config):
         self.app = app
         self.config = config
