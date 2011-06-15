@@ -680,7 +680,7 @@ class ErrormatorCatcher(object):
             else:
                 self.report(environ, traceback)
             # by default reraise exceptions for app/FW to handle
-            if self.errormator.reraise_exceptions:
+            if self.reraise_exceptions:
                 raise exc_type, exc_value, tb
             try:
                 start_response('500 INTERNAL SERVER ERROR',
