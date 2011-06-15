@@ -115,17 +115,16 @@ class Report(object):
 
 
 class AsyncReport(threading.Thread):
-    def __init__(self):
+    def __init__(self, api_key, server_url, client, report):
         super(AsyncReport, self).__init__()
-        self.report = None
-        self.config = {}
+        self.report = report
+        self.client = client
+        self.api_key = api_key
+        self.server_url = server_url
 
     def run(self):
-        client = self.config.get('errormator.client', 'python')
-        self.report.submit(
-                self.config.get('errormator.api_key'),
-                self.config.get('errormator.server_url'),
-                errormator_client=client)
+        self.report.submit(self.api_key, self.server_url,
+                errormator_client=self.client)
 
 
 # the code below is shamelessly ripped (and slightly altered)
@@ -524,7 +523,7 @@ class TracebackCatcher(object):
             else:
                 self.callback(traceback, environ)
             # by default reraise exceptions for app/FW to handle
-            if asbool(self.config.get('errormator.reraise_exceptions', True)):
+            if self.errormator.reraise_exceptions:
                 raise exc_type, exc_value, tb
             try:
                 start_response('500 INTERNAL SERVER ERROR',
@@ -550,16 +549,17 @@ class ErrormatorCatcher(object):
 
     def __init__(self, app, config):
         self.app = app
-        self.config = config
         self.enabled = asbool(config.get('errormator', True))
         self.server = config.get('errormator.server') or fqdn
         self.async = asbool(config.get('errormator.async', True))
         self.report_404 = asbool(config.get('errormator.report_404'), False)
-
-        if 'errormator.catch_callback' in config:
-            self.catch_callback = asbool(config['errormator.catch_callback'])
-        else:
-            self.catch_callback = True
+        self.catch_callback = asbool(
+                config.get('errormator.catch_callback'), True)
+        self.client = config.get('errormator.client', 'python')
+        self.api_key = config.get('errormator.api_key')
+        self.server_url = config.get('errormator.server_url')
+        self.reraise_exceptions = asbool(
+                config.get('errormator.reraise_exceptions', True))
 
     def process_environ(self, environ):
         parsed_request = {}
@@ -592,7 +592,7 @@ class ErrormatorCatcher(object):
          additional_info) = self.process_environ(environ)
         report.payload['http_status'] = 500 if traceback else 404
         report.payload['priority'] = 5
-        report.payload['server'] = (self.server or 
+        report.payload['server'] = (self.server or
                     environ.get('SERVER_NAME', 'unknown server'))
         report.payload['report_details'] = []
         detail_entry = {}
@@ -618,15 +618,12 @@ class ErrormatorCatcher(object):
         report.payload.update(additional_info)
 
         if self.async:
-            async_report = AsyncReport()
-            async_report.report = report
-            async_report.config = self.config
+            async_report = AsyncReport(self.api_key, self.server_url,
+                    self.client, report)
             async_report.start()
         else:
-            client = self.config.get('errormator.client', 'python')
-            report.submit(self.config.get('errormator.api_key'),
-                self.config.get('errormator.server_url'),
-                errormator_client=client)
+            report.submit(self.api_key, self.server_url,
+                    errormator_client=self.client)
 
     def __call__(self, environ, start_response):
         """Run the application and conserve the traceback frames.
@@ -668,7 +665,7 @@ class ErrormatorCatcher(object):
             else:
                 self.report(traceback, environ)
             # by default reraise exceptions for app/FW to handle
-            if asbool(self.config.get('errormator.reraise_exceptions', True)):
+            if self.errormator.reraise_exceptions:
                 raise exc_type, exc_value, tb
             try:
                 start_response('500 INTERNAL SERVER ERROR',
