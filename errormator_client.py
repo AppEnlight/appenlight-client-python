@@ -564,12 +564,12 @@ class ErrormatorCatcher(object):
 
     def process_environ(self, environ):
         parsed_request = {}
-        additional_info = []
+        additional_info = {}
         for key, value in environ.items():
             if key.startswith('errormator.'):
-                additional_info.append((key[11:], unicode(value),))
+                additional_info[key[11:]] = unicode(value)
             try:
-                if hasattr(value, 'decode'):
+                if isinstance(value, str):
                     parsed_request[key] = value.decode('utf8')
                 else:
                     parsed_request[key] = unicode(value)
@@ -585,12 +585,12 @@ class ErrormatorCatcher(object):
             remote_addr = environ.get('REMOTE_ADDR')
         return parsed_request, remote_addr, additional_info
 
-    def report(self, environ, traceback=None):
+    def report(self, environ, traceback=None, message=None):
         if not self.enabled:
             return
         report = Report()
-        (parsed_request, remote_addr,
-         additional_info) = self.process_environ(environ)
+        (parsed_request, remote_addr, additional_info) = \
+                self.process_environ(environ)
         report.payload['http_status'] = 500 if traceback else 404
         report.payload['priority'] = 5
         report.payload['server'] = (self.server or
@@ -602,7 +602,8 @@ class ErrormatorCatcher(object):
         detail_entry['user_agent'] = environ.get('HTTP_USER_AGENT')
         detail_entry['username'] = environ.get('REMOTE_USER', u'')
         detail_entry['url'] = paste_req.construct_url(environ)
-        detail_entry['message'] = u''
+        message = message or additional_info.get('message', u'')
+        detail_entry['message'] = message
         report.payload['report_details'].append(detail_entry)
         if traceback:
             exception_text = traceback.exception
