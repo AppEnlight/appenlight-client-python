@@ -585,7 +585,7 @@ class ErrormatorCatcher(object):
             remote_addr = environ.get('REMOTE_ADDR')
         return parsed_request, remote_addr, additional_info
 
-    def report(self, traceback, environ):
+    def report(self, environ, traceback=None):
         if not self.enabled:
             return
         report = Report()
@@ -648,7 +648,7 @@ class ErrormatorCatcher(object):
                 app_iter.close()
 
             if detected_data and detected_data[0] == '404':
-                self.report(None, environ,)
+                self.report(environ)
         except:
             if hasattr(app_iter, 'close'):
                 app_iter.close()
@@ -659,12 +659,12 @@ class ErrormatorCatcher(object):
                                               ignore_system_exceptions=True)
             if self.catch_callback:
                 try:
-                    self.report(traceback, environ)
+                    self.report(environ, traceback)
                 except Exception, e:
                     log.error(
                         'ERRORMATOR: Exception in logging callback: %s' % e)
             else:
-                self.report(traceback, environ)
+                self.report(environ, traceback)
             # by default reraise exceptions for app/FW to handle
             if self.errormator.reraise_exceptions:
                 raise exc_type, exc_value, tb
