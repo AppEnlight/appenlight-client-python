@@ -28,6 +28,7 @@
 import cStringIO
 import datetime
 import gzip
+import logging
 import urllib
 import urllib2
 import socket
@@ -43,6 +44,9 @@ from paste import request as paste_req
 from paste.util.converters import asbool
 
 
+log = logging.getLogger(__name__)
+
+
 def gzipcompress(bytestr):
     stream = cStringIO.StringIO()
     gzstream = gzip.GzipFile(fileobj=stream, compresslevel=1, mode='wb')
@@ -55,8 +59,6 @@ def gzipcompress(bytestr):
     finally:
         stream.close()
 
-
-import logging
 
 #lets try to find fqdn
 fqdn = socket.getfqdn()
@@ -98,18 +100,18 @@ class Report(object):
             conn = urllib2.urlopen(req)
             if conn.getcode() != 200:
                 message = 'ERRORMATOR: response code: %s' % conn.getcode()
-                logging.error(message)
+                log.error(message)
                 if exception_on_failure:
                     raise ErrormatorException(message)
         except (IOError,), e:
             message = 'ERRORMATOR: problem: %s' % e
-            logging.error(message)
+            log.error(message)
             if exception_on_failure:
                 raise ErrormatorException(message)
         else:
             message = '%s:ERRORMATOR: logged: %s' % (datetime.datetime.now(),
                                                self.payload['error_type'],)
-            logging.error(message)
+            log.error(message)
 
 
 class AsyncReport(threading.Thread):
@@ -517,7 +519,7 @@ class TracebackCatcher(object):
                 try:
                     self.callback(traceback, environ)
                 except Exception, e:
-                    logging.error(
+                    log.error(
                         'ERRORMATOR: Exception in logging callback: %s' % e)
             else:
                 self.callback(traceback, environ)
@@ -655,7 +657,7 @@ class ErrormatorCatcher(object):
                 try:
                     self.report(traceback, environ)
                 except Exception, e:
-                    logging.error(
+                    log.error(
                         'ERRORMATOR: Exception in logging callback: %s' % e)
             else:
                 self.report(traceback, environ)
