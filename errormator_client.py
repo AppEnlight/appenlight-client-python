@@ -103,7 +103,7 @@ class Report(object):
                 log.error(message)
                 if exception_on_failure:
                     raise ErrormatorException(message)
-        except (IOError,), e:
+        except IOError as e:
             message = 'ERRORMATOR: problem: %s' % e
             log.error(message)
             if exception_on_failure:
