@@ -71,7 +71,7 @@ class ErrormatorException(Exception):
         return self._message
 
     @message.setter
-    def message(self, message):
+    def message_set(self, message):
         self._message = message
 
     def __str__(self):
@@ -343,16 +343,16 @@ class Traceback(object):
         if self.frames[-1] in new_frames:
             self.frames[:] = new_frames
 
+    @property
     def is_syntax_error(self):
         """Is it a syntax error?"""
         return isinstance(self.exc_value, SyntaxError)
-    is_syntax_error = property(is_syntax_error)
 
+    @property
     def exception(self):
         """String representation of the exception."""
         buf = traceback.format_exception_only(self.exc_type, self.exc_value)
         return ''.join(buf).strip().decode('utf-8', 'replace')
-    exception = property(exception)
 
     def log(self, logfile=None):
         """Log the ASCII traceback into a file object."""
@@ -361,6 +361,7 @@ class Traceback(object):
         tb = self.plaintext.encode('utf-8', 'replace').rstrip() + '\n'
         logfile.write(tb)
 
+    @cached_property
     def plaintext(self):
         result = ['Traceback (most recent call last):']
         for frame in self.frames:
@@ -369,7 +370,6 @@ class Traceback(object):
             result.append('    %s' % frame.current_line.strip())
         result.append('%s' % self.exception)
         return '\n'.join(result)
-    plaintext = cached_property(plaintext)
 
     id = property(lambda x: id(x))
 
