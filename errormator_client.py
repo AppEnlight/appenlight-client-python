@@ -551,6 +551,11 @@ class ErrormatorCatcher(object):
     def __init__(self, app, config):
         self.app = app
         self.config = config
+        self.enabled = asbool(config.get('errormator', True))
+        self.server = config.get('errormator.server') or fqdn
+        self.async = asbool(config.get('errormator.async', True))
+        self.report_404 = asbool(config.get('errormator.report_404'), False)
+
         if 'errormator.catch_callback' in config:
             self.catch_callback = asbool(config['errormator.catch_callback'])
         else:
@@ -580,15 +585,15 @@ class ErrormatorCatcher(object):
         return parsed_request, remote_addr, additional_info
 
     def report(self, traceback, environ):
-        if not asbool(self.config.get('errormator', True)):
+        if not self.enabled:
             return
         report = Report()
         (parsed_request, remote_addr,
          additional_info) = self.process_environ(environ)
         report.payload['http_status'] = 500 if traceback else 404
         report.payload['priority'] = 5
-        report.payload['server'] = self.config.get('errormator.server')\
-                    or fqdn or environ.get('SERVER_NAME', 'unknown server')
+        report.payload['server'] = (self.server or 
+                    environ.get('SERVER_NAME', 'unknown server'))
         report.payload['report_details'] = []
         detail_entry = {}
         detail_entry['request'] = parsed_request
@@ -612,16 +617,16 @@ class ErrormatorCatcher(object):
         #lets populate with additional environ data
         report.payload.update(additional_info)
 
-        if asbool(self.config.get('errormator.async', True)):
-            client = self.config.get('errormator.client', 'python')
-            report.submit(self.config.get('errormator.api_key'),
-                self.config.get('errormator.server_url'),
-                errormator_client=client)
-        else:
+        if self.async:
             async_report = AsyncReport()
             async_report.report = report
             async_report.config = self.config
             async_report.start()
+        else:
+            client = self.config.get('errormator.client', 'python')
+            report.submit(self.config.get('errormator.api_key'),
+                self.config.get('errormator.server_url'),
+                errormator_client=client)
 
     def __call__(self, environ, start_response):
         """Run the application and conserve the traceback frames.
@@ -633,8 +638,9 @@ class ErrormatorCatcher(object):
         def detect_headers(status, headers, *k, **kw):
             detected_data[:] = status[:3], headers
             return start_response(status, headers, *k, **kw)
+
         try:
-            if self.config.get('errormator.report_404'):
+            if self.report_404:
                 app_iter = self.app(environ, detect_headers)
             else:
                 app_iter = self.app(environ, start_response)
