@@ -65,13 +65,14 @@ fqdn = socket.getfqdn()
 
 
 class ErrormatorException(Exception):
-    def _get_message(self):
+
+    @property
+    def message(self):
         return self._message
 
-    def _set_message(self, message):
+    @message.setter
+    def message(self, message):
         self._message = message
-
-    message = property(_get_message, _set_message)
 
     def __str__(self):
         return repr(self.args)
