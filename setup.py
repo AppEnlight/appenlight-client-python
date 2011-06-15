@@ -17,6 +17,7 @@ setup(name='errormator_client',
       author='Marcin Lulek',
       author_email='info@webreactor.eu',
       license='BSD',
+      zip_safe=True,
       py_modules=['errormator_client'],
       install_requires=[
           'Paste',
