@@ -555,7 +555,7 @@ class ErrormatorCatcher(object):
         self.async = asbool(config.get('errormator.async', True))
         self.report_404 = asbool(config.get('errormator.report_404', False))
         self.catch_callback = asbool(
-                config.get('errormator.catch_callback'), True)
+                config.get('errormator.catch_callback', True))
         self.client = config.get('errormator.client', 'python')
         self.api_key = config.get('errormator.api_key')
         self.server_url = config.get('errormator.server_url')
