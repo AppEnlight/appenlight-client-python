@@ -639,6 +639,9 @@ class ErrormatorCatcher(object):
             return start_response(status, headers, *k, **kw)
 
         try:
+            if 'errormator.app' not in environ:
+                environ['errormator.app'] = self
+
             if self.report_404:
                 app_iter = self.app(environ, detect_headers)
             else:
