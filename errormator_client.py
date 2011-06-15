@@ -639,8 +639,18 @@ class ErrormatorCatcher(object):
             return start_response(status, headers, *k, **kw)
 
         try:
-            if 'errormator.app' not in environ:
-                environ['errormator.app'] = self
+            if 'errormator.report' not in environ:
+
+                def local_report(message, include_traceback=True):
+                    if include_traceback:
+                        traceback = get_current_traceback(skip=1,
+                                show_hidden_frames=True,
+                                ignore_system_exceptions=True)
+                    else:
+                        traceback = None
+                    self.report(environ, message, traceback)
+
+                environ['errormator.report'] = local_report
 
             if self.report_404:
                 app_iter = self.app(environ, detect_headers)
