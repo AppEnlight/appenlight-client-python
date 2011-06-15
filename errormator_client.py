@@ -14,10 +14,10 @@
 #      names of its contributors may be used to endorse or promote products
 #      derived from this software without specific prior written permission.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
 # DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 # (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
 # LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
@@ -36,7 +36,7 @@ import threading
 
 try:
     import json
-except (ImportError,), e:
+except ImportError:
     import simplejson as json
 
 from paste import request as paste_req
@@ -61,19 +61,23 @@ import logging
 #lets try to find fqdn
 fqdn = socket.getfqdn()
 
+
 class ErrormatorException(Exception):
-    def _get_message(self): 
+    def _get_message(self):
         return self._message
-    def _set_message(self, message): 
+
+    def _set_message(self, message):
         self._message = message
+
     message = property(_get_message, _set_message)
+
     def __str__(self):
         return repr(self.args)
 
+
 class Report(object):
-    
     __protocol_version__ = '0.2'
-    
+
     def __init__(self, payload={}):
         self.payload = payload
 
@@ -83,14 +87,13 @@ class Report(object):
                exception_on_failure=True):
         self.payload['errormator.client'] = errormator_client
         GET_vars = urllib.urlencode(
-                        {'api_key':api_key,
-                        'protocol_version':self.__protocol_version__})
+                        {'api_key': api_key,
+                        'protocol_version': self.__protocol_version__})
         server_url = '%s%s?%s' % (server_url, default_path, GET_vars,)
         try:
             req = urllib2.Request(server_url,
                                   json.dumps([self.payload]),
-                                  headers={'Content-Type':'application/json'}
-                                  )
+                                  headers={'Content-Type': 'application/json'})
             #req.headers['Content-Encoding'] = 'gzip'
             conn = urllib2.urlopen(req)
             if conn.getcode() != 200:
@@ -108,23 +111,24 @@ class Report(object):
                                                self.payload['error_type'],)
             logging.error(message)
 
+
 class AsyncReport(threading.Thread):
-    
-    def __init__ (self):
+    def __init__(self):
         super(AsyncReport, self).__init__()
         self.report = None
         self.config = {}
-          
-    def run (self):
+
+    def run(self):
+        client = self.config.get('errormator.client', 'python')
         self.report.submit(
                 self.config.get('errormator.api_key'),
                 self.config.get('errormator.server_url'),
-                errormator_client=self.config.get('errormator.client', 'python')
-                           ) 
-        
-# the code below is shamelessly ripped (and slightly altered) 
+                errormator_client=client)
+
+
+# the code below is shamelessly ripped (and slightly altered)
 # from the flickzeug package
-        
+
 # Copyright (c) 2009 by the Flickzeug Team, see AUTHORS for more details.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -167,11 +171,9 @@ class AsyncReport(threading.Thread):
 """
 import re
 import os
-import sys
 import inspect
 import traceback
 import codecs
-from tokenize import TokenError
 
 
 _coding_re = re.compile(r'coding[:=]\s*([-\w.]+)')
@@ -249,7 +251,6 @@ class cached_property(object):
             value = self.func(obj)
             obj.__dict__[self.__name__] = value
         return value
-
 
 
 def get_current_traceback(ignore_system_exceptions=False,
@@ -361,8 +362,9 @@ class Traceback(object):
     def plaintext(self):
         result = ['Traceback (most recent call last):']
         for frame in self.frames:
-            result.append('File "%s", line %s, in %s' % (frame.filename, frame.lineno, frame.function_name,))
-            result.append('    %s' % frame.current_line.strip()) 
+            result.append('File "%s", line %s, in %s' %
+                    (frame.filename, frame.lineno, frame.function_name,))
+            result.append('    %s' % frame.current_line.strip())
         result.append('%s' % self.exception)
         return '\n'.join(result)
     plaintext = cached_property(plaintext)
@@ -409,7 +411,7 @@ class Frame(object):
         if mode != 'exec':
             return eval(code, self.globals, self.locals)
         exec code in self.globals, self.locals
-        
+
     @cached_property
     def sourcelines(self):
         """The sourcecode of the file as list of unicode strings."""
@@ -471,6 +473,7 @@ class Frame(object):
 
     id = property(lambda x: id(x))
 
+
 class TracebackCatcher(object):
     """Enables exception catching for an application
 
@@ -496,7 +499,7 @@ class TracebackCatcher(object):
     def __call__(self, environ, start_response):
         """Run the application and conserve the traceback frames."""
         app_iter = None
-        try:                
+        try:
             app_iter = self.app(environ, start_response)
             for item in app_iter:
                 yield item
@@ -505,7 +508,7 @@ class TracebackCatcher(object):
         except:
             if hasattr(app_iter, 'close'):
                 app_iter.close()
-                
+
             #we need that here
             exc_type, exc_value, tb = sys.exc_info()
             traceback = get_current_traceback(skip=1, show_hidden_frames=True,
@@ -514,23 +517,23 @@ class TracebackCatcher(object):
                 try:
                     self.callback(traceback, environ)
                 except Exception, e:
-                    logging.error('ERRORMATOR: Exception in logging callback: %s' % e)
+                    logging.error(
+                        'ERRORMATOR: Exception in logging callback: %s' % e)
             else:
                 self.callback(traceback, environ)
             # by default reraise exceptions for app/FW to handle
             if asbool(self.config.get('errormator.reraise_exceptions', True)):
-                raise exc_type, exc_value, tb                                   
+                raise exc_type, exc_value, tb
             try:
-                start_response('500 INTERNAL SERVER ERROR', [
-                    ('Content-Type', 'text/html; charset=utf-8')
-                ])
-            except Exception, err:
+                start_response('500 INTERNAL SERVER ERROR',
+                        [('Content-Type', 'text/html; charset=utf-8')])
+            except Exception:
                 # if we end up here there has been output but an error
                 # occurred.  in that situation we can do nothing fancy any
                 # more, better log something into the error log and fall
                 # back gracefully.
                 environ['wsgi.errors'].write(
-                    'TracebackCatcher middleware catched exception in streamed '
+                    'TracebackCatcher middleware caught exception in streamed '
                     'response at a point where response headers were already '
                     'sent.\n')
             else:
@@ -540,9 +543,9 @@ class TracebackCatcher(object):
 #above original Traceback Catcher for reference
 
 class ErrormatorCatcher(object):
-    
+
     __version__ = 0.2
-    
+
     def __init__(self, app, config):
         self.app = app
         self.config = config
@@ -550,7 +553,7 @@ class ErrormatorCatcher(object):
             self.catch_callback = asbool(config['errormator.catch_callback'])
         else:
             self.catch_callback = True
-            
+
     def process_environ(self, environ):
         parsed_request = {}
         additional_info = []
@@ -566,16 +569,17 @@ class ErrormatorCatcher(object):
                 # this CAN go wrong
                 pass
         if environ.get("HTTP_X_REAL_IP"):
-            remote_addr = environ.get("HTTP_X_REAL_IP") 
+            remote_addr = environ.get("HTTP_X_REAL_IP")
         elif environ.get("HTTP_X_FORWARDED_FOR"):
-            remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[0].strip()
+            remote_addr = environ.get("HTTP_X_FORWARDED_FOR")\
+                    .split(',')[0].strip()
         else:
             remote_addr = environ.get('REMOTE_ADDR')
         return parsed_request, remote_addr, additional_info
-         
+
     def report(self, traceback, environ):
         if not asbool(self.config.get('errormator', True)):
-            return                  
+            return
         report = Report()
         (parsed_request, remote_addr,
          additional_info) = self.process_environ(environ)
@@ -599,37 +603,38 @@ class ErrormatorCatcher(object):
             report.payload['traceback'] = traceback_text
         else:
             report.payload['error_type'] = '404 Not Found'
-        if report.payload['http_status'] == 404 and report.payload.get('traceback'):
+        if report.payload['http_status'] == 404 and \
+                report.payload.get('traceback'):
             #make sure traceback is empty for 404's
             report.payload['traceback'] = u''
         #lets populate with additional environ data
         report.payload.update(additional_info)
-        
+
         if asbool(self.config.get('errormator.async', True)):
+            client = self.config.get('errormator.client', 'python')
             report.submit(self.config.get('errormator.api_key'),
                 self.config.get('errormator.server_url'),
-                errormator_client=self.config.get('errormator.client', 'python')
-                          )
+                errormator_client=client)
         else:
             async_report = AsyncReport()
             async_report.report = report
             async_report.config = self.config
             async_report.start()
-            
-            
+
     def __call__(self, environ, start_response):
         """Run the application and conserve the traceback frames.
         also determine if we got 404
         """
         app_iter = None
         detected_data = []
+
         def detect_headers(status, headers, *k, **kw):
             detected_data[:] = status[:3], headers
             return start_response(status, headers, *k, **kw)
         try:
             if self.config.get('errormator.report_404'):
                 app_iter = self.app(environ, detect_headers)
-            else:                
+            else:
                 app_iter = self.app(environ, start_response)
             for item in app_iter:
                 yield item
@@ -641,7 +646,7 @@ class ErrormatorCatcher(object):
         except:
             if hasattr(app_iter, 'close'):
                 app_iter.close()
-                
+
             #we need that here
             exc_type, exc_value, tb = sys.exc_info()
             traceback = get_current_traceback(skip=1, show_hidden_frames=True,
@@ -650,25 +655,25 @@ class ErrormatorCatcher(object):
                 try:
                     self.report(traceback, environ)
                 except Exception, e:
-                    logging.error('ERRORMATOR: Exception in logging callback: %s' % e)
+                    logging.error(
+                        'ERRORMATOR: Exception in logging callback: %s' % e)
             else:
                 self.report(traceback, environ)
             # by default reraise exceptions for app/FW to handle
             if asbool(self.config.get('errormator.reraise_exceptions', True)):
-                raise exc_type, exc_value, tb                                   
+                raise exc_type, exc_value, tb
             try:
-                start_response('500 INTERNAL SERVER ERROR', [
-                    ('Content-Type', 'text/html; charset=utf-8')
-                ])
-            except Exception, err:
+                start_response('500 INTERNAL SERVER ERROR',
+                        [('Content-Type', 'text/html; charset=utf-8')])
+            except Exception:
                 # if we end up here there has been output but an error
                 # occurred.  in that situation we can do nothing fancy any
                 # more, better log something into the error log and fall
                 # back gracefully.
                 environ['wsgi.errors'].write(
-                    'TracebackCatcher middleware catched exception in streamed '
-                    'response at a point where response headers were already '
-                    'sent.\n')
+                    'TracebackCatcher middleware catched exception in streamed'
+                    ' response at a point where response headers were already'
+                    ' sent.\n')
             else:
                 yield 'Server Error'
 
@@ -681,10 +686,12 @@ class ErrormatorHTTPCodeSniffer(object):
     def __call__(self, environ, start_response):
         return self.app(environ, start_response)
 
+
 def make_catcher_middleware(app, global_config, **kw):
     config = global_config.copy()
     config.update(kw)
     return ErrormatorCatcher(app, config=config)
+
 
 def make_sniffer_middleware(app, global_config, **kw):
     #deprecated, errormator catcher will handle everything
