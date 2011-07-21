@@ -87,7 +87,7 @@ class Report(object):
     def submit(self, api_key, server_url,
                default_path='/api/reports',
                errormator_client='python',
-               exception_on_failure=True):
+               exception_on_failure=True,timeout=30):
         self.payload['errormator.client'] = errormator_client
         GET_vars = urllib.urlencode(
                         {'api_key': api_key,
@@ -98,7 +98,10 @@ class Report(object):
                                   json.dumps([self.payload]),
                                   headers={'Content-Type': 'application/json'})
             #req.headers['Content-Encoding'] = 'gzip'
-            conn = urllib2.urlopen(req)
+            try:
+                conn = urllib2.urlopen(req,timeout=timeout)
+            except TypeError as e:
+                conn = urllib2.urlopen(req)
             if conn.getcode() != 200:
                 message = 'ERRORMATOR: response code: %s' % conn.getcode()
                 log.error(message)
@@ -116,16 +119,17 @@ class Report(object):
 
 
 class AsyncReport(threading.Thread):
-    def __init__(self, api_key, server_url, client, report):
+    def __init__(self, api_key, server_url, client, report,timeout):
         super(AsyncReport, self).__init__()
         self.report = report
         self.client = client
         self.api_key = api_key
         self.server_url = server_url
+        self.timeout = timeout
 
     def run(self):
         self.report.submit(self.api_key, self.server_url,
-                errormator_client=self.client)
+                errormator_client=self.client,timeout=self.timeout)
 
 
 # the code below is shamelessly ripped (and slightly altered)
@@ -559,6 +563,7 @@ class ErrormatorCatcher(object):
         self.client = config.get('errormator.client', 'python')
         self.api_key = config.get('errormator.api_key')
         self.server_url = config.get('errormator.server_url')
+        self.timeout = int(config.get('errormator.timeout',20))
         self.reraise_exceptions = asbool(
                 config.get('errormator.reraise_exceptions', True))
 
@@ -621,11 +626,11 @@ class ErrormatorCatcher(object):
 
         if self.async:
             async_report = AsyncReport(self.api_key, self.server_url,
-                    self.client, report)
+                    self.client, report,self.timeout)
             async_report.start()
         else:
             report.submit(self.api_key, self.server_url,
-                    errormator_client=self.client)
+                    errormator_client=self.client,timeout=self.timeout)
 
     def __call__(self, environ, start_response):
         """Run the application and conserve the traceback frames.
@@ -656,13 +661,20 @@ class ErrormatorCatcher(object):
                 app_iter = self.app(environ, detect_headers)
             else:
                 app_iter = self.app(environ, start_response)
-            for item in app_iter:
-                yield item
-            if hasattr(app_iter, 'close'):
-                app_iter.close()
-
-            if detected_data and detected_data[0] == '404':
-                self.report(environ)
+                
+            try:
+                return app_iter
+            finally:
+                if detected_data and detected_data[0] == '404':
+                    self.report(environ)
+                
+#            for item in app_iter:
+#                yield item
+#            if hasattr(app_iter, 'close'):
+#                app_iter.close()
+#
+#            if detected_data and detected_data[0] == '404':
+#                self.report(environ)
         except:
             if hasattr(app_iter, 'close'):
                 app_iter.close()
@@ -695,7 +707,7 @@ class ErrormatorCatcher(object):
                     ' response at a point where response headers were already'
                     ' sent.\n')
             else:
-                yield 'Server Error'
+                return 'Server Error'
 
 
 #deprecated bw compat
