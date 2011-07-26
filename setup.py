@@ -21,6 +21,7 @@ setup(name='errormator_client',
       py_modules=['errormator_client'],
       install_requires=[
           'Paste',
+          "webob"
       ],
       entry_points="""
       [paste.filter_app_factory]
