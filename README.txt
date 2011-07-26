@@ -22,6 +22,7 @@ pipeline =
     app_name
 
 
+
 for pylons app you can modify config/middleware.py:
 import the classes and add this lines:
 
@@ -37,7 +38,45 @@ errormator.api_key = YOUR_API_KEY
 errormator.server = Instance/Server Name
 errormator.report_404 = true
 
+Logging API Support
+===================
+to enable logging support you need to alter your ini file;
+
+add a new section for handlers
+
+example:
+
+[handlers]
+keys = YOURLOGGERS, errormator_logger
+
+then add the new handler to your loggers
+
+[logger_root]
+level = INFO
+handlers = YOURHANDLERS, errormator_logger
+
+etc.
+
+finally add a new handler section
+
+[handler_errormator_logger]
+class = errormator_client.ErrormatorLogHandler
+args = (50,True,'API_KEY','https://api.errormator.com')
+level = NOTSET
+
+
+in args: first param determines after how many entries errors get flushed to remote service
+in args: second param determines if client should make a threaded call
+
+it is also possible to send logging messages directly as log function will be 
+attached to your environ object:
+
+request.environ['errormator.log']('DUPA','TEST!')
+
+
+
 errormator_client is BSD licensed, consult LICENSE for details. 
+
 
 Installation and Setup
 ======================

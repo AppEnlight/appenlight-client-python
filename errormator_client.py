@@ -34,6 +34,7 @@ import urllib2
 import socket
 import sys
 import threading
+from logging.handlers import MemoryHandler, BufferingHandler
 from webob import Request
 
 try:
@@ -135,6 +136,75 @@ def process_environ(environ, traceback=False):
         remote_addr = environ.get('REMOTE_ADDR')
     return parsed_request, remote_addr, additional_info
 
+class ErrormatorLogHandler(MemoryHandler):
+    def __init__(self, capacity=50, async=True, api_key=None, server_url=None,timeout=30):
+        """
+        Initialize the handler with the buffer size, the level at which
+        flushing should occur and an optional target.
+        """
+        BufferingHandler.__init__(self, capacity)
+        self.capacity = capacity
+        self.async = asbool(async)
+        self.api_key = api_key
+        self.server_url = server_url
+        self.timeout = timeout
+
+    def shouldFlush(self, record):
+        """
+        Check for buffer full or a record at the flushLevel or higher.
+        """
+        return (len(self.buffer) >= self.capacity)
+    
+    def flush(self):
+        """
+        For a ErrormatorLog, flushing means just sending the buffered
+        records to the listerner, if there is one.
+        """
+        entries = []
+        # if service basic data is not supplied just clear the buffer
+        if self.api_key and self.server_url: 
+            for record in self.buffer:
+                entries.append(
+                        {'log_level':record.levelname,
+                        'message':'%s %s' %(record.name,record.getMessage(),),
+                        'date':getattr(record,'asctime',
+                        datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S,%f'))
+                        })
+            
+            log_call = LogCall(entries)
+            if self.async:
+                log_call_async = AsyncLogCall(self.api_key, self.server_url,
+                        log_call, self.timeout)
+                log_call_async.start()
+            else:
+                log_call.submit(self.api_key, self.server_url,
+                        timeout=self.timeout)
+        
+        self.buffer = []
+
+class LogCall(object):
+    """ Handled actual communication of data to the server """
+    __protocol_version__ = '0.2'
+
+    def __init__(self, payload={}):
+        self.payload = payload
+
+    def submit(self, api_key, server_url,
+               endpoint='/api/logs',
+               errormator_client='python',
+               exception_on_failure=False,
+               timeout=30,
+               gzip=False):
+        GET_vars = urllib.urlencode(
+                        {'api_key': api_key,
+                        'protocol_version': self.__protocol_version__})
+        server_url = '%s%s?%s' % (server_url, endpoint, GET_vars,)
+        if send_request(self.payload, server_url, timeout=timeout,
+                        exception_on_failure=exception_on_failure):
+            message = '%s:ERRORMATOR: remote logged: %s' % (datetime.datetime.now(),
+                                               len(self.payload),)
+            log.info(message)
+
 class Report(object):
     """ Handled actual communication of data to the server """
     __protocol_version__ = '0.2'
@@ -159,6 +229,17 @@ class Report(object):
                                                self.payload['error_type'],)
             log.error(message)
 
+class AsyncLogCall(threading.Thread):
+    def __init__(self, api_key, server_url, log_callable, timeout):
+        super(AsyncLogCall, self).__init__()
+        self.log_callable = log_callable
+        self.api_key = api_key
+        self.server_url = server_url
+        self.timeout = timeout
+
+    def run(self):
+        self.log_callable.submit(self.api_key, self.server_url,
+                                 timeout=self.timeout)
 
 class AsyncReport(threading.Thread):
     def __init__(self, api_key, server_url, client, report, timeout):
@@ -681,6 +762,19 @@ class ErrormatorCatcher(object):
                     self.report(environ, message, traceback)
 
                 environ['errormator.report'] = local_report
+
+            #inject remote logging function to environ
+            if 'errormator.log' not in environ:
+                def local_log(level, message):
+                    log_call = LogCall([
+                        {"log_level":level,
+                        "message":message,
+                        "timestamp":datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S,%f')
+                        }])
+                    log_call.submit(self.api_key, self.server_url,
+                            timeout=self.timeout)
+
+                environ['errormator.log'] = local_log
 
             if self.report_404:
                 app_iter = self.app(environ, detect_headers)
