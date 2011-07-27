@@ -34,6 +34,7 @@ import urllib2
 import socket
 import sys
 import threading
+import time
 from logging.handlers import MemoryHandler, BufferingHandler
 from webob import Request
 
@@ -166,12 +167,17 @@ class ErrormatorLogHandler(MemoryHandler):
         # if service basic data is not supplied just clear the buffer
         if self.api_key and self.server_url: 
             for record in self.buffer:
+                if not getattr(record,'created'):
+                    time_string = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S,%f')
+                else:
+                    time_string = time.strftime('%Y-%m-%d %H:%M:%S,%f',
+                                    time.gmtime(record.created)) % record.msecs 
+                
                 entries.append(
                         {'log_level':record.levelname,
                         'message':'%s %s' %(record.name,record.getMessage(),),
                         'server': self.server,
-                        'date':getattr(record,'asctime',
-                        datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S,%f'))
+                        'date':time_string
                         })
             
             log_call = LogCall(entries)
