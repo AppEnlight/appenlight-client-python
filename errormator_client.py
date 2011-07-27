@@ -778,7 +778,8 @@ class ErrormatorCatcher(object):
                     log_call = LogCall([
                         {"log_level":level,
                         "message":message,
-                        "timestamp":datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S,%f')
+                        "timestamp":datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S,%f'),
+                        "server":self.server
                         }])
                     log_call.submit(self.api_key, self.server_url,
                             timeout=self.timeout)
