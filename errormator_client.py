@@ -137,7 +137,8 @@ def process_environ(environ, traceback=False):
     return parsed_request, remote_addr, additional_info
 
 class ErrormatorLogHandler(MemoryHandler):
-    def __init__(self, capacity=50, async=True, api_key=None, server_url=None,timeout=30):
+    def __init__(self, capacity=50, async=True, api_key=None, server_url=None,
+                 server_name=None, timeout=30):
         """
         Initialize the handler with the buffer size, the level at which
         flushing should occur and an optional target.
@@ -148,6 +149,7 @@ class ErrormatorLogHandler(MemoryHandler):
         self.api_key = api_key
         self.server_url = server_url
         self.timeout = timeout
+        self.server = server_name or fqdn
 
     def shouldFlush(self, record):
         """
@@ -167,6 +169,7 @@ class ErrormatorLogHandler(MemoryHandler):
                 entries.append(
                         {'log_level':record.levelname,
                         'message':'%s %s' %(record.name,record.getMessage(),),
+                        'server': self.server,
                         'date':getattr(record,'asctime',
                         datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S,%f'))
                         })
