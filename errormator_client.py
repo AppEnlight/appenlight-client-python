@@ -212,7 +212,7 @@ class LogCall(object):
                         exception_on_failure=exception_on_failure):
             message = '%s:ERRORMATOR: remote logged: %s' % (datetime.datetime.now(),
                                                len(self.payload),)
-            log.info(message)
+            log.debug(message)
 
 
 # taken from pyramid_debugtoolbar - special kudos for raydeo and pyramid team ;)
@@ -902,6 +902,7 @@ class ErrormatorHTTPCodeSniffer(object):
 def make_catcher_middleware(app, global_config, **kw):
     config = global_config.copy()
     config.update(kw)
+    print config
     if not asbool(config.get('errormator', True)):
         return app
     
