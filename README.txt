@@ -40,33 +40,14 @@ errormator.report_404 = true
 
 Logging API Support
 ===================
-to enable logging support you need to alter your ini file;
+to enable logging support you need to alter your ini file and add more entries
+(apart the ones above)
+errormator.logging = true
+errormator.logging.buffer = 50
+errormator.logging.async = true
 
-add a new section for handlers
-
-example:
-
-[handlers]
-keys = YOURLOGGERS, errormator_logger
-
-then add the new handler to your loggers
-
-[logger_root]
-level = INFO
-handlers = YOURHANDLERS, errormator_logger
-
-etc.
-
-finally add a new handler section
-
-[handler_errormator_logger]
-class = errormator_client.ErrormatorLogHandler
-args = (50,True,'API_KEY','https://api.errormator.com')
-level = NOTSET
-
-
-in args: first param determines after how many entries errors get flushed to remote service
-in args: second param determines if client should make a threaded call
+first param determines after how many entries errors get flushed to remote service
+second param determines if client should make a threaded call
 
 it is also possible to send logging messages directly as log function will be 
 attached to your environ object:
