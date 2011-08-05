@@ -268,7 +268,7 @@ class Report(object):
                         exception_on_failure=exception_on_failure):
             message = '%s:ERRORMATOR: logged: %s' % (datetime.datetime.now(),
                                                self.payload['error_type'],)
-            log.error(message)
+            log.warning(message)
 
 class AsyncLogCall(threading.Thread):
     def __init__(self, api_key, server_url, log_callable, timeout):
