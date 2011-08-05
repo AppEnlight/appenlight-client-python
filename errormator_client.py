@@ -845,7 +845,6 @@ class ErrormatorCatcher(object):
             finally:
                 #lets process environ
                 req_time = datetime.datetime.utcnow() - start_time
-                print req_time.seconds
                 
                 if detected_data and detected_data[0] == '404':
                     self.report(environ, http_status=404)

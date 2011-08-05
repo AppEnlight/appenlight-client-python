@@ -49,10 +49,14 @@ errormator.logging.async = true
 first param determines after how many entries errors get flushed to remote service
 second param determines if client should make a threaded call
 
-it is also possible to send logging messages directly as log function will be 
+It is also possible to send logging messages directly as log function will be 
 attached to your environ object:
 
-request.environ['errormator.log']('DUPA','TEST!')
+request.environ['errormator.log']('FOO','TEST!')
+
+it is also possible to send reports directly from inside of your application:
+
+request.environ['errormator.report']('TEST Lorem ipsum', False)
 
 
 
