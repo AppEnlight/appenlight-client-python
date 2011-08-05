@@ -899,10 +899,9 @@ class ErrormatorHTTPCodeSniffer(object):
         return self.app(environ, start_response)
 
 
-def make_catcher_middleware(app, global_config, **kw):
+def make_errormator_middleware(app, global_config, **kw):
     config = global_config.copy()
     config.update(kw)
-    print config
     if not asbool(config.get('errormator', True)):
         return app
     
@@ -920,6 +919,7 @@ def make_catcher_middleware(app, global_config, **kw):
         
     return ErrormatorCatcher(app, config=config)
 
+make_catcher_middleware = make_errormator_middleware 
 
 def make_sniffer_middleware(app, global_config, **kw):
     #deprecated, errormator catcher will handle everything

@@ -6,7 +6,7 @@ in your ini add:
 
 #exception gathering
 [filter:errormator_client]
-use = egg:errormator_client#error_catcher
+use = egg:errormator_client#errormator
 debug = false
 errormator = true
 errormator.server_url = https://api.errormator.com
@@ -29,7 +29,7 @@ import the classes and add this lines:
 #exception gathering
 # CUSTOM MIDDLEWARE HERE (filtered by error handling middlewares)
   
-app = ErrormatorCatcher(app, config)
+app = make_errormator_middleware(app,config)
 
 and add in your ini:
 errormator = true
@@ -48,6 +48,8 @@ errormator.logging.async = true
 
 first param determines after how many entries errors get flushed to remote service
 second param determines if client should make a threaded call
+
+in pylons
 
 It is also possible to send logging messages directly as log function will be 
 attached to your environ object:
