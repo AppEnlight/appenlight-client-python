@@ -48,6 +48,7 @@ from paste.util.converters import asbool
 
 
 log = logging.getLogger(__name__)
+log_requests = logging.getLogger('%s.request' %__name__)
 
 
 def gzipcompress(bytestr):
@@ -158,6 +159,12 @@ class ErrormatorLogHandler(MemoryHandler):
         """
         return (len(self.buffer) >= self.capacity)
     
+    def emit(self, record):
+        #skip reports from errormator itself
+        if record.name in ('errormator_client','errormator_client.request',):
+            return
+        super(ErrormatorLogHandler,self).emit(record)
+        
     def flush(self):
         """
         For a ErrormatorLog, flushing means just sending the buffered
@@ -210,9 +217,8 @@ class LogCall(object):
         server_url = '%s%s?%s' % (server_url, endpoint, GET_vars,)
         if send_request(self.payload, server_url, timeout=timeout,
                         exception_on_failure=exception_on_failure):
-            message = '%s:ERRORMATOR: remote logged: %s' % (datetime.datetime.now(),
-                                               len(self.payload),)
-            log.debug(message)
+            message = 'remote logged: %s' % len(self.payload)
+            log.info(message)
 
 
 # taken from pyramid_debugtoolbar - special kudos for raydeo and pyramid team ;)
@@ -266,8 +272,7 @@ class Report(object):
         server_url = '%s%s?%s' % (server_url, endpoint, GET_vars,)
         if send_request([self.payload], server_url, timeout=timeout,
                         exception_on_failure=exception_on_failure):
-            message = '%s:ERRORMATOR: logged: %s' % (datetime.datetime.now(),
-                                               self.payload['error_type'],)
+            message = 'error logged: %s' % self.payload['error_type']
             log.warning(message)
 
 class AsyncLogCall(threading.Thread):
@@ -902,6 +907,7 @@ class ErrormatorHTTPCodeSniffer(object):
 def make_errormator_middleware(app, global_config, **kw):
     config = global_config.copy()
     config.update(kw)
+    #this shuts down all errormator functionalities
     if not asbool(config.get('errormator', True)):
         return app
     
@@ -915,10 +921,14 @@ def make_errormator_middleware(app, global_config, **kw):
                             config.get('errormator.server_name'),
                             config.get('errormator.logging.timeout', 30)
                             )
+        log_handler.setLevel(config.get('errormator.logging.level','NOTSET'))
         logging.root.addHandler(log_handler)
-        
-    return ErrormatorCatcher(app, config=config)
+    
+    if asbool(config.get('errormator.report_errors', True)):
+        app = ErrormatorCatcher(app, config=config)
+    return app
 
+#alias for be compat
 make_catcher_middleware = make_errormator_middleware 
 
 def make_sniffer_middleware(app, global_config, **kw):
