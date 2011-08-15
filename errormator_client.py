@@ -46,6 +46,11 @@ except ImportError:
 from paste import request as paste_req
 from paste.util.converters import asbool
 
+LEVELS = {'debug': logging.DEBUG,
+          'info': logging.INFO,
+          'warning': logging.WARNING,
+          'error': logging.ERROR,
+          'critical': logging.CRITICAL}
 
 log = logging.getLogger(__name__)
 log_requests = logging.getLogger('%s.request' %__name__)
@@ -921,7 +926,10 @@ def make_errormator_middleware(app, global_config, **kw):
                             config.get('errormator.server_name'),
                             config.get('errormator.logging.timeout', 30)
                             )
-        log_handler.setLevel(config.get('errormator.logging.level','NOTSET'))
+        
+        level = LEVELS.get(config.get('errormator.logging.level').lower(),
+                           logging.NOTSET)
+        log_handler.setLevel(level)
         logging.root.addHandler(log_handler)
     
     if asbool(config.get('errormator.report_errors', True)):
