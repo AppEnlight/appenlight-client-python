@@ -163,7 +163,7 @@ class ErrormatorLogHandler(MemoryHandler):
         #skip reports from errormator itself
         if record.name in ('errormator_client','errormator_client.request',):
             return
-        super(ErrormatorLogHandler,self).emit(record)
+        MemoryHandler.emit(record)
         
     def flush(self):
         """
