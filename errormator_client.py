@@ -143,6 +143,35 @@ def process_environ(environ, traceback=False):
         remote_addr = environ.get('REMOTE_ADDR')
     return parsed_request, remote_addr, additional_info
 
+def create_report_structure(environ, traceback=None, message=None,
+                     http_status=200,server='unknown server'):
+    (parsed_request, remote_addr, additional_info) = \
+            process_environ(environ, traceback)
+    parsed_data = {'report_details': []}
+    parsed_data['http_status'] = 500 if traceback else http_status
+    parsed_data['priority'] = 5
+    parsed_data['server'] = (server or
+                environ.get('SERVER_NAME', 'unknown server'))
+    detail_entry = {}
+    if traceback:
+        detail_entry['request'] = parsed_request
+        #conserve bandwidth
+        detail_entry['request'].pop('HTTP_USER_AGENT', None)
+        detail_entry['request'].pop('REMOTE_ADDR', None)
+        detail_entry['request'].pop('HTTP_COOKIE', None)
+        detail_entry['request'].pop('webob._parsed_cookies', None)
+        
+    detail_entry['ip'] = remote_addr
+    detail_entry['user_agent'] = environ.get('HTTP_USER_AGENT')
+    detail_entry['username'] = environ.get('REMOTE_USER', u'')
+    detail_entry['url'] = paste_req.construct_url(environ)
+    message = message or additional_info.get('message', u'')
+    detail_entry['message'] = message
+    parsed_data['report_details'].append(detail_entry)
+    return parsed_data, additional_info
+
+
+
 class ErrormatorLogHandler(MemoryHandler):
     def __init__(self, capacity=50, async=True, api_key=None, server_url=None,
                  server_name=None, timeout=30):
@@ -731,7 +760,6 @@ class ErrormatorCatcher(object):
         self.enabled = asbool(config.get('errormator', True))
         self.server = config.get('errormator.server') or fqdn
         self.async = asbool(config.get('errormator.async', True))
-        self.report_404 = asbool(config.get('errormator.report_404', False))
         self.catch_callback = asbool(
                 config.get('errormator.catch_callback', True))
         self.client = config.get('errormator.client', 'python')
@@ -742,40 +770,14 @@ class ErrormatorCatcher(object):
         self.reraise_exceptions = asbool(
                 config.get('errormator.reraise_exceptions', True))
 
-
-    def parse_basic_data(self, environ, traceback=None, message=None,
-                         http_status=200):
-        (parsed_request, remote_addr, additional_info) = \
-                process_environ(environ, traceback)
-        parsed_data = {'report_details': []}
-        parsed_data['http_status'] = 500 if traceback else http_status
-        parsed_data['priority'] = 5
-        parsed_data['server'] = (self.server or
-                    environ.get('SERVER_NAME', 'unknown server'))
-        detail_entry = {}
-        if traceback:
-            detail_entry['request'] = parsed_request
-            #conserve bandwidth
-            detail_entry['request'].pop('HTTP_USER_AGENT', None)
-            detail_entry['request'].pop('REMOTE_ADDR', None)
-            detail_entry['request'].pop('HTTP_COOKIE', None)
-            detail_entry['request'].pop('webob._parsed_cookies', None)
-            
-        detail_entry['ip'] = remote_addr
-        detail_entry['user_agent'] = environ.get('HTTP_USER_AGENT')
-        detail_entry['username'] = environ.get('REMOTE_USER', u'')
-        detail_entry['url'] = paste_req.construct_url(environ)
-        message = message or additional_info.get('message', u'')
-        detail_entry['message'] = message
-        parsed_data['report_details'].append(detail_entry)
-        return parsed_data, additional_info
-
     def report(self, environ, traceback=None, message=None, http_status=200):
         report = Report()
-        parsed_data, additional_info = self.parse_basic_data(environ,
-                                                              traceback,
-                                                              message,
-                                                              http_status)
+        parsed_data, additional_info = create_report_structure(environ,
+                                                               traceback,
+                                                               message,
+                                                               http_status,
+                                                               server=self.server
+                                                               )
         report.payload = parsed_data
         if traceback:
             exception_text = traceback.exception
@@ -798,24 +800,13 @@ class ErrormatorCatcher(object):
         else:
             report.submit(self.api_key, self.server_url,
                     errormator_client=self.client, timeout=self.timeout)
-            
-            
-    def slow_request_report(self, environ, message=None):
-        print self.parse_basic_data(environ, traceback, message)
-
 
     def __call__(self, environ, start_response):
         """Run the application and conserve the traceback frames.
         also determine if we got 404
         """
-        start_time = datetime.datetime.utcnow()
         app_iter = None
         detected_data = []
-
-        def detect_headers(status, headers, *k, **kw):
-            detected_data[:] = status[:3], headers
-            return start_response(status, headers, *k, **kw)
-
         try:
             #inject local reporting function to environ
             if 'errormator.report' not in environ:
@@ -844,20 +835,9 @@ class ErrormatorCatcher(object):
                             timeout=self.timeout)
 
                 environ['errormator.log'] = local_log
-
-            if self.report_404:
-                app_iter = self.app(environ, detect_headers)
-            else:
-                app_iter = self.app(environ, start_response)
-                
-            try:
-                return app_iter
-            finally:
-                #lets process environ
-                req_time = datetime.datetime.utcnow() - start_time
-                
-                if detected_data and detected_data[0] == '404':
-                    self.report(environ, http_status=404)
+            
+            app_iter = self.app(environ, start_response)
+            return app_iter
                 
 #            for item in app_iter:
 #                yield item
@@ -899,6 +879,27 @@ class ErrormatorCatcher(object):
             else:
                 return 'Server Error'
 
+class ErrormatorReport404(ErrormatorCatcher):
+    __version__ = 0.2
+        
+    def __call__(self, environ, start_response):
+        """Run the application, determine if we got 404
+        """
+        app_iter = None
+        detected_data = []
+
+        def detect_headers(status, headers, *k, **kw):
+            detected_data[:] = status[:3], headers
+            return start_response(status, headers, *k, **kw)
+
+        app_iter = self.app(environ, detect_headers)                
+        try:
+            return app_iter
+        finally:
+            #lets process environ
+            if detected_data and detected_data[0] == '404':
+                self.report(environ, http_status=404)
+        
 
 #deprecated bw compat
 class ErrormatorHTTPCodeSniffer(object):
@@ -931,6 +932,12 @@ def make_errormator_middleware(app, global_config, **kw):
                            logging.NOTSET)
         log_handler.setLevel(level)
         logging.root.addHandler(log_handler)
+
+    if asbool(config.get('errormator.report_404', False)):
+        app = ErrormatorReport404(app, config=config)
+
+#    if asbool(config.get('errormator.report_slow_requests', True)):
+#        app = ErrormatorSlowRequest(app, config=config)
     
     if asbool(config.get('errormator.report_errors', True)):
         app = ErrormatorCatcher(app, config=config)
