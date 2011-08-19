@@ -53,8 +53,12 @@ LEVELS = {'debug': logging.DEBUG,
           'critical': logging.CRITICAL}
 
 log = logging.getLogger(__name__)
-log_requests = logging.getLogger('%s.request' %__name__)
+log_slow = logging.getLogger('errormator_client.slow')
+log_slow.setLevel(logging.DEBUG)
+log_errors = logging.getLogger('errormator_client.error')
+log_errors.setLevel(logging.DEBUG)
 
+DATE_FRMT = '%Y-%m-%d %H:%M:%S,%f'
 
 def gzipcompress(bytestr):
     stream = cStringIO.StringIO()
@@ -131,7 +135,7 @@ def process_environ(environ, traceback=False):
         # only do this if there was an error
         # reparse with webob to get all the info we want
         req = Request(environ)
-        parsed_request['ERRORMATOR_Cookies'] = dict(req.cookies)
+        parsed_request['ERRORMATOR_COOKIES'] = dict(req.cookies)
         parsed_request['ERRORMATOR_GET'] = dict([(k, req.GET.getall(k)) for k in req.GET])
         parsed_request['ERRORMATOR_POST'] = dict([(k, req.POST.getall(k)) for k in req.POST])
     if environ.get("HTTP_X_REAL_IP"):
@@ -195,7 +199,8 @@ class ErrormatorLogHandler(MemoryHandler):
     
     def emit(self, record):
         #skip reports from errormator itself
-        if record.name in ('errormator_client','errormator_client.request',):
+        if record.name in ('errormator_client', 'errormator_client.slow',
+                           'errormator_client.error',):
             return
         MemoryHandler.emit(self,record)
         
@@ -209,9 +214,9 @@ class ErrormatorLogHandler(MemoryHandler):
         if self.api_key and self.server_url: 
             for record in self.buffer:
                 if not getattr(record, 'created'):
-                    time_string = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S,%f')
+                    time_string = datetime.datetime.utcnow().strftime(DATE_FRMT)
                 else:
-                    time_string = time.strftime('%Y-%m-%d %H:%M:%S,%f',
+                    time_string = time.strftime(DATE_FRMT,
                                     time.gmtime(record.created)) % record.msecs 
                 
                 entries.append(
@@ -221,18 +226,69 @@ class ErrormatorLogHandler(MemoryHandler):
                         'date':time_string
                         })
             
-            log_call = LogCall(entries)
+            remote_call = RemoteCall(entries)
             if self.async:
-                log_call_async = AsyncLogCall(self.api_key, self.server_url,
-                        log_call, self.timeout)
-                log_call_async.start()
+                remote_call_async = AsyncRemoteCall(self.api_key,
+                                                    self.server_url,
+                                                    remote_call,
+                                                    self.timeout,
+                                                    endpoint='/api/logs')
+                remote_call_async.start()
             else:
-                log_call.submit(self.api_key, self.server_url,
-                        timeout=self.timeout)
-        
+                remote_call.submit(self.api_key, self.server_url,
+                        timeout=self.timeout, endpoint='/api/logs')        
         self.buffer = []
 
-class LogCall(object):
+class ErrormatorErrorHandler(MemoryHandler):
+    def __init__(self, capacity=3, async=True, api_key=None, server_url=None,
+                 server_name=None, timeout=30):
+        """
+        Initialize the handler with the buffer size, the level at which
+        flushing should occur and an optional target.
+        """
+        BufferingHandler.__init__(self, capacity)
+        self.capacity = capacity
+        self.async = asbool(async)
+        self.api_key = api_key
+        self.server_url = server_url
+        self.timeout = timeout
+        self.server = server_name or fqdn
+
+    def shouldFlush(self, record):
+        """
+        Check for buffer full or a record at the flushLevel or higher.
+        """
+        return (len(self.buffer) >= self.capacity)
+    
+    def emit(self, record):
+        if record.name == 'errormator_client.error':
+            MemoryHandler.emit(self,record)
+        
+    def flush(self):
+        """
+        For a ErrormatorLog, flushing means just sending the buffered
+        records to the listerner, if there is one.
+        """
+        entries = []
+        # if service basic data is not supplied just clear the buffer
+        if self.api_key and self.server_url: 
+            for record in self.buffer:
+                entries.append(record.errormator_data)            
+            remote_call = RemoteCall(entries)
+            if self.async:
+                remote_call_async = AsyncRemoteCall(self.api_key,
+                                                    self.server_url,
+                                                    remote_call,
+                                                    self.timeout,
+                                                    endpoint='/api/reports')
+                remote_call_async.start()
+            else:
+                remote_call.submit(self.api_key, self.server_url,
+                        timeout=self.timeout, endpoint='/api/reports')
+        self.buffer = []
+
+
+class RemoteCall(object):
     """ Handled actual communication of data to the server """
     __protocol_version__ = '0.2'
 
@@ -240,20 +296,34 @@ class LogCall(object):
         self.payload = payload
 
     def submit(self, api_key, server_url,
-               endpoint='/api/logs',
+               endpoint=None,
                errormator_client='python',
                exception_on_failure=False,
                timeout=30,
                gzip=False):
+        if not endpoint:
+            raise ErrormatorException('No endpoint specified')
         GET_vars = urllib.urlencode(
                         {'api_key': api_key,
                         'protocol_version': self.__protocol_version__})
         server_url = '%s%s?%s' % (server_url, endpoint, GET_vars,)
         if send_request(self.payload, server_url, timeout=timeout,
                         exception_on_failure=exception_on_failure):
-            message = 'remote logged: %s' % len(self.payload)
+            message = '%s entries sent: %s' % (endpoint, len(self.payload),)
             log.info(message)
 
+class AsyncRemoteCall(threading.Thread):
+    def __init__(self, api_key, server_url, callable, timeout, endpoint):
+        super(AsyncRemoteCall, self).__init__()
+        self.callable = callable
+        self.api_key = api_key
+        self.server_url = server_url
+        self.timeout = timeout
+        self.endpoint = endpoint
+
+    def run(self):
+        self.callable.submit(self.api_key, self.server_url,
+                             timeout=self.timeout, endpoint=self.endpoint)
 
 # taken from pyramid_debugtoolbar - special kudos for raydeo and pyramid team ;)
 # https://github.com/Pylons/pyramid_debugtoolbar
@@ -267,7 +337,9 @@ class ThreadTrackingHandler(logging.Handler):
         self.records = {} # a dictionary that maps threads to log records
 
     def emit(self, record):
-        self.get_records().append(record)
+        #append reports from errormator slow queries
+        if record.name in ('errormator_client.slow',):
+            self.get_records().append(record)
 
     def get_records(self, thread=None):
         """
@@ -285,54 +357,6 @@ class ThreadTrackingHandler(logging.Handler):
             thread = threading.currentThread()
         if thread in self.records:
             del self.records[thread]
-
-class Report(object):
-    """ Handled actual communication of data to the server """
-    __protocol_version__ = '0.2'
-
-    def __init__(self, payload={}):
-        self.payload = payload
-
-    def submit(self, api_key, server_url,
-               endpoint='/api/reports',
-               errormator_client='python',
-               exception_on_failure=True,
-               timeout=30,
-               gzip=False):
-        self.payload['errormator.client'] = errormator_client
-        GET_vars = urllib.urlencode(
-                        {'api_key': api_key,
-                        'protocol_version': self.__protocol_version__})
-        server_url = '%s%s?%s' % (server_url, endpoint, GET_vars,)
-        if send_request([self.payload], server_url, timeout=timeout,
-                        exception_on_failure=exception_on_failure):
-            message = 'error logged: %s' % self.payload['error_type']
-            log.warning(message)
-
-class AsyncLogCall(threading.Thread):
-    def __init__(self, api_key, server_url, log_callable, timeout):
-        super(AsyncLogCall, self).__init__()
-        self.log_callable = log_callable
-        self.api_key = api_key
-        self.server_url = server_url
-        self.timeout = timeout
-
-    def run(self):
-        self.log_callable.submit(self.api_key, self.server_url,
-                                 timeout=self.timeout)
-
-class AsyncReport(threading.Thread):
-    def __init__(self, api_key, server_url, client, report, timeout):
-        super(AsyncReport, self).__init__()
-        self.report = report
-        self.client = client
-        self.api_key = api_key
-        self.server_url = server_url
-        self.timeout = timeout
-
-    def run(self):
-        self.report.submit(self.api_key, self.server_url,
-                errormator_client=self.client, timeout=self.timeout)
 
 
 # the code below is shamelessly ripped (and slightly altered)
@@ -751,11 +775,11 @@ class TracebackCatcher(object):
 
 #above original Traceback Catcher for reference
 
-class ErrormatorCatcher(object):
+class ErrormatorBase(object):
 
     __version__ = 0.2
 
-    def __init__(self, app, config):
+    def __init__(self, app, config, log_handler=None):
         self.app = app
         self.enabled = asbool(config.get('errormator', True))
         self.server = config.get('errormator.server') or fqdn
@@ -769,37 +793,40 @@ class ErrormatorCatcher(object):
         self.gzip = asbool(config.get('errormator.gzip', False))
         self.reraise_exceptions = asbool(
                 config.get('errormator.reraise_exceptions', True))
+        self.slow_request = int(config.get('errormator.slow_request', 10))
+        if self.slow_request < 1:
+            self.slow_request = 10
+        self.slow_query = int(config.get('errormator.slow_query', 5))
+        if self.slow_query < 1:
+            self.slow_query = 5
+        self.log_handler = log_handler
 
-    def report(self, environ, traceback=None, message=None, http_status=200):
-        report = Report()
+class ErrormatorCatcher(ErrormatorBase):
+
+    __version__ = 0.2
+
+    def generate_report(self, environ, traceback=None, message=None, http_status=200):
         parsed_data, additional_info = create_report_structure(environ,
                                                                traceback,
                                                                message,
                                                                http_status,
                                                                server=self.server
                                                                )
-        report.payload = parsed_data
         if traceback:
             exception_text = traceback.exception
             traceback_text = traceback.plaintext
-            report.payload['error_type'] = exception_text
-            report.payload['traceback'] = traceback_text
+            parsed_data['error_type'] = exception_text
+            parsed_data['traceback'] = traceback_text
         else:
-            report.payload['error_type'] = '404 Not Found'
-        if report.payload['http_status'] == 404 and \
-                report.payload.get('traceback'):
+            parsed_data['error_type'] = '404 Not Found'
+        if parsed_data['http_status'] == 404 and \
+                parsed_data.get('traceback'):
             #make sure traceback is empty for 404's
-            report.payload['traceback'] = u''
+            parsed_data['traceback'] = u''
         #lets populate with additional environ data
-        report.payload.update(additional_info)
-
-        if self.async:
-            async_report = AsyncReport(self.api_key, self.server_url,
-                    self.client, report, self.timeout)
-            async_report.start()
-        else:
-            report.submit(self.api_key, self.server_url,
-                    errormator_client=self.client, timeout=self.timeout)
+        parsed_data.update(additional_info)
+        parsed_data['errormator.client'] = self.client
+        return parsed_data
 
     def __call__(self, environ, start_response):
         """Run the application and conserve the traceback frames.
@@ -818,21 +845,27 @@ class ErrormatorCatcher(object):
                                 ignore_system_exceptions=True)
                     else:
                         traceback = None
-                    self.report(environ, traceback, message, http_status)
+                    report_data = self.generate_report(environ, traceback,
+                                    message=message, http_status=500)
+                    error_call = RemoteCall([report_data])
+                    error_call.submit(self.api_key, self.server_url,
+                            timeout=self.timeout,
+                            endpoint='/api/reports')
 
                 environ['errormator.report'] = local_report
 
             #inject remote logging function to environ
             if 'errormator.log' not in environ:
                 def local_log(level, message):
-                    log_call = LogCall([
+                    log_call = RemoteCall([
                         {"log_level":level,
                         "message":message,
                         "timestamp":datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S,%f'),
                         "server":self.server
                         }])
                     log_call.submit(self.api_key, self.server_url,
-                            timeout=self.timeout)
+                            timeout=self.timeout,
+                            endpoint='/api/logs')
 
                 environ['errormator.log'] = local_log
             
@@ -853,14 +886,13 @@ class ErrormatorCatcher(object):
             exc_type, exc_value, tb = sys.exc_info()
             traceback = get_current_traceback(skip=1, show_hidden_frames=True,
                                               ignore_system_exceptions=True)
-            if self.catch_callback:
-                try:
-                    self.report(environ, traceback, http_status=500)
-                except Exception, e:
-                    log.error(
-                        'ERRORMATOR: Exception in logging callback: %s' % e)
-            else:
-                self.report(environ, traceback, http_status=500)
+            report_data = self.generate_report(environ, traceback,
+                                    message=None, http_status=500)
+            #leave trace of exception in logs
+            log_errors.warning('%s @ %s' % (report_data.get('error_type'),
+                                report_data['report_details'][0].get('url')),
+                               extra={'errormator_data':report_data}
+                      )
             # by default reraise exceptions for app/FW to handle
             if self.reraise_exceptions:
                 raise exc_type, exc_value, tb
@@ -898,8 +930,52 @@ class ErrormatorReport404(ErrormatorCatcher):
         finally:
             #lets process environ
             if detected_data and detected_data[0] == '404':
-                self.report(environ, http_status=404)
+                report_data = self.generate_report(environ, traceback=None,
+                                    message=None, http_status=404)
+                #leave trace of exception in logs
+                log_errors.warning('%s @ %s' % (report_data.get('error_type'),
+                                    report_data['report_details'][0].get('url')),
+                                   extra={'errormator_data':report_data}
+                          )
         
+class ErrormatorSlowRequest(ErrormatorBase):
+    __version__ = 0.2
+        
+    def __call__(self, environ, start_response):
+        """Run the application, determine if we got 404
+        """
+        app_iter = None
+        detected_data = []
+        start_time = datetime.datetime.now()
+        app_iter = self.app(environ, start_response)                
+        try:
+            return app_iter
+        finally:
+            end_time = datetime.datetime.now()
+            delta = end_time - start_time
+            records = self.log_handler.get_records()
+            self.log_handler.clear_records()
+            if delta.seconds > self.slow_request or len(records)>0: 
+                (parsed_request, remote_addr, additional_info) = \
+                        process_environ(environ, True)
+                report_data = {
+                               "start_time":start_time.strftime(DATE_FRMT),
+                               "end_time":end_time.strftime(DATE_FRMT),
+                               "records":[],
+                               'server': self.server,
+                               'user_agent': environ.get('HTTP_USER_AGENT'),
+                               'username': environ.get('REMOTE_USER', u''),
+                               'url': paste_req.construct_url(environ),
+                               'ERRORMATOR_COOKIES':parsed_request['ERRORMATOR_COOKIES'],
+                               'ERRORMATOR_POST':parsed_request['ERRORMATOR_POST'],
+                               'ERRORMATOR_GET':parsed_request['ERRORMATOR_GET']
+                               }
+                for record in records:
+                    row = {
+                    'date':time.strftime(DATE_FRMT,time.gmtime(record.created)) % record.msecs,
+                    'message':record.getMessage()
+                    }
+                    report_data['records'].append(row)
 
 #deprecated bw compat
 class ErrormatorHTTPCodeSniffer(object):
@@ -916,9 +992,23 @@ def make_errormator_middleware(app, global_config, **kw):
     #this shuts down all errormator functionalities
     if not asbool(config.get('errormator', True)):
         return app
+
+    # batch error sending logger -> api
+    error_handler = ErrormatorErrorHandler(
+                        int(config.get('errormator.error.buffer', 3)),
+                        asbool(config.get('errormator.error.async', True)),
+                        config.get('errormator.api_key'),
+                        config.get('errormator.server_url'),
+                        config.get('errormator.server_name'),
+                        config.get('errormator.error.timeout', 30)
+                        )
+    error_handler.setLevel(logging.DEBUG)
+    logging.root.addHandler(error_handler)
     
-    # general logging api - simplier save bandwidth
+    # general logging handler -> api
     if asbool(config.get('errormator.logging', True)):
+        level = LEVELS.get(config.get('errormator.logging.level').lower(),
+                           logging.NOTSET)
         log_handler = ErrormatorLogHandler(
                             int(config.get('errormator.logging.buffer', 50)),
                             asbool(config.get('errormator.logging.async', True)),
@@ -927,17 +1017,18 @@ def make_errormator_middleware(app, global_config, **kw):
                             config.get('errormator.server_name'),
                             config.get('errormator.logging.timeout', 30)
                             )
-        
-        level = LEVELS.get(config.get('errormator.logging.level').lower(),
-                           logging.NOTSET)
         log_handler.setLevel(level)
         logging.root.addHandler(log_handler)
 
+    if asbool(config.get('errormator.report_slow_requests', False)):
+        thread_tracking_handler = ThreadTrackingHandler()
+        logging.root.addHandler(thread_tracking_handler)
+        thread_tracking_handler.setLevel(logging.DEBUG)
+        app = ErrormatorSlowRequest(app, config=config,
+                                    log_handler=thread_tracking_handler)
+
     if asbool(config.get('errormator.report_404', False)):
         app = ErrormatorReport404(app, config=config)
-
-#    if asbool(config.get('errormator.report_slow_requests', True)):
-#        app = ErrormatorSlowRequest(app, config=config)
     
     if asbool(config.get('errormator.report_errors', True)):
         app = ErrormatorCatcher(app, config=config)
