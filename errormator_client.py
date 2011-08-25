@@ -248,7 +248,7 @@ class ErrormatorLogHandler(MemoryHandler):
         self.last_flush_time = datetime.datetime.now()
 
 class ErrormatorErrorHandler(MemoryHandler):
-    def __init__(self, capacity=3, async=True, api_key=None, server_url=None,
+    def __init__(self, capacity=5, async=True, api_key=None, server_url=None,
                  server_name=None, timeout=30, buffer_flush_time=60):
         """
         Initialize the handler with the buffer size, the level at which
@@ -1010,7 +1010,7 @@ def make_errormator_middleware(app, global_config, **kw):
 
     # batch error sending logger -> api
     error_handler = ErrormatorErrorHandler(
-                    capacity=int(config.get('errormator.error.buffer', 3)),
+                    capacity=int(config.get('errormator.error.buffer', 5)),
                     async=asbool(config.get('errormator.error.async', True)),
                     api_key=config.get('errormator.api_key'),
                     server_url=config.get('errormator.server_url'),
@@ -1023,7 +1023,8 @@ def make_errormator_middleware(app, global_config, **kw):
     
     # general logging handler -> api
     if asbool(config.get('errormator.logging', True)):
-        level = LEVELS.get(config.get('errormator.logging.level').lower(),
+        level = LEVELS.get(config.get('errormator.logging.level',
+                                      'NOTSET').lower(),
                            logging.NOTSET)
         log_handler = ErrormatorLogHandler(
                     capacity=int(config.get('errormator.logging.buffer', 50)),
