@@ -148,7 +148,7 @@ def process_environ(environ, traceback=False):
     return parsed_request, remote_addr, additional_info
 
 def create_report_structure(environ, traceback=None, message=None,
-                     http_status=200,server='unknown server'):
+                     http_status=200, server='unknown server'):
     (parsed_request, remote_addr, additional_info) = \
             process_environ(environ, traceback)
     parsed_data = {'report_details': []}
@@ -181,7 +181,7 @@ def create_report_structure(environ, traceback=None, message=None,
 
 class ErrormatorLogHandler(MemoryHandler):
     def __init__(self, capacity=50, async=True, api_key=None, server_url=None,
-                 server_name=None, timeout=30):
+                 server_name=None, timeout=30, buffer_flush_time=60):
         """
         Initialize the handler with the buffer size, the level at which
         flushing should occur and an optional target.
@@ -193,19 +193,23 @@ class ErrormatorLogHandler(MemoryHandler):
         self.server_url = server_url
         self.timeout = timeout
         self.server = server_name or fqdn
+        self.buffer_flush_time = buffer_flush_time
+        self.last_flush_time = datetime.datetime.now()
 
     def shouldFlush(self, record):
         """
         Check for buffer full or a record at the flushLevel or higher.
         """
-        return (len(self.buffer) >= self.capacity)
+        tdelta = datetime.datetime.now() - self.last_flush_time
+        return (len(self.buffer) >= self.capacity or 
+                tdelta.seconds >= self.buffer_flush_time)
     
     def emit(self, record):
         #skip reports from errormator itself
         if record.name in ('errormator_client', 'errormator_client.slow',
                            'errormator_client.error',):
             return
-        MemoryHandler.emit(self,record)
+        MemoryHandler.emit(self, record)
         
     def flush(self):
         """
@@ -241,10 +245,11 @@ class ErrormatorLogHandler(MemoryHandler):
                 remote_call.submit(self.api_key, self.server_url,
                         timeout=self.timeout, endpoint='/api/logs')        
         self.buffer = []
+        self.last_flush_time = datetime.datetime.now()
 
 class ErrormatorErrorHandler(MemoryHandler):
     def __init__(self, capacity=3, async=True, api_key=None, server_url=None,
-                 server_name=None, timeout=30):
+                 server_name=None, timeout=30, buffer_flush_time=60):
         """
         Initialize the handler with the buffer size, the level at which
         flushing should occur and an optional target.
@@ -256,16 +261,20 @@ class ErrormatorErrorHandler(MemoryHandler):
         self.server_url = server_url
         self.timeout = timeout
         self.server = server_name or fqdn
+        self.buffer_flush_time = buffer_flush_time
+        self.last_flush_time = datetime.datetime.now()
 
     def shouldFlush(self, record):
         """
         Check for buffer full or a record at the flushLevel or higher.
         """
-        return (len(self.buffer) >= self.capacity)
+        tdelta = datetime.datetime.now() - self.last_flush_time
+        return (len(self.buffer) >= self.capacity or 
+                tdelta.seconds >= self.buffer_flush_time)
     
     def emit(self, record):
         if record.name == 'errormator_client.error':
-            MemoryHandler.emit(self,record)
+            MemoryHandler.emit(self, record)
         
     def flush(self):
         """
@@ -289,6 +298,7 @@ class ErrormatorErrorHandler(MemoryHandler):
                 remote_call.submit(self.api_key, self.server_url,
                         timeout=self.timeout, endpoint='/api/reports')
         self.buffer = []
+        self.last_flush_time = datetime.datetime.now()
 
 
 class RemoteCall(object):
@@ -792,16 +802,18 @@ class ErrormatorBase(object):
         self.client = config.get('errormator.client', 'python')
         self.api_key = config.get('errormator.api_key')
         self.server_url = config.get('errormator.server_url')
+        self.buffer_flush_time = int(config.get('errormator.buffer_flush_time', 60))
         self.timeout = int(config.get('errormator.timeout', 20))
         self.gzip = asbool(config.get('errormator.gzip', False))
         self.reraise_exceptions = asbool(
                 config.get('errormator.reraise_exceptions', True))
-        self.slow_request = int(config.get('errormator.slow_request', 10))
-        if self.slow_request < 1:
-            self.slow_request = 10
-        self.slow_query = int(config.get('errormator.slow_query', 5))
-        if self.slow_query < 1:
-            self.slow_query = 5
+        self.slow_request = asbool(config.get('errormator.slow_request', False))
+        self.slow_request_time = float(config.get('errormator.slow_request.time', 2))
+        if self.slow_request_time < 1:
+            self.slow_request_time = 10
+        self.slow_query_time = float(config.get('errormator.slow_query.time', 1.5))
+        if self.slow_query_time < 1:
+            self.slow_query_time = 5
         self.log_handler = log_handler
 
 class ErrormatorCatcher(ErrormatorBase):
@@ -958,7 +970,7 @@ class ErrormatorSlowRequest(ErrormatorBase):
             delta = end_time - start_time
             records = self.log_handler.get_records()
             self.log_handler.clear_records()
-            if delta.seconds > self.slow_request or len(records)>0: 
+            if delta.seconds > self.slow_request_time or len(records) > 0: 
                 (parsed_request, remote_addr, additional_info) = \
                         process_environ(environ, True)
                 report_data = {
@@ -975,7 +987,7 @@ class ErrormatorSlowRequest(ErrormatorBase):
                                }
                 for record in records:
                     row = {
-                    'date':time.strftime(DATE_FRMT,time.gmtime(record.created)) % record.msecs,
+                    'date':time.strftime(DATE_FRMT, time.gmtime(record.created)) % record.msecs,
                     'message':record.getMessage()
                     }
                     report_data['records'].append(row)
@@ -998,12 +1010,13 @@ def make_errormator_middleware(app, global_config, **kw):
 
     # batch error sending logger -> api
     error_handler = ErrormatorErrorHandler(
-                        int(config.get('errormator.error.buffer', 3)),
-                        asbool(config.get('errormator.error.async', True)),
-                        config.get('errormator.api_key'),
-                        config.get('errormator.server_url'),
-                        config.get('errormator.server_name'),
-                        config.get('errormator.error.timeout', 30)
+                    capacity=int(config.get('errormator.error.buffer', 3)),
+                    async=asbool(config.get('errormator.error.async', True)),
+                    api_key=config.get('errormator.api_key'),
+                    server_url=config.get('errormator.server_url'),
+                    server_name=config.get('errormator.server_name'),
+                    timeout=config.get('errormator.error.timeout', 30),
+        buffer_flush_time=int(config.get('errormator.buffer_flush_time', 60))
                         )
     error_handler.setLevel(logging.DEBUG)
     logging.root.addHandler(error_handler)
@@ -1013,17 +1026,18 @@ def make_errormator_middleware(app, global_config, **kw):
         level = LEVELS.get(config.get('errormator.logging.level').lower(),
                            logging.NOTSET)
         log_handler = ErrormatorLogHandler(
-                            int(config.get('errormator.logging.buffer', 50)),
-                            asbool(config.get('errormator.logging.async', True)),
-                            config.get('errormator.api_key'),
-                            config.get('errormator.server_url'),
-                            config.get('errormator.server_name'),
-                            config.get('errormator.logging.timeout', 30)
+                    capacity=int(config.get('errormator.logging.buffer', 50)),
+                    async=asbool(config.get('errormator.logging.async', True)),
+                    api_key=config.get('errormator.api_key'),
+                    server_url=config.get('errormator.server_url'),
+                    server_name=config.get('errormator.server_name'),
+                    timeout=int(config.get('errormator.logging.timeout', 30)),
+                    buffer_flush_time=int(config.get('errormator.buffer_flush_time', 60))
                             )
         log_handler.setLevel(level)
         logging.root.addHandler(log_handler)
 
-    if asbool(config.get('errormator.report_slow_requests', False)):
+    if asbool(config.get('errormator.slow_request', False)):
         thread_tracking_handler = ThreadTrackingHandler()
         logging.root.addHandler(thread_tracking_handler)
         thread_tracking_handler.setLevel(logging.DEBUG)

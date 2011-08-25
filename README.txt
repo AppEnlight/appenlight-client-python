@@ -35,6 +35,7 @@ and add in your ini:
 errormator = true
 errormator.server_url = https://api.errormator.com
 errormator.api_key = YOUR_API_KEY
+errormator.buffer_flush_time = 60
 errormator.server = Instance/Server Name
 errormator.report_404 = true
 
