@@ -76,6 +76,29 @@ def gzipcompress(bytestr):
 #lets try to find fqdn
 fqdn = socket.getfqdn()
 
+def sqlalchemy_07_listener(delta):
+    from sqlalchemy import event
+    from sqlalchemy.engine.base import Engine
+    
+    @event.listens_for(Engine, "before_cursor_execute")
+    def _before_cursor_execute(conn, cursor, stmt, params, context, execmany):
+        setattr(conn, 'err_query_start', datetime.datetime.now())
+
+    @event.listens_for(Engine, "after_cursor_execute")
+    def _after_cursor_execute(conn, cursor, stmt, params, context, execmany):
+        query_time = datetime.datetime.now() - conn.err_query_start
+        if query_time >= delta:
+            query_info = {'type':'sqlalchemy',
+                          'started':datetime.datetime.utcnow().strftime(DATE_FRMT),
+                          'duration': query_time,
+                          'statement': stmt,
+                          'parameters': params,
+                          'context': context
+                    }
+            log_slow.warning('slow query detected',
+                             extra={'errormator_data':query_info}
+                              )
+        delattr(conn, 'err_query_start')
 
 class ErrormatorException(Exception):
 
@@ -206,8 +229,7 @@ class ErrormatorLogHandler(MemoryHandler):
     
     def emit(self, record):
         #skip reports from errormator itself
-        if record.name in ('errormator_client', 'errormator_client.slow',
-                           'errormator_client.error',):
+        if record.name.startswith('errormator_client'):
             return
         MemoryHandler.emit(self, record)
         
@@ -247,9 +269,9 @@ class ErrormatorLogHandler(MemoryHandler):
         self.buffer = []
         self.last_flush_time = datetime.datetime.now()
 
-class ErrormatorErrorHandler(MemoryHandler):
+class ErrormatorReportHandler(MemoryHandler):
     def __init__(self, capacity=5, async=True, api_key=None, server_url=None,
-                 server_name=None, timeout=30, buffer_flush_time=60):
+                 server_name=None, timeout=30, buffer_flush_time=60,endpoint=None):
         """
         Initialize the handler with the buffer size, the level at which
         flushing should occur and an optional target.
@@ -263,6 +285,7 @@ class ErrormatorErrorHandler(MemoryHandler):
         self.server = server_name or fqdn
         self.buffer_flush_time = buffer_flush_time
         self.last_flush_time = datetime.datetime.now()
+        self.endpoint = endpoint
 
     def shouldFlush(self, record):
         """
@@ -283,7 +306,7 @@ class ErrormatorErrorHandler(MemoryHandler):
         """
         entries = []
         # if service basic data is not supplied just clear the buffer
-        if self.api_key and self.server_url: 
+        if self.api_key and self.server_url and self.endpoint: 
             for record in self.buffer:
                 entries.append(record.errormator_data)            
             remote_call = RemoteCall(entries)
@@ -292,11 +315,11 @@ class ErrormatorErrorHandler(MemoryHandler):
                                                     self.server_url,
                                                     remote_call,
                                                     self.timeout,
-                                                    endpoint='/api/reports')
+                                                    endpoint=self.endpoint)
                 remote_call_async.start()
             else:
                 remote_call.submit(self.api_key, self.server_url,
-                        timeout=self.timeout, endpoint='/api/reports')
+                        timeout=self.timeout, endpoint=self.endpoint)
         self.buffer = []
         self.last_flush_time = datetime.datetime.now()
 
@@ -989,12 +1012,7 @@ class ErrormatorSlowRequest(ErrormatorBase):
                 "ERRORMATOR_GET":parsed_request['ERRORMATOR_GET']
                                }
                 for record in records:
-                    row = {
-                    'date':time.strftime(DATE_FRMT, time.gmtime(record.created)) % record.msecs,
-                    'message':record.getMessage()
-                    }
-                    report_data['records'].append(row)
-                print report_data
+                    report_data['records'].append(record.errormator_data)
 
 #deprecated bw compat
 class ErrormatorHTTPCodeSniffer(object):
@@ -1013,14 +1031,15 @@ def make_errormator_middleware(app, global_config, **kw):
         return app
 
     # batch error sending logger -> api
-    error_handler = ErrormatorErrorHandler(
+    error_handler = ErrormatorReportHandler(
                     capacity=int(config.get('errormator.error.buffer', 5)),
                     async=asbool(config.get('errormator.error.async', True)),
                     api_key=config.get('errormator.api_key'),
                     server_url=config.get('errormator.server_url'),
                     server_name=config.get('errormator.server_name'),
                     timeout=config.get('errormator.error.timeout', 30),
-        buffer_flush_time=int(config.get('errormator.buffer_flush_time', 60))
+        buffer_flush_time=int(config.get('errormator.buffer_flush_time', 60)),
+        endpoint='/api/reports'
                         )
     error_handler.setLevel(logging.DEBUG)
     logging.root.addHandler(error_handler)
@@ -1043,11 +1062,37 @@ def make_errormator_middleware(app, global_config, **kw):
         logging.root.addHandler(log_handler)
 
     if asbool(config.get('errormator.slow_request', False)):
+        # batch error sending logger -> api - same as error handler but we dont
+        # want to share buffers
+        query_handler = ErrormatorReportHandler(
+                        capacity=int(config.get('errormator.error.buffer', 5)),
+                        async=asbool(config.get('errormator.error.async', True)),
+                        api_key=config.get('errormator.api_key'),
+                        server_url=config.get('errormator.server_url'),
+                        server_name=config.get('errormator.server_name'),
+                        timeout=config.get('errormator.error.timeout', 30),
+            buffer_flush_time=int(config.get('errormator.buffer_flush_time', 60)),
+            endpoint='/api/slow_reports'
+                            )
+        query_handler.setLevel(logging.DEBUG)
+        logging.root.addHandler(query_handler)
         thread_tracking_handler = ThreadTrackingHandler()
         logging.root.addHandler(thread_tracking_handler)
         thread_tracking_handler.setLevel(logging.DEBUG)
         app = ErrormatorSlowRequest(app, config=config,
                                     log_handler=thread_tracking_handler)
+        if asbool(config.get('errormator.slow_request.sqlalchemy', False)):
+            try:
+                from sqlalchemy import event
+                from sqlalchemy.engine.base import Engine
+                slow_query_time = float(config.get('errormator.slow_query.time', 5))
+                if slow_query_time < 1:
+                    slow_query_time = 1.0
+                tdelta = datetime.timedelta(seconds=slow_query_time)
+                sqlalchemy_07_listener(tdelta)
+            except ImportError, e:
+                console.warning('Sqlalchemy older than 0.7 - logging disabled')
+
 
     if asbool(config.get('errormator.report_404', False)):
         app = ErrormatorReport404(app, config=config)

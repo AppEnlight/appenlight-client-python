@@ -61,7 +61,13 @@ it is also possible to send reports directly from inside of your application:
 
 request.environ['errormator.report']('TEST Lorem ipsum', False)
 
-
+Slow Request/Query API Support
+===================
+to enable slow api support you need to alter your ini file and add more entries
+errormator.slow_request = true
+errormator.slow_request.time = 10
+errormator.slow_request.sqlalchemy = true
+errormator.slow_query.time = 10
 
 errormator_client is BSD licensed, consult LICENSE for details. 
 
