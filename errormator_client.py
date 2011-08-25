@@ -38,10 +38,14 @@ import time
 from logging.handlers import MemoryHandler, BufferingHandler
 from webob import Request
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import json
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.date):
+            return obj.strftime(DATE_FRMT)
+        if isinstance(obj, datetime.datetime):
+            return obj.strftime(DATE_FRMT)      
+        return json.JSONEncoder.default(self, obj)
 
 from paste import request as paste_req
 from paste.util.converters import asbool
@@ -53,10 +57,15 @@ LEVELS = {'debug': logging.DEBUG,
           'critical': logging.CRITICAL}
 
 log = logging.getLogger(__name__)
+# used for slow query GATHERING/ - to be picked up by threaded logger
 log_slow = logging.getLogger('errormator_client.slow')
 log_slow.setLevel(logging.DEBUG)
+# used to log errors and flushing them out to api 
 log_errors = logging.getLogger('errormator_client.error')
 log_errors.setLevel(logging.DEBUG)
+# used to log slow reports and flushing them out to api
+log_slow_reports = logging.getLogger('errormator_client.slow_report')
+log_slow_reports.setLevel(logging.DEBUG)
 
 DATE_FRMT = '%Y-%m-%d %H:%M:%S,%f'
 
@@ -86,16 +95,19 @@ def sqlalchemy_07_listener(delta):
 
     @event.listens_for(Engine, "after_cursor_execute")
     def _after_cursor_execute(conn, cursor, stmt, params, context, execmany):
-        query_time = datetime.datetime.now() - conn.err_query_start
-        if query_time >= delta:
+        td = datetime.datetime.now() - conn.err_query_start
+        if td >= delta:
+            duration = float('%s.%s' % (
+                        (td.seconds + td.days * 24 * 3600) * 10**6 / 10**6,
+                             td.microseconds)
+                             )
             query_info = {'type':'sqlalchemy',
-                          'started':datetime.datetime.utcnow().strftime(DATE_FRMT),
-                          'duration': query_time,
+                          'timestamp':conn.err_query_start.strftime(DATE_FRMT),
+                          'duration': duration,
                           'statement': stmt,
-                          'parameters': params,
-                          'context': context
+                          'parameters': params
                     }
-            log_slow.warning('slow query detected',
+            log_slow.debug('slow query detected',
                              extra={'errormator_data':query_info}
                               )
         delattr(conn, 'err_query_start')
@@ -120,7 +132,7 @@ def send_request(data, request_url, timeout=30,
                  gzip=False):
     try:
         req = urllib2.Request(request_url,
-                              json.dumps(data),
+                              json.dumps(data, cls=DateTimeEncoder),
                               headers={'Content-Type': 'application/json'})
         #req.headers['Content-Encoding'] = 'gzip'
         try:
@@ -286,6 +298,10 @@ class ErrormatorReportHandler(MemoryHandler):
         self.buffer_flush_time = buffer_flush_time
         self.last_flush_time = datetime.datetime.now()
         self.endpoint = endpoint
+        if endpoint == '/api/slow_reports':
+            self.allow_emit = 'errormator_client.slow_report'
+        elif endpoint == '/api/reports':
+            self.allow_emit = 'errormator_client.error'
 
     def shouldFlush(self, record):
         """
@@ -296,7 +312,7 @@ class ErrormatorReportHandler(MemoryHandler):
                 tdelta.seconds >= self.buffer_flush_time)
     
     def emit(self, record):
-        if record.name == 'errormator_client.error':
+        if record.name == self.allow_emit:
             MemoryHandler.emit(self, record)
         
     def flush(self):
@@ -1002,17 +1018,23 @@ class ErrormatorSlowRequest(ErrormatorBase):
                 "start_time":start_time.strftime(DATE_FRMT),
                 "end_time":end_time.strftime(DATE_FRMT),
                 "template_start_time":environ.get('errormator.tmpl_start_time'),
-                "records":[],
+                "details":[],
                 "server": self.server,
-                "user_agent": environ.get('HTTP_USER_AGENT'),
-                "username": environ.get('REMOTE_USER', u''),
                 "url": paste_req.construct_url(environ),
-                "ERRORMATOR_COOKIES":parsed_request['ERRORMATOR_COOKIES'],
-                "ERRORMATOR_POST":parsed_request['ERRORMATOR_POST'],
-                "ERRORMATOR_GET":parsed_request['ERRORMATOR_GET']
+                "request":{
+                    "user_agent": environ.get('HTTP_USER_AGENT'),
+                    "username": environ.get('REMOTE_USER', u''),
+                    "ERRORMATOR_COOKIES":parsed_request['ERRORMATOR_COOKIES'],
+                    "ERRORMATOR_POST":parsed_request['ERRORMATOR_POST'],
+                    "ERRORMATOR_GET":parsed_request['ERRORMATOR_GET']
+                           }
                                }
                 for record in records:
-                    report_data['records'].append(record.errormator_data)
+                    report_data['details'].append(record.errormator_data)
+                log_slow_reports.info('slow request/queries detected: %s' % 
+                                report_data.get('url'),
+                                extra={'errormator_data':report_data}
+                          )
 
 #deprecated bw compat
 class ErrormatorHTTPCodeSniffer(object):
@@ -1076,11 +1098,14 @@ def make_errormator_middleware(app, global_config, **kw):
                             )
         query_handler.setLevel(logging.DEBUG)
         logging.root.addHandler(query_handler)
+        #register thread tracking handler
         thread_tracking_handler = ThreadTrackingHandler()
         logging.root.addHandler(thread_tracking_handler)
         thread_tracking_handler.setLevel(logging.DEBUG)
+        #pass the threaded handler to middleware 
         app = ErrormatorSlowRequest(app, config=config,
                                     log_handler=thread_tracking_handler)
+        #register sqlalchemy listeners
         if asbool(config.get('errormator.slow_request.sqlalchemy', False)):
             try:
                 from sqlalchemy import event
