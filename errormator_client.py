@@ -808,12 +808,14 @@ class ErrormatorBase(object):
         self.reraise_exceptions = asbool(
                 config.get('errormator.reraise_exceptions', True))
         self.slow_request = asbool(config.get('errormator.slow_request', False))
-        self.slow_request_time = float(config.get('errormator.slow_request.time', 2))
+        self.slow_request_time = float(config.get('errormator.slow_request.time', 10))
+        self.slow_query_time = float(config.get('errormator.slow_query.time', 5))
         if self.slow_request_time < 1:
-            self.slow_request_time = 10
-        self.slow_query_time = float(config.get('errormator.slow_query.time', 1.5))
+            self.slow_request_time = 1.0
         if self.slow_query_time < 1:
-            self.slow_query_time = 5
+            self.slow_query_time = 1.0
+        self.slow_request_time = datetime.timedelta(seconds=self.slow_request_time)
+        self.slow_query_time = datetime.timedelta(seconds=self.slow_query_time)
         self.log_handler = log_handler
 
 class ErrormatorCatcher(ErrormatorBase):
@@ -970,20 +972,21 @@ class ErrormatorSlowRequest(ErrormatorBase):
             delta = end_time - start_time
             records = self.log_handler.get_records()
             self.log_handler.clear_records()
-            if delta.seconds > self.slow_request_time or len(records) > 0: 
+            if delta >= self.slow_request_time or len(records) > 0: 
                 (parsed_request, remote_addr, additional_info) = \
                         process_environ(environ, True)
                 report_data = {
-                               "start_time":start_time.strftime(DATE_FRMT),
-                               "end_time":end_time.strftime(DATE_FRMT),
-                               "records":[],
-                               'server': self.server,
-                               'user_agent': environ.get('HTTP_USER_AGENT'),
-                               'username': environ.get('REMOTE_USER', u''),
-                               'url': paste_req.construct_url(environ),
-                               'ERRORMATOR_COOKIES':parsed_request['ERRORMATOR_COOKIES'],
-                               'ERRORMATOR_POST':parsed_request['ERRORMATOR_POST'],
-                               'ERRORMATOR_GET':parsed_request['ERRORMATOR_GET']
+                "start_time":start_time.strftime(DATE_FRMT),
+                "end_time":end_time.strftime(DATE_FRMT),
+                "template_start_time":environ.get('errormator.tmpl_start_time'),
+                "records":[],
+                "server": self.server,
+                "user_agent": environ.get('HTTP_USER_AGENT'),
+                "username": environ.get('REMOTE_USER', u''),
+                "url": paste_req.construct_url(environ),
+                "ERRORMATOR_COOKIES":parsed_request['ERRORMATOR_COOKIES'],
+                "ERRORMATOR_POST":parsed_request['ERRORMATOR_POST'],
+                "ERRORMATOR_GET":parsed_request['ERRORMATOR_GET']
                                }
                 for record in records:
                     row = {
@@ -991,6 +994,7 @@ class ErrormatorSlowRequest(ErrormatorBase):
                     'message':record.getMessage()
                     }
                     report_data['records'].append(row)
+                print report_data
 
 #deprecated bw compat
 class ErrormatorHTTPCodeSniffer(object):
