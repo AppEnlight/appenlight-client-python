@@ -164,6 +164,9 @@ def create_report_structure(environ, traceback=None, message=None,
         detail_entry['request'].pop('REMOTE_ADDR', None)
         detail_entry['request'].pop('HTTP_COOKIE', None)
         detail_entry['request'].pop('webob._parsed_cookies', None)
+        detail_entry['request'].pop('webob._parsed_post_vars', None)
+        detail_entry['request'].pop('webob._parsed_query_vars', None)
+        
         
     detail_entry['ip'] = remote_addr
     detail_entry['user_agent'] = environ.get('HTTP_USER_AGENT')
