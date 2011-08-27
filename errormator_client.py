@@ -91,11 +91,11 @@ def sqlalchemy_07_listener(delta):
     
     @event.listens_for(Engine, "before_cursor_execute")
     def _before_cursor_execute(conn, cursor, stmt, params, context, execmany):
-        setattr(conn, 'err_query_start', datetime.datetime.now())
+        setattr(conn, 'err_query_start', datetime.datetime.utcnow())
 
     @event.listens_for(Engine, "after_cursor_execute")
     def _after_cursor_execute(conn, cursor, stmt, params, context, execmany):
-        td = datetime.datetime.now() - conn.err_query_start
+        td = datetime.datetime.utcnow() - conn.err_query_start
         if td >= delta:
             duration = float('%s.%s' % (
                         (td.seconds + td.days * 24 * 3600) * 10**6 / 10**6,
@@ -1002,12 +1002,12 @@ class ErrormatorSlowRequest(ErrormatorBase):
         """
         app_iter = None
         detected_data = []
-        start_time = datetime.datetime.now()
+        start_time = datetime.datetime.utcnow()
         app_iter = self.app(environ, start_response)                
         try:
             return app_iter
         finally:
-            end_time = datetime.datetime.now()
+            end_time = datetime.datetime.utcnow()
             delta = end_time - start_time
             records = self.log_handler.get_records()
             self.log_handler.clear_records()
