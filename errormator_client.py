@@ -259,13 +259,16 @@ class ErrormatorLogHandler(MemoryHandler):
                 else:
                     time_string = time.strftime(DATE_FRMT,
                                     time.gmtime(record.created)) % record.msecs 
-                
-                entries.append(
-                        {'log_level':record.levelname,
-                        'message':'%s %s' % (record.name, record.getMessage(),),
-                        'server': self.server,
-                        'date':time_string
-                        })
+                try:
+                    entries.append(
+                            {'log_level':record.levelname,
+                            'message':'%s %s' % (record.name, record.getMessage(),),
+                            'server': self.server,
+                            'date':time_string
+                            })
+                except TypeError,e :
+                    #handle some weird case where record.getMessage() fails
+                    pass
             
             remote_call = RemoteCall(entries)
             if self.async:
