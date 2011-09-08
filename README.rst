@@ -73,6 +73,24 @@ to enable slow api support you need to alter your ini file and add more entries:
 
 errormator_client is BSD licensed, consult LICENSE for details. 
 
+Sensitive data filtering
+===================
+The client by default blanks out COOKIE,POST,GET for keys like:
+'password','passwd','pwd','auth_tkt'
+
+This behaviour can be altered to filter all kinds of data from the structures
+that get sent to the server by passing dotted module name in configuration::
+
+    errormator.filter_callable = foo.bar.baz:callable_name
+
+example:
+
+    def callable_name(structure, section=None):
+        structure['request']['SOMEVAL'] = '***REMOVED***'
+        return structure
+
+Errormator will try to import foo.bar.baz and use callable_name as the function
+that accepts parameters (structure, section) and returns altered data structure.
 
 Installation and Setup
 ======================

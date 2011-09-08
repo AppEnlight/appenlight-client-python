@@ -98,7 +98,7 @@ def sqlalchemy_07_listener(delta):
         td = datetime.datetime.utcnow() - conn.err_query_start
         if td >= delta:
             duration = float('%s.%s' % (
-                        (td.seconds + td.days * 24 * 3600) * 10**6 / 10**6,
+                        (td.seconds + td.days * 24 * 3600) * 10 ** 6 / 10 ** 6,
                              td.microseconds)
                              )
             query_info = {'type':'sqlalchemy',
@@ -266,7 +266,7 @@ class ErrormatorLogHandler(MemoryHandler):
                             'server': self.server,
                             'date':time_string
                             })
-                except TypeError,e :
+                except TypeError, e :
                     #handle some weird case where record.getMessage() fails
                     pass
             
@@ -286,7 +286,7 @@ class ErrormatorLogHandler(MemoryHandler):
 
 class ErrormatorReportHandler(MemoryHandler):
     def __init__(self, capacity=5, async=True, api_key=None, server_url=None,
-                 server_name=None, timeout=30, buffer_flush_time=60,endpoint=None):
+                 server_name=None, timeout=30, buffer_flush_time=60, endpoint=None):
         """
         Initialize the handler with the buffer size, the level at which
         flushing should occur and an optional target.
@@ -860,6 +860,26 @@ class ErrormatorBase(object):
         self.slow_query_time = datetime.timedelta(seconds=self.slow_query_time)
         self.log_handler = log_handler
 
+    def data_filter(self, structure, section=None):
+        if section == 'error_report':
+            keys_to_check = (structure['report_details'][0]['request']['ERRORMATOR_COOKIES'],
+                              structure['report_details'][0]['request']['ERRORMATOR_GET'],
+                              structure['report_details'][0]['request']['ERRORMATOR_POST']
+                              )        
+        else:
+            keys_to_check = (structure['request']['ERRORMATOR_COOKIES'],
+                              structure['request']['ERRORMATOR_GET'],
+                              structure['request']['ERRORMATOR_POST']
+                              )
+        
+        for source in keys_to_check:
+            for k, v in source.items():
+                if ('password' in k or 'passwd' in k or 'pwd' in k 
+                    or 'auth_tkt' in k):
+                    source[k] = u'***'
+        return structure
+
+
 class ErrormatorCatcher(ErrormatorBase):
 
     __version__ = 0.2
@@ -885,6 +905,7 @@ class ErrormatorCatcher(ErrormatorBase):
         #lets populate with additional environ data
         parsed_data.update(additional_info)
         parsed_data['errormator.client'] = self.client
+        parsed_data = self.data_filter(parsed_data, 'error_report')
         return parsed_data
 
     def __call__(self, environ, start_response):
@@ -904,9 +925,9 @@ class ErrormatorCatcher(ErrormatorBase):
                                 ignore_system_exceptions=True)
                     else:
                         traceback = None
-                    report_data = self.generate_report(environ, traceback,
+                    report = self.generate_report(environ, traceback,
                                     message=message, http_status=500)
-                    error_call = RemoteCall([report_data])
+                    error_call = RemoteCall([report])
                     error_call.submit(self.api_key, self.server_url,
                             timeout=self.timeout,
                             endpoint='/api/reports')
@@ -945,12 +966,12 @@ class ErrormatorCatcher(ErrormatorBase):
             exc_type, exc_value, tb = sys.exc_info()
             traceback = get_current_traceback(skip=1, show_hidden_frames=True,
                                               ignore_system_exceptions=True)
-            report_data = self.generate_report(environ, traceback,
+            report = self.generate_report(environ, traceback,
                                     message=None, http_status=500)
             #leave trace of exception in logs
-            log_errors.warning('%s @ %s' % (report_data.get('error_type'),
-                                report_data['report_details'][0].get('url')),
-                               extra={'errormator_data':report_data}
+            log_errors.warning('%s @ %s' % (report.get('error_type'),
+                                report['report_details'][0].get('url')),
+                               extra={'errormator_data':report}
                       )
             # by default reraise exceptions for app/FW to handle
             if self.reraise_exceptions:
@@ -989,17 +1010,39 @@ class ErrormatorReport404(ErrormatorCatcher):
         finally:
             #lets process environ
             if detected_data and detected_data[0] == '404':
-                report_data = self.generate_report(environ, traceback=None,
+                report = self.generate_report(environ, traceback=None,
                                     message=None, http_status=404)
                 #leave trace of exception in logs
-                log_errors.warning('%s @ %s' % (report_data.get('error_type'),
-                                    report_data['report_details'][0].get('url')),
-                                   extra={'errormator_data':report_data}
+                log_errors.warning('%s @ %s' % (report.get('error_type'),
+                                    report['report_details'][0].get('url')),
+                                   extra={'errormator_data':report}
                           )
         
 class ErrormatorSlowRequest(ErrormatorBase):
     __version__ = 0.2
-        
+    
+    def generate_report(self, environ, start_time, end_time, records=[]):
+        (parsed_request, remote_addr, additional_info) = \
+                process_environ(environ, True)
+        report = {
+        "start_time":start_time.strftime(DATE_FRMT),
+        "end_time":end_time.strftime(DATE_FRMT),
+        "template_start_time":environ.get('errormator.tmpl_start_time'),
+        "report_details":[],
+        "server": self.server,
+        "url": paste_req.construct_url(environ),
+        "request":{
+            "user_agent": environ.get('HTTP_USER_AGENT'),
+            "username": environ.get('REMOTE_USER', u''),
+            "ERRORMATOR_COOKIES":parsed_request['ERRORMATOR_COOKIES'],
+            "ERRORMATOR_POST":parsed_request['ERRORMATOR_POST'],
+            "ERRORMATOR_GET":parsed_request['ERRORMATOR_GET']}
+                       }
+        for record in records:
+            report['report_details'].append(record.errormator_data)
+        report = self.data_filter(report, 'slow_request')
+        return report
+    
     def __call__(self, environ, start_response):
         """Run the application, determine if we got 404
         """
@@ -1015,28 +1058,11 @@ class ErrormatorSlowRequest(ErrormatorBase):
             records = self.log_handler.get_records()
             self.log_handler.clear_records()
             if delta >= self.slow_request_time or len(records) > 0: 
-                (parsed_request, remote_addr, additional_info) = \
-                        process_environ(environ, True)
-                report_data = {
-                "start_time":start_time.strftime(DATE_FRMT),
-                "end_time":end_time.strftime(DATE_FRMT),
-                "template_start_time":environ.get('errormator.tmpl_start_time'),
-                "details":[],
-                "server": self.server,
-                "url": paste_req.construct_url(environ),
-                "request":{
-                    "user_agent": environ.get('HTTP_USER_AGENT'),
-                    "username": environ.get('REMOTE_USER', u''),
-                    "ERRORMATOR_COOKIES":parsed_request['ERRORMATOR_COOKIES'],
-                    "ERRORMATOR_POST":parsed_request['ERRORMATOR_POST'],
-                    "ERRORMATOR_GET":parsed_request['ERRORMATOR_GET']
-                           }
-                               }
-                for record in records:
-                    report_data['details'].append(record.errormator_data)
+                report = self.generate_report(environ, start_time, end_time,
+                                               records)
                 log_slow_reports.info('slow request/queries detected: %s' % 
-                                report_data.get('url'),
-                                extra={'errormator_data':report_data}
+                                report.get('url'),
+                                extra={'errormator_data':report}
                           )
 
 #deprecated bw compat
@@ -1054,7 +1080,19 @@ def make_errormator_middleware(app, global_config, **kw):
     #this shuts down all errormator functionalities
     if not asbool(config.get('errormator', True)):
         return app
-
+    
+    filter_callable = config.get('errormator.filter_callable')
+    if filter_callable:
+        try:
+            parts = filter_callable.split(':')
+            _tmp = __import__(parts[0], globals(), locals(), [parts[1],], -1)
+            filter_callable = getattr(_tmp, parts[1])
+            print filter_callable
+        except ImportError, e:
+            filter_callable = None
+            log.error('Could not import filter callable, using default, %s' % e) 
+    
+    
     # batch error sending logger -> api
     error_handler = ErrormatorReportHandler(
                     capacity=int(config.get('errormator.error.buffer', 5)),
@@ -1108,6 +1146,8 @@ def make_errormator_middleware(app, global_config, **kw):
         #pass the threaded handler to middleware 
         app = ErrormatorSlowRequest(app, config=config,
                                     log_handler=thread_tracking_handler)
+        if filter_callable:
+            app.data_filter = filter_callable
         #register sqlalchemy listeners
         if asbool(config.get('errormator.slow_request.sqlalchemy', False)):
             try:
@@ -1124,9 +1164,13 @@ def make_errormator_middleware(app, global_config, **kw):
 
     if asbool(config.get('errormator.report_404', False)):
         app = ErrormatorReport404(app, config=config)
+        if filter_callable:
+            app.data_filter = filter_callable
     
     if asbool(config.get('errormator.report_errors', True)):
         app = ErrormatorCatcher(app, config=config)
+        if filter_callable:
+            app.data_filter = filter_callable
     return app
 
 #alias for be compat
