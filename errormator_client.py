@@ -860,19 +860,22 @@ class ErrormatorBase(object):
         self.slow_query_time = datetime.timedelta(seconds=self.slow_query_time)
         self.log_handler = log_handler
 
-    def data_filter(self, structure, section=None):
+    def data_filter(self, structure, section=None): 
         if section == 'error_report':
-            keys_to_check = (structure['report_details'][0]['request']['ERRORMATOR_COOKIES'],
-                              structure['report_details'][0]['request']['ERRORMATOR_GET'],
-                              structure['report_details'][0]['request']['ERRORMATOR_POST']
+            keys_to_check = (structure['report_details'][0]['request'].get('ERRORMATOR_COOKIES'),
+                              structure['report_details'][0]['request'].get('ERRORMATOR_GET'),
+                              structure['report_details'][0]['request'].get('ERRORMATOR_POST')
                               )        
-        else:
-            keys_to_check = (structure['request']['ERRORMATOR_COOKIES'],
-                              structure['request']['ERRORMATOR_GET'],
-                              structure['request']['ERRORMATOR_POST']
+        elif section == 'slow_request':
+            keys_to_check = (structure['request'].get('ERRORMATOR_COOKIES'),
+                              structure['request'].get('ERRORMATOR_GET'),
+                              structure['request'].get('ERRORMATOR_POST')
                               )
+        else:
+            # do not filter for 404 by default
+            return structure
         
-        for source in keys_to_check:
+        for source in filter(None,keys_to_check):
             for k, v in source.items():
                 if ('password' in k or 'passwd' in k or 'pwd' in k 
                     or 'auth_tkt' in k):
@@ -905,7 +908,10 @@ class ErrormatorCatcher(ErrormatorBase):
         #lets populate with additional environ data
         parsed_data.update(additional_info)
         parsed_data['errormator.client'] = self.client
-        parsed_data = self.data_filter(parsed_data, 'error_report')
+        if traceback:
+            parsed_data = self.data_filter(parsed_data, 'error_report')
+        else:
+            parsed_data = self.data_filter(parsed_data, '404_report')
         return parsed_data
 
     def __call__(self, environ, start_response):
