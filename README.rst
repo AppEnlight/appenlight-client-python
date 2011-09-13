@@ -1,5 +1,5 @@
 errormator_client
-============
+=================
 usage (example for pyramid):
 
 in your ini add::
@@ -63,7 +63,7 @@ it is also possible to send reports directly from inside of your application::
     request.environ['errormator.report']('TEST Lorem ipsum', False)
 
 Slow Request/Query API Support
-===================
+==============================
 to enable slow api support you need to alter your ini file and add more entries::
 
     errormator.slow_request = true
@@ -74,7 +74,7 @@ to enable slow api support you need to alter your ini file and add more entries:
 errormator_client is BSD licensed, consult LICENSE for details. 
 
 Sensitive data filtering
-===================
+========================
 The client by default blanks out COOKIE,POST,GET for keys like:
 'password','passwd','pwd','auth_tkt'
 
