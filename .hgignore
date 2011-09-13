@@ -1,0 +1,15 @@
+
+syntax: regexp
+^\.settings$
+syntax: regexp
+^\.project$
+syntax: regexp
+^\.pydevproject$
+syntax: regexp
+^dist$
+syntax: regexp
+^.*\.pyc$
+syntax: regexp
+^.*\.egg-info$
+syntax: regexp
+^\.pydevproject$
