@@ -42,9 +42,9 @@ import json
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime.date):
-            return obj.strftime(DATE_FRMT)
+            return obj.isoformat()
         if isinstance(obj, datetime.datetime):
-            return obj.strftime(DATE_FRMT)      
+            return obj.isoformat()      
         return json.JSONEncoder.default(self, obj)
 
 from paste import request as paste_req
@@ -67,7 +67,7 @@ log_errors.setLevel(logging.DEBUG)
 log_slow_reports = logging.getLogger('errormator_client.slow_report')
 log_slow_reports.setLevel(logging.DEBUG)
 
-DATE_FRMT = '%Y-%m-%d %H:%M:%S,%f'
+DATE_FRMT = '%Y-%m-%dT%H:%M:%S.%f'
 
 def gzipcompress(bytestr):
     stream = cStringIO.StringIO()
@@ -102,7 +102,7 @@ def sqlalchemy_07_listener(delta):
                              td.microseconds)
                              )
             query_info = {'type':'sqlalchemy',
-                          'timestamp':conn.err_query_start.strftime(DATE_FRMT),
+                          'timestamp':conn.err_query_start.isoformat(),
                           'duration': duration,
                           'statement': stmt,
                           'parameters': params
@@ -255,7 +255,7 @@ class ErrormatorLogHandler(MemoryHandler):
         if self.api_key and self.server_url: 
             for record in self.buffer:
                 if not getattr(record, 'created'):
-                    time_string = datetime.datetime.utcnow().strftime(DATE_FRMT)
+                    time_string = datetime.datetime.utcnow().isoformat()
                 else:
                     time_string = time.strftime(DATE_FRMT,
                                     time.gmtime(record.created)) % record.msecs 
@@ -946,7 +946,7 @@ class ErrormatorCatcher(ErrormatorBase):
                     log_call = RemoteCall([
                         {"log_level":level,
                         "message":message,
-                        "timestamp":datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S,%f'),
+                        "timestamp":datetime.datetime.utcnow().isoformat(),
                         "server":self.server
                         }])
                     log_call.submit(self.api_key, self.server_url,
@@ -1031,8 +1031,8 @@ class ErrormatorSlowRequest(ErrormatorBase):
         (parsed_request, remote_addr, additional_info) = \
                 process_environ(environ, True)
         report = {
-        "start_time":start_time.strftime(DATE_FRMT),
-        "end_time":end_time.strftime(DATE_FRMT),
+        "start_time":start_time.isoformat(),
+        "end_time":end_time.isoformat(),
         "template_start_time":environ.get('errormator.tmpl_start_time'),
         "report_details":[],
         "server": self.server,
