@@ -47,6 +47,7 @@ to enable logging support you need to alter your ini file and add more entries
     errormator.logging = true
     errormator.logging.buffer = 50
     errormator.logging.async = true
+    errormator.logging.level = INFO # optional - you can set minimum log level
 
 first param determines after how many entries errors get flushed to remote service
 second param determines if client should make a threaded call
