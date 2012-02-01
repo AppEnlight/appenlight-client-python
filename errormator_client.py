@@ -1165,7 +1165,7 @@ def make_errormator_middleware(app, global_config, **kw):
                 tdelta = datetime.timedelta(seconds=slow_query_time)
                 sqlalchemy_07_listener(tdelta)
             except ImportError, e:
-                console.warning('Sqlalchemy older than 0.7 - logging disabled')
+                log.warning('Sqlalchemy older than 0.7 - logging disabled')
 
 
     if asbool(config.get('errormator.report_404', False)):
