@@ -266,7 +266,7 @@ class ErrormatorLogHandler(MemoryHandler):
                             'server': self.server,
                             'date':time_string
                             })
-                except TypeError, e :
+                except (TypeError, UnicodeDecodeError), e :
                     #handle some weird case where record.getMessage() fails
                     pass
             
