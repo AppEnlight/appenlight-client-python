@@ -262,11 +262,11 @@ class ErrormatorLogHandler(MemoryHandler):
                 try:
                     entries.append(
                             {'log_level':record.levelname,
-                            'message':'%s %s' % (record.name, record.getMessage(),),
+                            'message':'%s %s' % (record.name, record.getMessage().encode('utf8'),),
                             'server': self.server,
                             'date':time_string
                             })
-                except (TypeError, UnicodeDecodeError), e :
+                except (TypeError), e :
                     #handle some weird case where record.getMessage() fails
                     pass
             
