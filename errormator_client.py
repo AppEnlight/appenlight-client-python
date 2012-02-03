@@ -266,9 +266,9 @@ class ErrormatorLogHandler(MemoryHandler):
                             'server': self.server,
                             'date':time_string
                             })
-                except (TypeError), e :
+                except (TypeError, UnicodeDecodeError, UnicodeEncodeError), e :
                     #handle some weird case where record.getMessage() fails
-                    pass
+                    log.warning(e)
             
             remote_call = RemoteCall(entries)
             if self.async:
