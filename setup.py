@@ -2,7 +2,7 @@ from setuptools import setup
 
 
 setup(name='errormator_client',
-      version='0.2.s4u.3',
+      version='0.3',
       description='Sample client for Errormator reporting',
       classifiers=[
           'Intended Audience :: Developers',
@@ -20,13 +20,13 @@ setup(name='errormator_client',
       zip_safe=True,
       py_modules=['errormator_client'],
       install_requires=[
-          'Paste',
+          'requests',
           "webob"
       ],
       entry_points="""
       [paste.filter_app_factory]
-      errormator = errormator_client:make_errormator_middleware
-      error_catcher = errormator_client:make_catcher_middleware
-      header_sniffer = errormator_client:make_sniffer_middleware
+      errormator = errormator_client.client:make_errormator_middleware
+      error_catcher = errormator_client.client:make_catcher_middleware
+      header_sniffer = errormator_client.client:make_sniffer_middleware
       """,
       )
