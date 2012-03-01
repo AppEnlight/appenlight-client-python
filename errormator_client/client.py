@@ -170,6 +170,8 @@ class Client(object):
             if to_send_items:
                 try:
                     self.remote_call(to_send_items, self.endpoints['reports'])
+                except KeyboardInterrupt as e:
+                    raise KeyboardInterrupt()
                 except Exception as e:
                     print 'report error', e
             time.sleep(next_interval)
@@ -187,12 +189,16 @@ class Client(object):
                 try:
                     self.remote_call(slow_to_send_items,
                                  self.endpoints['slow_reports'])
+                except KeyboardInterrupt as e:
+                    raise KeyboardInterrupt()
                 except Exception as e:
                     print 'slow reports error', e
             if logs_to_send_items:
                 try:
                     self.remote_call(logs_to_send_items,
                                  self.endpoints['logs'])
+                except KeyboardInterrupt as e:
+                    raise KeyboardInterrupt()
                 except Exception as e:
                     print 'logs error', e
             time.sleep(self.config['buffer_flush_interval'])
@@ -251,7 +257,7 @@ class Client(object):
         log_entries = []
         if not records:
             records = self.log_handler.get_records()
-            self.errormator_client.datastore_handler.clear_records()
+            self.log_handler.clear_records()
 
         for record in records:
             if not getattr(record, 'created'):
