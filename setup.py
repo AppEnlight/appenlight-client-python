@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 setup(name='errormator_client',
@@ -18,7 +18,7 @@ setup(name='errormator_client',
       author_email='info@webreactor.eu',
       license='BSD',
       zip_safe=True,
-      py_modules=['errormator_client'],
+      packages=find_packages(),
       install_requires=[
           'requests',
           "webob"
