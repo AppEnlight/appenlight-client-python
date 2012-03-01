@@ -79,6 +79,7 @@ class Client(object):
             errormator.report_404 - enables 404 error logging (default False)
             errormator.report_errors - enables 500 error logging (default True)
             errormator.buffer_flush_interval - how often send data to mothership Errormator (default 5)
+            errormator.force_send - send all data after request is finished - handy for crons or other voliatile applications
         """
         self.config = {}
         # general options
@@ -104,6 +105,7 @@ class Client(object):
         self.config['report_404'] = asbool(config.get('errormator.report_404', False))
         self.config['report_errors'] = asbool(config.get('errormator.report_errors', True))
         self.config['buffer_flush_interval'] = int(config.get('errormator.buffer_flush_interval', 5))
+        self.config['force_send'] = asbool(config.get('errormator.force_send', False))
 
         self.filter_callable = config.get('errormator.filter_callable')
         if self.filter_callable:
@@ -111,7 +113,6 @@ class Client(object):
                 parts = self.filter_callable.split(':')
                 _tmp = __import__(parts[0], globals(), locals(), [parts[1], ], -1)
                 self.filter_callable = getattr(_tmp, parts[1])
-                print self.filter_callable
             except ImportError as e:
                 self.filter_callable = None
                 log.error('Could not import filter callable, using default, %s' % e)
@@ -137,7 +138,7 @@ class Client(object):
                                                 self.config['slow_query_time'],
                                                 self.datastore_handler)
                 except ImportError as e:
-                    print e
+                    log.warning(e)
                     log.warning('Sqlalchemy older than 0.7 - logging disabled')
 
         self.endpoints = {
@@ -160,10 +161,8 @@ class Client(object):
         self.submit_other_data_t.start()
         self.uuid = uuid.uuid4()
 
-    def submit_report_data(self):
-        while True:
-            # if we had errors previously we want to send them faster to errormator
-            next_interval = 1 if len(self.report_queue) else self.config['buffer_flush_interval']
+    def submit_report_data(self, loop=True):
+        def send():
             with self.report_queue_lock:
                 to_send_items = self.report_queue[:250]
                 self.report_queue = self.report_queue[250:]
@@ -173,11 +172,16 @@ class Client(object):
                 except KeyboardInterrupt as e:
                     raise KeyboardInterrupt()
                 except Exception as e:
-                    print 'report error', e
-            time.sleep(next_interval)
+                    log.warning('report error %s' % e)
+        if loop:
+            while True:
+                # if we had errors previously we want to send them faster to errormator
+                next_interval = 1 if len(self.report_queue) else self.config['buffer_flush_interval']
+                send()
+                time.sleep(next_interval)
 
-    def submit_other_data(self):
-        while True:
+    def submit_other_data(self, loop=True):
+        def send():
             with self.slow_report_queue_lock:
                 slow_to_send_items = self.slow_report_queue[:250]
                 self.slow_report_queue = self.slow_report_queue[250:]
@@ -192,7 +196,7 @@ class Client(object):
                 except KeyboardInterrupt as e:
                     raise KeyboardInterrupt()
                 except Exception as e:
-                    print 'slow reports error', e
+                    log.warning('slow report error %s' % e)
             if logs_to_send_items:
                 try:
                     self.remote_call(logs_to_send_items,
@@ -200,8 +204,13 @@ class Client(object):
                 except KeyboardInterrupt as e:
                     raise KeyboardInterrupt()
                 except Exception as e:
-                    print 'logs error', e
-            time.sleep(self.config['buffer_flush_interval'])
+                    log.warning('logs error %s' % e)
+        if loop:
+            while True:
+                send()
+                time.sleep(self.config['buffer_flush_interval'])
+        else:
+            send()
 
     def remote_call(self, data, endpoint):
         GET_vars = urllib.urlencode({'api_key': self.config['api_key'],
@@ -211,7 +220,8 @@ class Client(object):
         log.debug('sending out %s entries to %s' % (len(data), endpoint,))
         try:
             resp = requests.post(server_url, data=json.dumps(data),
-                                 headers=headers, timeout=self.config['timeout'])
+                                 headers=headers, timeout=self.config['timeout'],
+                                 config={'max_retries':0})
         except requests.exceptions.Timeout as e:
             log.warning('Errormator HTTP Tiemout')
             return False

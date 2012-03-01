@@ -34,6 +34,15 @@ class ErrormatorWSGIWrapper(object):
         # inject client instance reference to environ
         if 'errormator.client' not in environ:
             environ['errormator.client'] = self.errormator_client
+            # some bw. compat stubs
+            def local_report(message, include_traceback=True,
+                                 http_status=200):
+                environ['errormator.force_send'] = True
+            def local_log(level, message):
+                environ['errormator.force_send'] = True
+            environ['errormator.report'] = local_report
+            environ['errormator.log'] = local_log
+
         try:
             app_iter = self.app(environ, detect_headers)
             return app_iter
@@ -83,7 +92,7 @@ class ErrormatorWSGIWrapper(object):
                 delta = end_time - start_time
                 records = self.errormator_client.datastore_handler.get_records()
                 self.errormator_client.datastore_handler.clear_records()
-                if delta >= self.errormator_client.config['slow_request_time'] or len(records) > 0:
+                if delta >= self.errormator_client.config['slow_request_time'] or records:
                     self.errormator_client.py_slow_report(environ,
                                     start_time, end_time, records)
             if self.errormator_client.config['logging']:
@@ -91,3 +100,7 @@ class ErrormatorWSGIWrapper(object):
                 self.errormator_client.log_handler.clear_records()
                 self.errormator_client.py_log(environ, records=records,
                                         uuid=environ['errormator.request_id'])
+            # send all data we gathered immediately at the end of request
+            if self.errormator_client.config['force_send'] or environ.get('errormator.force_send'):
+                self.errormator_client.submit_report_data(loop=False)
+                self.errormator_client.submit_other_data(loop=False)

@@ -53,7 +53,7 @@ additional config variables you can set in config object::
     errormator.report_404 - enables 404 error logging (default False)
     errormator.report_errors - enables 500 error logging (default True)
     errormator.buffer_flush_interval - how often send data to mothership Errormator (default 5)
-
+    errormator.force_send - send all data after request is finished - handy for crons or other voliatile applications
 
 errormator_client is BSD licensed, consult LICENSE for details. 
 
