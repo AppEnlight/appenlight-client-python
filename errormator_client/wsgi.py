@@ -82,8 +82,6 @@ class ErrormatorWSGIWrapper(object):
                                     traceback,
                                     message=None,
                                     http_status=http_status)
-                #leave trace of exception in logs
-                log.warning(u'%s code: %s @%s' % (http_status, e, url,))
 
             # report slowness
             if self.errormator_client.config['slow_requests']:

@@ -220,7 +220,7 @@ class Client(object):
                                 'protocol_version': self.__protocol_version__})
         server_url = '%s%s?%s' % (self.config['server_url'], endpoint, GET_vars,)
         headers = {'content-type': 'application/json'}
-        log.debug('sending out %s entries to %s' % (len(data), endpoint,))
+        log.info('sending out %s entries to %s' % (len(data), endpoint,))
 
 
         try:
