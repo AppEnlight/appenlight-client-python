@@ -79,6 +79,6 @@ that accepts parameters (structure, section) and returns altered data structure.
 Installation and Setup
 ======================
 
-Install ``errormator_client`` using easy_install::
+Install ``errormator_client`` using pip::
 
-    easy_install errormator_client
+    pip_install errormator-client
