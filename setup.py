@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='errormator_client',
-      version='0.3',
+      version='0.3.1',
       description='Sample client for Errormator reporting',
       classifiers=[
           'Intended Audience :: Developers',
@@ -20,7 +20,6 @@ setup(name='errormator_client',
       zip_safe=True,
       packages=find_packages(),
       install_requires=[
-          'requests',
           "webob"
       ],
       entry_points="""

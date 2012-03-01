@@ -32,12 +32,13 @@ import sys
 import threading
 import time
 import socket
-import requests
+#import requests
 import urllib
+import urllib2
 import json
 import uuid
 
-from errormator_client.utils import asbool, create_report_structure
+from errormator_client.utils import asbool, create_report_structure, DateTimeEncoder
 
 # are we running python 3.x ?
 PY3 = sys.version_info[0] == 3
@@ -52,8 +53,8 @@ LEVELS = {'debug': logging.DEBUG,
 log = logging.getLogger(__name__)
 
 class Client(object):
-    ___version__ = 0.3
-    __protocol_version__ = 0.3
+    ___version__ = '0.3.1'
+    __protocol_version__ = '0.3'
 
     def __init__(self, config):
         """
@@ -178,7 +179,8 @@ class Client(object):
                 # if we had errors previously we want to send them faster to errormator
                 next_interval = 1 if len(self.report_queue) else self.config['buffer_flush_interval']
                 send()
-                time.sleep(next_interval)
+                for x in xrange(next_interval * 2):
+                    time.sleep(0.5)
 
     def submit_other_data(self, loop=True):
         def send():
@@ -208,7 +210,8 @@ class Client(object):
         if loop:
             while True:
                 send()
-                time.sleep(self.config['buffer_flush_interval'])
+                for x in xrange(self.config['buffer_flush_interval'] * 2):
+                    time.sleep(0.5)
         else:
             send()
 
@@ -218,16 +221,27 @@ class Client(object):
         server_url = '%s%s?%s' % (self.config['server_url'], endpoint, GET_vars,)
         headers = {'content-type': 'application/json'}
         log.debug('sending out %s entries to %s' % (len(data), endpoint,))
+
+
         try:
-            resp = requests.post(server_url, data=json.dumps(data),
-                                 headers=headers, timeout=self.config['timeout'],
-                                 config={'max_retries':0})
-        except requests.exceptions.Timeout as e:
-            log.warning('Errormator HTTP Tiemout')
+            req = urllib2.Request(server_url,
+                                  json.dumps(data, cls=DateTimeEncoder),
+                                  headers=headers)
+        except IOError as e:
+            message = 'ERRORMATOR: problem: %s' % e
+            log.error(message)
             return False
-        if resp.status_code != requests.codes.ok:
-            message = 'ERRORMATOR: response code: %s' % resp.status_code()
-            log.warning(message)
+        try:
+            conn = urllib2.urlopen(req, timeout=self.config['timeout'])
+            conn.close()
+            return True
+        except TypeError as e:
+            conn = urllib2.urlopen(req)
+            conn.close()
+            return True
+        if conn.getcode() != 200:
+            message = 'ERRORMATOR: response code: %s' % conn.getcode()
+            log.error(message)
 
     def data_filter(self, structure, section=None):
         if section == 'error_report':

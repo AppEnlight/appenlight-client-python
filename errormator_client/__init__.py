@@ -10,3 +10,5 @@ class ErrormatorException(Exception):
 
     def __str__(self):
         return repr(self.args)
+
+from errormator_client.client import make_errormator_middleware
