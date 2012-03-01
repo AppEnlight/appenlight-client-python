@@ -208,7 +208,7 @@ class Client(object):
                                 'protocol_version': self.__protocol_version__})
         server_url = '%s%s?%s' % (self.config['server_url'], endpoint, GET_vars,)
         headers = {'content-type': 'application/json'}
-        log.info('sending out %s entries to %s' % (len(data), endpoint,))
+        log.debug('sending out %s entries to %s' % (len(data), endpoint,))
         try:
             resp = requests.post(server_url, data=json.dumps(data),
                                  headers=headers, timeout=self.config['timeout'])
@@ -280,7 +280,7 @@ class Client(object):
                 log.warning(e)
         with self.log_queue_lock:
             self.log_queue.extend(log_entries)
-        log.info('add %s log entries to queue' % len(records))
+        log.debug('add %s log entries to queue' % len(records))
         return {}
 
     def py_slow_report(self, environ, start_time, end_time, records=[]):
