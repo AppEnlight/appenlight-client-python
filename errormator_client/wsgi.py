@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 
 class ErrormatorWSGIWrapper(object):
 
-    __version__ = 0.2
+    __version__ = '0.2'
 
     def __init__(self, app, errormator_client):
         self.app = app

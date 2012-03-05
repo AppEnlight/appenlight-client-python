@@ -53,7 +53,7 @@ LEVELS = {'debug': logging.DEBUG,
 log = logging.getLogger(__name__)
 
 class Client(object):
-    ___version__ = '0.3.1'
+    ___version__ = '0.3.2'
     __protocol_version__ = '0.3'
 
     def __init__(self, config):
@@ -267,7 +267,8 @@ class Client(object):
 
     def py_report(self, environ, traceback=None, message=None, http_status=200):
         report_data, errormator_info = create_report_structure(environ,
-                        traceback, server=self.config['server_name'])
+                        traceback, server=self.config['server_name'],
+                        http_status=http_status)
         report_data = self.filter_callable(report_data, 'error_report') if self.filter_callable else \
                         self.data_filter(report_data, 'error_report')
         url = report_data['report_details'][0]['url']
