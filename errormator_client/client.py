@@ -154,15 +154,10 @@ class Client(object):
         self.slow_report_queue_lock = threading.RLock()
         self.log_queue = []
         self.log_queue_lock = threading.RLock()
-
-        self.submit_report_data_t = threading.Thread(target=self.submit_report_data)
-        self.submit_report_data_t.start()
-
-        self.submit_other_data_t = threading.Thread(target=self.submit_other_data)
-        self.submit_other_data_t.start()
         self.uuid = uuid.uuid4()
+        self.last_submit = datetime.datetime.now()
 
-    def submit_report_data(self, loop=True):
+    def submit_report_data(self):
         def send():
             with self.report_queue_lock:
                 to_send_items = self.report_queue[:250]
@@ -174,15 +169,10 @@ class Client(object):
                     raise KeyboardInterrupt()
                 except Exception as e:
                     log.warning('report error %s' % e)
-        if loop:
-            while True:
-                # if we had errors previously we want to send them faster to errormator
-                next_interval = 1 if len(self.report_queue) else self.config['buffer_flush_interval']
-                send()
-                for x in xrange(next_interval * 2):
-                    time.sleep(0.5)
+        send()
+        # FIXME: reintroduce threads
 
-    def submit_other_data(self, loop=True):
+    def submit_other_data(self):
         def send():
             with self.slow_report_queue_lock:
                 slow_to_send_items = self.slow_report_queue[:250]
@@ -207,13 +197,17 @@ class Client(object):
                     raise KeyboardInterrupt()
                 except Exception as e:
                     log.warning('logs error %s' % e)
-        if loop:
-            while True:
-                send()
-                for x in xrange(self.config['buffer_flush_interval'] * 2):
-                    time.sleep(0.5)
-        else:
-            send()
+        send()
+        # FIXME: reintroduce threads
+
+    def check_if_deliver(self, force_send=False):
+        delta = datetime.datetime.now() - self.last_submit
+        if delta.seconds > self.config['buffer_flush_interval'] or force_send:
+            submit_report_data_t = threading.Thread(target=self.submit_report_data)
+            submit_report_data_t.start()
+            submit_other_data_t = threading.Thread(target=self.submit_other_data)
+            submit_other_data_t.start()
+            self.last_submit = datetime.datetime.now()
 
     def remote_call(self, data, endpoint):
         GET_vars = urllib.urlencode({'api_key': self.config['api_key'],

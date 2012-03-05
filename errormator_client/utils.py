@@ -67,6 +67,8 @@ def create_report_structure(environ, traceback=None, message=None,
         report_data['error_type'] = exception_text
         report_data['traceback'] = traceback_text
     report_data['http_status'] = 500 if traceback else http_status
+    if http_status == 404:
+        report_data['error_type'] = '404 Not Found' 
     report_data['priority'] = 5
     report_data['server'] = (server or
                 environ.get('SERVER_NAME', 'unknown server'))

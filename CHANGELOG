@@ -1,7 +1,8 @@
 CHANGELOG:
 
 2012-03-05
-    0.3.2 Bugfixes
+    0.3.2 Bugfixes, temporarly remove threads and introduce mode of operation
+    similar to 0.2
 
 2012-03-01
     Released 0.3 and 0.3.1 First PYPI releases
