@@ -149,11 +149,11 @@ class Client(object):
                           }
 
         self.report_queue = []
-        self.report_queue_lock = threading.Lock()
+        self.report_queue_lock = threading.RLock()
         self.slow_report_queue = []
-        self.slow_report_queue_lock = threading.Lock()
+        self.slow_report_queue_lock = threading.RLock()
         self.log_queue = []
-        self.log_queue_lock = threading.Lock()
+        self.log_queue_lock = threading.RLock()
 
         self.submit_report_data_t = threading.Thread(target=self.submit_report_data)
         self.submit_report_data_t.start()
