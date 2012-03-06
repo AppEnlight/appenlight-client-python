@@ -1,5 +1,8 @@
 CHANGELOG:
 
+2012-03-06
+    0.3.5 Bugfixes, use new slow query api format
+
 2012-03-05
     0.3.2 Bugfixes, temporarly remove threads and introduce mode of operation
     similar to 0.2

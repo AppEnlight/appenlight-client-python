@@ -26,7 +26,7 @@ class DateTimeEncoder(json.JSONEncoder):
             return obj.isoformat()
         return json.JSONEncoder.default(self, obj)
 
-def process_environ(environ, traceback=False):
+def process_environ(environ, traceback=None, include_params=False):
     # form friendly to json encode
     parsed_environ = {}
     errormator_info = {}
@@ -44,7 +44,7 @@ def process_environ(environ, traceback=False):
                 except Exception as e:
                     pass
     # provide better details for 500's
-    if traceback:
+    if include_params:
         parsed_environ['COOKIES'] = dict(req.cookies)
         parsed_environ['GET'] = dict([(k, req.GET.getall(k)) for k in req.GET])
         parsed_environ['POST'] = dict([(k, req.POST.getall(k)) for k in req.POST])
@@ -58,8 +58,9 @@ def process_environ(environ, traceback=False):
     return parsed_environ, errormator_info
 
 def create_report_structure(environ, traceback=None, message=None,
-                     http_status=200, server='unknown server'):
-    (parsed_environ, errormator_info) = process_environ(environ, traceback)
+            http_status=200, server='unknown server', include_params=False):
+    (parsed_environ, errormator_info) = process_environ(environ, traceback,
+                                                        include_params)
     report_data = {'report_details': []}
     if traceback:
         exception_text = traceback.exception

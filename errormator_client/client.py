@@ -53,7 +53,7 @@ LEVELS = {'debug': logging.DEBUG,
 log = logging.getLogger(__name__)
 
 class Client(object):
-    __version__ = '0.3.2'
+    __version__ = '0.3.5'
     __protocol_version__ = '0.3'
 
     def __init__(self, config):
@@ -262,7 +262,7 @@ class Client(object):
     def py_report(self, environ, traceback=None, message=None, http_status=200):
         report_data, errormator_info = create_report_structure(environ,
                         traceback, server=self.config['server_name'],
-                        http_status=http_status)
+                        http_status=http_status, include_params=True)
         report_data = self.filter_callable(report_data, 'error_report') if self.filter_callable else \
                         self.data_filter(report_data, 'error_report')
         url = report_data['report_details'][0]['url']
@@ -304,16 +304,18 @@ class Client(object):
 
     def py_slow_report(self, environ, start_time, end_time, records=[]):
         report_data, errormator_info = create_report_structure(environ,
-                                    server=self.config['server_name'])
+                    server=self.config['server_name'], include_params=True)
         report_data = self.filter_callable(report_data, 'error_report') if self.filter_callable else \
                       self.data_filter(report_data, 'error_report')
         url = report_data['report_details'][0]['url']
         if not records:
             records = self.datastore_handler.get_records()
             self.datastore_handler.clear_records()
-
+        report_data['report_details'][0]['start_time'] = start_time
+        report_data['report_details'][0]['end_time'] = end_time
+        report_data['report_details'][0]['slow_calls'] = []
         for record in records:
-            report_data['report_details'].append(record.errormator_data)
+            report_data['report_details'][0]['slow_calls'].append(record.errormator_data)
         with self.slow_report_queue_lock:
             self.slow_report_queue.append(report_data)
         log.info('slow request/queries detected: %s' % url)
