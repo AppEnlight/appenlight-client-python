@@ -53,7 +53,7 @@ LEVELS = {'debug': logging.DEBUG,
 log = logging.getLogger(__name__)
 
 class Client(object):
-    __version__ = '0.3.5'
+    __version__ = '0.3.6'
     __protocol_version__ = '0.3'
 
     def __init__(self, config):
@@ -129,7 +129,7 @@ class Client(object):
             self.log_handler.setLevel(level)
 
         # register datastore metrics
-        if self.config['datastores']:
+        if self.config['datastores'] and self.config['slow_requests']:
             self.datastore_handler = errormator_client.logger.register_datastores()
             if asbool(config.get('errormator.datastores.sqlalchemy', True)):
                 try:

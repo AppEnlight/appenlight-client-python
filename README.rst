@@ -7,7 +7,7 @@ in your ini add::
 
     #exception gathering
     [filter:errormator_client]
-    use = egg:errormator_client#errormator
+    use = egg:errormator_client
     debug = false
     errormator = true
     errormator.server_url = https://api.errormator.com

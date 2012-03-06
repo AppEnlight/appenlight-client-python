@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='errormator_client',
-      version='0.3.5',
+      version='0.3.6',
       description='Sample client for Errormator reporting',
       classifiers=[
           'Intended Audience :: Developers',
@@ -24,6 +24,7 @@ setup(name='errormator_client',
       ],
       entry_points="""
       [paste.filter_app_factory]
+      main = errormator_client.client:make_errormator_middleware
       errormator = errormator_client.client:make_errormator_middleware
       """,
       )
