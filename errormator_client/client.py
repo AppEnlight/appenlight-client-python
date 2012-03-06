@@ -53,7 +53,7 @@ LEVELS = {'debug': logging.DEBUG,
 log = logging.getLogger(__name__)
 
 class Client(object):
-    ___version__ = '0.3.2'
+    __version__ = '0.3.2'
     __protocol_version__ = '0.3'
 
     def __init__(self, config):
