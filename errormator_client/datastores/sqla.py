@@ -4,6 +4,7 @@ import datetime
 import logging
 # used for slow query GATHERING/ - to be picked up by threaded logger
 
+
 def sqlalchemy_07_listener(delta, datastore_handler):
     log_slow = logging.getLogger('errormator_client.datastore.sqlalchemy')
     log_slow.setLevel(logging.DEBUG)

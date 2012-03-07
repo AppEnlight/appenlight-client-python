@@ -52,6 +52,7 @@ LEVELS = {'debug': logging.DEBUG,
 
 log = logging.getLogger(__name__)
 
+
 class Client(object):
     __version__ = '0.3.6'
     __protocol_version__ = '0.3'
@@ -73,7 +74,7 @@ class Client(object):
             errormator.slow_requests - record slow requests in application (needs to be enabled for slow datastore recording)
             errormator.logging - enable hooking to application loggers
             errormator.logging.level - minimum log level for log capture
-            errormator.datastores - enable query execution tracking for various datastore layers 
+            errormator.datastores - enable query execution tracking for various datastore layers
             errormator.slow_request_time - (float/int) time in seconds after request is considered being slow (default 30)
             errormator.slow_query_time - (float/int) time in seconds after datastore sql query is considered being slow (default 7)
             errormator.datastores.sqlalchemy = default true - tries to enable sqlalchemy query logging
@@ -119,7 +120,7 @@ class Client(object):
                 log.error('Could not import filter callable, using default, %s' % e)
 
         if self.config['buffer_flush_interval'] < 2:
-             self.config['buffer_flush_interval'] = 2
+            self.config['buffer_flush_interval'] = 2
         # register logging
         import errormator_client.logger
         if self.config['logging']:
@@ -215,8 +216,6 @@ class Client(object):
         server_url = '%s%s?%s' % (self.config['server_url'], endpoint, GET_vars,)
         headers = {'content-type': 'application/json'}
         log.info('sending out %s entries to %s' % (len(data), endpoint,))
-
-
         try:
             req = urllib2.Request(server_url,
                                   json.dumps(data, cls=DateTimeEncoder),
@@ -253,7 +252,7 @@ class Client(object):
             return structure
 
         for source in filter(None, keys_to_check):
-            for k, v in source.items():
+            for k in source.iterkeys():
                 if ('password' in k or 'passwd' in k or 'pwd' in k
                     or 'auth_tkt' in k or 'secret' in k):
                     source[k] = u'***'
@@ -272,7 +271,7 @@ class Client(object):
                                           report_data.get('error_type'), url,))
         return True
 
-    def py_log(self, environ, records=None, uuid=None):
+    def py_log(self, environ, records=None, r_uuid=None):
         log_entries = []
         if not records:
             records = self.log_handler.get_records()
@@ -292,7 +291,7 @@ class Client(object):
                         'message':'%s' % (message.encode('utf8') if isinstance(message, unicode) else message,),
                         'server': self.config['server_name'],
                         'date':time_string,
-                        'request_id':uuid
+                        'request_id':r_uuid
                         })
             except (TypeError, UnicodeDecodeError, UnicodeEncodeError), e:
                 #handle some weird case where record.getMessage() fails
@@ -302,7 +301,7 @@ class Client(object):
         log.debug('add %s log entries to queue' % len(records))
         return {}
 
-    def py_slow_report(self, environ, start_time, end_time, records=[]):
+    def py_slow_report(self, environ, start_time, end_time, records=()):
         report_data, errormator_info = create_report_structure(environ,
                     server=self.config['server_name'], include_params=True)
         report_data = self.filter_callable(report_data, 'error_report') if self.filter_callable else \
@@ -320,7 +319,6 @@ class Client(object):
             self.slow_report_queue.append(report_data)
         log.info('slow request/queries detected: %s' % url)
         return True
-
 
 
 def make_errormator_middleware(app, global_config, **kw):

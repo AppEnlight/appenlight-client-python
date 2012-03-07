@@ -1,10 +1,7 @@
 from webob import Request
 import datetime
 import json
-import socket
-import urllib
-import urllib2
-import threading
+
 
 def asbool(obj):
     if isinstance(obj, (str, unicode)):
@@ -18,6 +15,7 @@ def asbool(obj):
                 "String is not true/false: %r" % obj)
     return bool(obj)
 
+
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime.date):
@@ -25,6 +23,7 @@ class DateTimeEncoder(json.JSONEncoder):
         if isinstance(obj, datetime.datetime):
             return obj.isoformat()
         return json.JSONEncoder.default(self, obj)
+
 
 def process_environ(environ, traceback=None, include_params=False):
     # form friendly to json encode
@@ -48,7 +47,7 @@ def process_environ(environ, traceback=None, include_params=False):
         parsed_environ['COOKIES'] = dict(req.cookies)
         parsed_environ['GET'] = dict([(k, req.GET.getall(k)) for k in req.GET])
         parsed_environ['POST'] = dict([(k, req.POST.getall(k)) for k in req.POST])
-    # figure out real ip 
+    # figure out real ip
     if environ.get("HTTP_X_FORWARDED_FOR"):
         remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[0].strip()
     else:
@@ -56,6 +55,7 @@ def process_environ(environ, traceback=None, include_params=False):
     parsed_environ['REMOTE_ADDR'] = remote_addr
     errormator_info['URL'] = req.url
     return parsed_environ, errormator_info
+
 
 def create_report_structure(environ, traceback=None, message=None,
             http_status=200, server='unknown server', include_params=False):
@@ -69,7 +69,7 @@ def create_report_structure(environ, traceback=None, message=None,
         report_data['traceback'] = traceback_text
     report_data['http_status'] = 500 if traceback else http_status
     if http_status == 404:
-        report_data['error_type'] = '404 Not Found' 
+        report_data['error_type'] = '404 Not Found'
     report_data['priority'] = 5
     report_data['server'] = (server or
                 environ.get('SERVER_NAME', 'unknown server'))

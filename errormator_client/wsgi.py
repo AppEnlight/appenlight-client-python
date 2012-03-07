@@ -1,11 +1,11 @@
 import uuid
 import datetime
-from errormator_client.utils import asbool
 from errormator_client.exceptions import get_current_traceback
 import logging
 import sys
 
 log = logging.getLogger(__name__)
+
 
 class ErrormatorWSGIWrapper(object):
 
@@ -35,9 +35,11 @@ class ErrormatorWSGIWrapper(object):
         if 'errormator.client' not in environ:
             environ['errormator.client'] = self.errormator_client
             # some bw. compat stubs
+
             def local_report(message, include_traceback=True,
                                  http_status=200):
                 environ['errormator.force_send'] = True
+
             def local_log(level, message):
                 environ['errormator.force_send'] = True
             environ['errormator.report'] = local_report
@@ -71,17 +73,16 @@ class ErrormatorWSGIWrapper(object):
             # report 500's and 404's
             if traceback and self.errormator_client.config['report_errors']:
                 http_status = 500
-            elif self.errormator_client.config['report_404'] and detected_data and detected_data[0] == '404':
+            elif (self.errormator_client.config['report_404'] and
+                  detected_data and detected_data[0] == '404'):
                 http_status = int(detected_data[0])
                 e = '404 Not Found'
             else:
                 http_status = None
             if http_status:
-                url = self.errormator_client.py_report(
-                                    environ,
-                                    traceback,
-                                    message=None,
-                                    http_status=http_status)
+                self.errormator_client.py_report(environ, traceback,
+                                                 message=None,
+                                                 http_status=http_status)
 
             # report slowness
             if self.errormator_client.config['slow_requests']:
@@ -90,7 +91,8 @@ class ErrormatorWSGIWrapper(object):
                 delta = end_time - start_time
                 records = self.errormator_client.datastore_handler.get_records()
                 self.errormator_client.datastore_handler.clear_records()
-                if delta >= self.errormator_client.config['slow_request_time'] or records:
+                if (delta >= self.errormator_client.config['slow_request_time']
+                    or records):
                     self.errormator_client.py_slow_report(environ,
                                     start_time, end_time, records)
             if self.errormator_client.config['logging']:
@@ -100,5 +102,5 @@ class ErrormatorWSGIWrapper(object):
                                         uuid=environ['errormator.request_id'])
             # send all data we gathered immediately at the end of request
             self.errormator_client.check_if_deliver(
-                    self.errormator_client.config['force_send'] or 
+                    self.errormator_client.config['force_send'] or
                     environ.get('errormator.force_send'))
