@@ -99,7 +99,7 @@ class ErrormatorWSGIWrapper(object):
                 records = self.errormator_client.log_handler.get_records()
                 self.errormator_client.log_handler.clear_records()
                 self.errormator_client.py_log(environ, records=records,
-                                        uuid=environ['errormator.request_id'])
+                                    r_uuid=environ['errormator.request_id'])
             # send all data we gathered immediately at the end of request
             self.errormator_client.check_if_deliver(
                     self.errormator_client.config['force_send'] or

@@ -31,7 +31,10 @@ def process_environ(environ, traceback=None, include_params=False):
     errormator_info = {}
     req = Request(environ)
     for key, value in req.environ.items():
-        if key.startswith('errormator.') and key != 'errormator.client':
+        if key.startswith('errormator.') and key not in ('errormator.client',
+                                                    'errormator.force_send',
+                                                    'errormator.log',
+                                                    'errormator.report'):
             errormator_info[key[11:]] = unicode(value)
         else:
             if traceback or key.startswith('HTTP') or key in ('HTTP_USER_AGENT',):
@@ -46,12 +49,14 @@ def process_environ(environ, traceback=None, include_params=False):
     if include_params:
         parsed_environ['COOKIES'] = dict(req.cookies)
         parsed_environ['GET'] = dict([(k, req.GET.getall(k)) for k in req.GET])
-        parsed_environ['POST'] = dict([(k, req.POST.getall(k)) for k in req.POST])
+        parsed_environ['POST'] = dict([(k, req.POST.getall(k))
+                                       for k in req.POST])
     # figure out real ip
     if environ.get("HTTP_X_FORWARDED_FOR"):
         remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[0].strip()
     else:
-        remote_addr = environ.get("HTTP_X_REAL_IP") or environ.get('REMOTE_ADDR')
+        remote_addr = (environ.get("HTTP_X_REAL_IP")
+                       or environ.get('REMOTE_ADDR'))
     parsed_environ['REMOTE_ADDR'] = remote_addr
     errormator_info['URL'] = req.url
     return parsed_environ, errormator_info
@@ -61,7 +66,7 @@ def create_report_structure(environ, traceback=None, message=None,
             http_status=200, server='unknown server', include_params=False):
     (parsed_environ, errormator_info) = process_environ(environ, traceback,
                                                         include_params)
-    report_data = {'report_details': []}
+    report_data = {'client': 'Python', 'report_details': []}
     if traceback:
         exception_text = traceback.exception
         traceback_text = traceback.plaintext
@@ -80,6 +85,8 @@ def create_report_structure(environ, traceback=None, message=None,
     detail_entry['user_agent'] = parsed_environ.get('HTTP_USER_AGENT', u'')
     detail_entry['username'] = parsed_environ.get('REMOTE_USER', u'')
     detail_entry['url'] = errormator_info.pop('URL', 'unknown')
+    if 'request_id' in errormator_info:
+        detail_entry['request_id'] = errormator_info.pop('request_id', None)
     detail_entry['message'] = message or errormator_info.get('message', u'')
     #conserve bandwidth pop keys that we dont need in request details
     exclude_keys = ('HTTP_USER_AGENT', 'REMOTE_ADDR', 'HTTP_COOKIE',

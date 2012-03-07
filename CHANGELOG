@@ -1,5 +1,8 @@
 CHANGELOG:
 
+2012-03-07
+    0.3.7 Bugfixes, cleanup, start sending request_id to mothership
+
 2012-03-06
     0.3.5 Bugfixes, use new slow query api format
 

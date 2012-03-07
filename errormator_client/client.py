@@ -116,8 +116,10 @@ class Client(object):
                 _tmp = __import__(parts[0], globals(), locals(), [parts[1], ], -1)
                 self.filter_callable = getattr(_tmp, parts[1])
             except ImportError as e:
-                self.filter_callable = None
+                self.filter_callable = self.data_filter
                 log.error('Could not import filter callable, using default, %s' % e)
+        else:
+            self.filter_callable = self.data_filter
 
         if self.config['buffer_flush_interval'] < 2:
             self.config['buffer_flush_interval'] = 2
@@ -169,7 +171,7 @@ class Client(object):
                 except KeyboardInterrupt as e:
                     raise KeyboardInterrupt()
                 except Exception as e:
-                    log.warning('report error %s' % e)
+                    log.warning('REPORTS: connection issue: %s' % e)
         send()
         # FIXME: reintroduce threads
 
@@ -189,7 +191,7 @@ class Client(object):
                 except KeyboardInterrupt as e:
                     raise KeyboardInterrupt()
                 except Exception as e:
-                    log.warning('slow report error %s' % e)
+                    log.warning('SLOW REPORTS: connection issue: %s' % e)
             if logs_to_send_items:
                 try:
                     self.remote_call(logs_to_send_items,
@@ -197,7 +199,7 @@ class Client(object):
                 except KeyboardInterrupt as e:
                     raise KeyboardInterrupt()
                 except Exception as e:
-                    log.warning('logs error %s' % e)
+                    log.warning('LOGS: connection issue: %s' % e)
         send()
         # FIXME: reintroduce threads
 
@@ -237,19 +239,11 @@ class Client(object):
             log.error(message)
 
     def data_filter(self, structure, section=None):
-        if section == 'error_report':
+        if section in ['error_report','slow_report']:
             keys_to_check = (structure['report_details'][0]['request'].get('COOKIES'),
                               structure['report_details'][0]['request'].get('GET'),
                               structure['report_details'][0]['request'].get('POST')
                               )
-        elif section == 'slow_request':
-            keys_to_check = (structure['request'].get('COOKIES'),
-                              structure['request'].get('GET'),
-                              structure['request'].get('POST')
-                              )
-        else:
-            # do not filter for 404 by default
-            return structure
 
         for source in filter(None, keys_to_check):
             for k in source.iterkeys():
@@ -262,8 +256,7 @@ class Client(object):
         report_data, errormator_info = create_report_structure(environ,
                         traceback, server=self.config['server_name'],
                         http_status=http_status, include_params=True)
-        report_data = self.filter_callable(report_data, 'error_report') if self.filter_callable else \
-                        self.data_filter(report_data, 'error_report')
+        report_data = self.filter_callable(report_data, 'error_report')
         url = report_data['report_details'][0]['url']
         with self.report_queue_lock:
             self.report_queue.append(report_data)
@@ -304,8 +297,7 @@ class Client(object):
     def py_slow_report(self, environ, start_time, end_time, records=()):
         report_data, errormator_info = create_report_structure(environ,
                     server=self.config['server_name'], include_params=True)
-        report_data = self.filter_callable(report_data, 'error_report') if self.filter_callable else \
-                      self.data_filter(report_data, 'error_report')
+        report_data = self.filter_callable(report_data, 'slow_report')
         url = report_data['report_details'][0]['url']
         if not records:
             records = self.datastore_handler.get_records()
