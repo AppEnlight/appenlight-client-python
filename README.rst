@@ -64,7 +64,7 @@ Pyramid uses exception views to serve nice html templates when exception occurs.
 Unfortunately this means that exception is handled BEFORE it reaches errormator's
 middleware so 500 error data will never get sent to errormator.
 
-This is how you can handle error handling inside your error_view:
+This is how you can handle error handling inside your error_view::
 
     def error_view(exc, request):
         from errormator_client.exceptions import get_current_traceback
