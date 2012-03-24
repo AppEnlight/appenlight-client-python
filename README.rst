@@ -57,6 +57,25 @@ additional config variables you can set in config object::
 
 errormator_client is BSD licensed, consult LICENSE for details. 
 
+Exception views in pyramid and Errormator
+=========================================
+
+Pyramid uses exception views to serve nice html templates when exception occurs.
+Unfortunately this means that exception is handled BEFORE it reaches errormator's
+middleware so 500 error data will never get sent to errormator.
+
+This is how you can handle error handling inside your error_view:
+
+    def error_view(exc, request):
+        from errormator_client.exceptions import get_current_traceback
+        traceback = get_current_traceback(skip=1, show_hidden_frames=True,
+                                                  ignore_system_exceptions=True)
+        request.environ['errormator.client'].py_report(request.environ, traceback,
+                                                     message=None,
+                                                     http_status=500)
+        request.response.status = 500
+        return {}
+
 Sensitive data filtering
 ========================
 The client by default blanks out COOKIE,POST,GET for keys like:
