@@ -68,11 +68,8 @@ This is how you can handle error handling inside your error_view:
 
     def error_view(exc, request):
         from errormator_client.exceptions import get_current_traceback
-        traceback = get_current_traceback(skip=1, show_hidden_frames=True,
-                                                  ignore_system_exceptions=True)
-        request.environ['errormator.client'].py_report(request.environ, traceback,
-                                                     message=None,
-                                                     http_status=500)
+        traceback = get_current_traceback(skip=1, show_hidden_frames=True, ignore_system_exceptions=True)
+        request.environ['errormator.client'].py_report(request.environ, traceback, message=None,http_status=500)
         request.response.status = 500
         return {}
 
