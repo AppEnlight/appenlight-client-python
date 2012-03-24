@@ -86,7 +86,7 @@ that get sent to the server by passing dotted module name in configuration::
 
     errormator.filter_callable = foo.bar.baz:callable_name
 
-example:
+example::
 
     def callable_name(structure, section=None):
         structure['request']['SOMEVAL'] = '***REMOVED***'
