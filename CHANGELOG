@@ -1,5 +1,8 @@
 CHANGELOG:
 
+2012-05-13
+    0.3.8 Add basic support for django in separate middleware (tested on 1.2 and above) 
+
 2012-03-07
     0.3.7 Bugfixes, cleanup, start sending request_id to mothership
 

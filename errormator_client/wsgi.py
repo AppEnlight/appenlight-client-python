@@ -76,7 +76,6 @@ class ErrormatorWSGIWrapper(object):
             elif (self.errormator_client.config['report_404'] and
                   detected_data and detected_data[0] == '404'):
                 http_status = int(detected_data[0])
-                e = '404 Not Found'
             else:
                 http_status = None
             if http_status:

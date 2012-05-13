@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='errormator_client',
-      version='0.3.7',
+      version='0.3.8',
       description='Sample client for Errormator reporting',
       classifiers=[
           'Intended Audience :: Developers',
