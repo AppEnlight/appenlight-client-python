@@ -64,7 +64,7 @@ Modify your settings file to contain::
 
     ERRORMATOR = {
             'errormator': True,
-            'errormator.server_url': 'http://localhost:6543',
+            'errormator.server_url': 'https://api.errormator.com',
             'errormator.api_key': 'YOUR_API_KEY',
             'errormator.catch_callback': False,
             'errormator.report_404': True,
