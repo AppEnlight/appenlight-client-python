@@ -65,20 +65,16 @@ Modify your settings file to contain::
     ERRORMATOR = {
             'errormator': True,
             'errormator.server_url': 'http://localhost:6543',
-            'errormator.api_key': 'NuHWmzPVsdZXTgIvntmdrrmbFTIheEwO',
+            'errormator.api_key': 'YOUR_API_KEY',
             'errormator.catch_callback': False,
             'errormator.report_404': True,
-            'errormator.error.buffer': 50,
-            'errormator.error.async': True,
             'errormator.logging': True,
-            'errormator.logging.buffer': 100,
-            'errormator.logging.async': True,
-            'errormator.logging.level': 'INFO',
+            'errormator.logging.level': 'WARNING',
             'errormator.slow_request': True,
-            'errormator.slow_request.time': 1,
+            'errormator.slow_request.time': 30,
             'errormator.slow_request.sqlalchemy': True,
-            'errormator.slow_query.time': 1,
-            'errormator.buffer_flush_time': 3,
+            'errormator.slow_query.time': 7,
+            'errormator.buffer_flush_time': 5,
               }
 
 Additionally middleware stack needs to be modified with additional middleware::
