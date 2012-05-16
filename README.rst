@@ -54,6 +54,8 @@ additional config variables you can set in config object::
     errormator.report_errors - enables 500 error logging (default True)
     errormator.buffer_flush_interval - how often send data to mothership Errormator (default 5)
     errormator.force_send - send all data after request is finished - handy for crons or other voliatile applications
+    errormator.bad_request_keys - list of keywords that should be blanked from request object - can be string with comma separated list of words in lowercase
+    (by default errormator will always blank keys that contain following words 'password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf', this list be extended with additional keywords set in config)
 
 Configuring errormator and django
 =================================

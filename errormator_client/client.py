@@ -38,7 +38,8 @@ import urllib2
 import json
 import uuid
 
-from errormator_client.utils import asbool, create_report_structure, DateTimeEncoder
+from errormator_client.utils import asbool, aslist, create_report_structure
+from errormator_client.utils import DateTimeEncoder
 
 # are we running python 3.x ?
 PY3 = sys.version_info[0] == 3
@@ -82,6 +83,8 @@ class Client(object):
             errormator.report_errors - enables 500 error logging (default True)
             errormator.buffer_flush_interval - how often send data to mothership Errormator (default 5)
             errormator.force_send - send all data after request is finished - handy for crons or other voliatile applications
+            errormator.bad_request_keys - list of keywords that should be blanked from request object - can be string with comma separated list of words in lowercase
+            (by default errormator will always blank keys that contain following words 'password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf', this list be extended with additional keywords set in config)
         """
         self.config = {}
         # general options
@@ -108,6 +111,7 @@ class Client(object):
         self.config['report_errors'] = asbool(config.get('errormator.report_errors', True))
         self.config['buffer_flush_interval'] = int(config.get('errormator.buffer_flush_interval', 5))
         self.config['force_send'] = asbool(config.get('errormator.force_send', False))
+        self.config['bad_request_keys'] = aslist(config.get('errormator.bad_request_keys'),',')
 
         self.filter_callable = config.get('errormator.filter_callable')
         if self.filter_callable:
@@ -239,6 +243,8 @@ class Client(object):
             log.error(message)
 
     def data_filter(self, structure, section=None):
+        filter_basics = ['password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf']
+        filter_basics.extend(self.config['bad_request_keys'])
         if section in ['error_report','slow_report']:
             keys_to_check = (structure['report_details'][0]['request'].get('COOKIES'),
                               structure['report_details'][0]['request'].get('GET'),
@@ -247,9 +253,9 @@ class Client(object):
 
         for source in filter(None, keys_to_check):
             for k in source.iterkeys():
-                if ('password' in k or 'passwd' in k or 'pwd' in k
-                    or 'auth_tkt' in k or 'secret' in k):
-                    source[k] = u'***'
+                for bad_key in filter_basics:
+                    if (bad_key in k.lower()):
+                        source[k] = u'***'
         return structure
 
     def py_report(self, environ, traceback=None, message=None, http_status=200):
