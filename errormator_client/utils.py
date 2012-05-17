@@ -38,7 +38,8 @@ def process_environ(environ, traceback=None, include_params=False):
                                                     'errormator.report'):
             errormator_info[key[11:]] = unicode(value)
         else:
-            if traceback or key.startswith('HTTP') or key in ('HTTP_USER_AGENT',):
+            if traceback and (key.startswith('HTTP') or key in ('HTTP_USER_AGENT',)):
+                print parsed_environ
                 try:
                     if isinstance(value, str):
                         parsed_environ[key] = value.decode('utf8')

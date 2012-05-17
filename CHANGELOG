@@ -1,6 +1,7 @@
 CHANGELOG:
 
 2012-05-17
+    0.3.11 send only minimum amount of HTTP environ vars
     0.3.10 Send start time for errors, use simplejson if possible
 
 2012-05-16 
