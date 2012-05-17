@@ -38,7 +38,9 @@ def process_environ(environ, traceback=None, include_params=False):
                                                     'errormator.report'):
             errormator_info[key[11:]] = unicode(value)
         else:
-            if traceback and (key.startswith('HTTP') or key in ('HTTP_USER_AGENT',)):
+            allowed_keys = ('HTTP_USER_AGENT', 'REMOTE_USER', 'REMOTE_ADDR',
+                            'SERVER_NAME','CONTENT_TYPE',)
+            if traceback and (key.startswith('HTTP') or key in allowed_keys):
                 try:
                     if isinstance(value, str):
                         parsed_environ[key] = value.decode('utf8')
@@ -84,15 +86,15 @@ def create_report_structure(environ, traceback=None, message=None,
     # fill in all other required info
     detail_entry['ip'] = parsed_environ.get('REMOTE_ADDR', u'')
     detail_entry['user_agent'] = parsed_environ.get('HTTP_USER_AGENT', u'')
-    detail_entry['username'] = parsed_environ.get('REMOTE_USER', u'')
+    detail_entry['username'] = parsed_environ.get('REMOTE_USER',
+                                            parsed_environ.get('username', ''))
     detail_entry['url'] = errormator_info.pop('URL', 'unknown')
     if 'request_id' in errormator_info:
         detail_entry['request_id'] = errormator_info.pop('request_id', None)
     detail_entry['message'] = message or errormator_info.get('message', u'')
     #conserve bandwidth pop keys that we dont need in request details
     exclude_keys = ('HTTP_USER_AGENT', 'REMOTE_ADDR', 'HTTP_COOKIE',
-                    'webob._parsed_cookies', 'webob._parsed_post_vars',
-                    'webob._parsed_query_vars', 'errormator.client')
+                    'errormator.client')
     for k in exclude_keys:
         detail_entry['request'].pop(k, None)
     report_data['report_details'].append(detail_entry)
