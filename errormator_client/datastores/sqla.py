@@ -23,7 +23,7 @@ def sqlalchemy_07_listener(delta, datastore_handler):
                              td.microseconds)
                              )
             query_info = {'type':'sqlalchemy',
-                          'timestamp':conn.err_query_start.isoformat(),
+                          'timestamp':conn.err_query_start,
                           'duration': duration,
                           'statement': stmt,
                           'parameters': params

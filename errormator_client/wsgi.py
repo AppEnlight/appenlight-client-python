@@ -81,7 +81,8 @@ class ErrormatorWSGIWrapper(object):
             if http_status:
                 self.errormator_client.py_report(environ, traceback,
                                                  message=None,
-                                                 http_status=http_status)
+                                                 http_status=http_status,
+                                                 start_time=start_time)
 
             # report slowness
             if self.errormator_client.config['slow_requests']:

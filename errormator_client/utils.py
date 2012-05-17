@@ -1,7 +1,5 @@
 from webob import Request
 import datetime
-import json
-
 
 def asbool(obj):
     if isinstance(obj, (str, unicode)):
@@ -27,16 +25,6 @@ def aslist(obj, sep=None, strip=True):
         return []
     else:
         return [obj]
-
-
-class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime.date):
-            return obj.isoformat()
-        if isinstance(obj, datetime.datetime):
-            return obj.isoformat()
-        return json.JSONEncoder.default(self, obj)
-
 
 def process_environ(environ, traceback=None, include_params=False):
     # form friendly to json encode

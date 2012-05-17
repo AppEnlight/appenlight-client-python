@@ -1,4 +1,8 @@
 CHANGELOG:
+
+2012-05-17
+    0.3.10 Send start time for errors, use simplejson if possible
+
 2012-05-16 
     0.3.9 Make filtering sensitive data more friendly by default
 

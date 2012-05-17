@@ -50,7 +50,8 @@ class ErrormatorMiddleware(object):
 
         self.errormator_client.py_report(environ, traceback,
                                          message=None,
-                                         http_status=http_status)
+                                         http_status=http_status,
+                                         start_time=self.start_time)
 
     def process_response(self, request, response):
         environ = request.environ

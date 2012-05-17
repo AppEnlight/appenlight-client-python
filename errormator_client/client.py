@@ -35,11 +35,10 @@ import socket
 #import requests
 import urllib
 import urllib2
-import json
 import uuid
 
+from errormator_client.ext_json import json
 from errormator_client.utils import asbool, aslist, create_report_structure
-from errormator_client.utils import DateTimeEncoder
 
 # are we running python 3.x ?
 PY3 = sys.version_info[0] == 3
@@ -224,7 +223,7 @@ class Client(object):
         log.info('sending out %s entries to %s' % (len(data), endpoint,))
         try:
             req = urllib2.Request(server_url,
-                                  json.dumps(data, cls=DateTimeEncoder),
+                                  json.dumps(data),
                                   headers=headers)
         except IOError as e:
             message = 'ERRORMATOR: problem: %s' % e
@@ -258,12 +257,15 @@ class Client(object):
                         source[k] = u'***'
         return structure
 
-    def py_report(self, environ, traceback=None, message=None, http_status=200):
+    def py_report(self, environ, traceback=None, message=None, http_status=200,
+                  start_time=None):
         report_data, errormator_info = create_report_structure(environ,
                         traceback, server=self.config['server_name'],
                         http_status=http_status, include_params=True)
         report_data = self.filter_callable(report_data, 'error_report')
         url = report_data['report_details'][0]['url']
+        if start_time:
+            report_data['report_details'][0]['start_time'] = start_time
         with self.report_queue_lock:
             self.report_queue.append(report_data)
         log.warning(u'%s code: %s @%s' % (http_status,
