@@ -54,7 +54,7 @@ log = logging.getLogger(__name__)
 
 
 class Client(object):
-    __version__ = '0.3.6'
+    __version__ = '0.3.10'
     __protocol_version__ = '0.3'
 
     def __init__(self, config):

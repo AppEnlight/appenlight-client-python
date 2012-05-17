@@ -40,22 +40,27 @@ and add in your ini::
 
 additional config variables you can set in config object::
 
-    errormator.server_name - identifier for Instance/Server Name your application is running on (default: auto determined fqdn of server)
+    errormator.server_name - identifier for Instance/Server Name your application is running on 
+    (default: auto determined fqdn of server)
     errormator.timeout - connection timeout when communicating with API
     errormator.reraise_exceptions - reraise exceptions when wsgi catches exception
     errormator.slow_requests - record slow requests in application (needs to be enabled for slow datastore recording)
     errormator.logging - enable hooking to application loggers
     errormator.logging.level - minimum log level for log capture
     errormator.datastores - enable query execution tracking for various datastore layers 
-    errormator.slow_request_time - (float/int) time in seconds after request is considered being slow (default 30)
+    errormator.slow_request_time - (float/int) time in seconds after request is considered being slow 
+    (default 30)
     errormator.slow_query_time - (float/int) time in seconds after datastore sql query is considered being slow (default 7)
     errormator.datastores.sqlalchemy = default true - tries to enable sqlalchemy query logging
     errormator.report_404 - enables 404 error logging (default False)
     errormator.report_errors - enables 500 error logging (default True)
     errormator.buffer_flush_interval - how often send data to mothership Errormator (default 5)
     errormator.force_send - send all data after request is finished - handy for crons or other voliatile applications
-    errormator.bad_request_keys - list of keywords that should be blanked from request object - can be string with comma separated list of words in lowercase
-    (by default errormator will always blank keys that contain following words 'password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf', this list be extended with additional keywords set in config)
+    errormator.bad_request_keys - list of keywords that should be blanked from request object
+    can be string with comma separated list of words in lowercase
+    (by default errormator will always blank keys that contain following words 
+    'password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf', 
+    this list be extended with additional keywords set in config)
 
 Configuring errormator and django
 =================================
