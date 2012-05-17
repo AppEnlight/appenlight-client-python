@@ -1,4 +1,6 @@
 CHANGELOG:
+2012-05-16 
+    0.3.9 Make filtering sensitive data more friendly by default
 
 2012-05-13
     0.3.8 Add basic support for django in separate middleware (tested on 1.2 and above) 
