@@ -56,11 +56,17 @@ additional config variables you can set in config object::
     errormator.report_errors - enables 500 error logging (default True)
     errormator.buffer_flush_interval - how often send data to mothership Errormator (default 5)
     errormator.force_send - send all data after request is finished - handy for crons or other voliatile applications
-    errormator.bad_request_keys - list of keywords that should be blanked from request object
-    can be string with comma separated list of words in lowercase
-    (by default errormator will always blank keys that contain following words 
-    'password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf', 
-    this list be extended with additional keywords set in config)
+    errormator.environ_keys_whitelist - list of addotonal keywords that should be grabbed from environ object
+    (can be string with comma separated list of words in lowercase)
+    (by default client will always send following info 'REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE' 
+    + all keys that start with HTTP* this list be extended with additional keywords set in config)
+    (errormator.request_keys_blacklist - list of keywords that should be blanked from request object
+    can be string with comma separated list of words in lowercase)
+    (by default client will always blank keys that contain following words 
+    'password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf', this list be extended with additional keywords set in config)
+    errormator.log_namespace_blacklist = list of namespaces that should be ignores when gathering log entries
+    (can be string with comma separated list of namespaces
+    by default the client ignores own entries: errormator_client.client)
 
 Configuring errormator and django
 =================================

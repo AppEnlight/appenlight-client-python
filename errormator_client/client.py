@@ -261,7 +261,6 @@ class Client(object):
     def data_filter(self, structure, section=None):
         if section in ['error_report', 'slow_report']:
             keys_to_check = (structure['report_details'][0]['request'].get('COOKIES'),
-                              structure['report_details'][0]['request'].get('GET'),
                               structure['report_details'][0]['request'].get('POST')
                               )
 
