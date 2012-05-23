@@ -1,5 +1,9 @@
 CHANGELOG:
 
+2012-05-23
+    0.3.12 allow configurable env and request vars blacklisting/whitelisting
+           allow filtering logging by namespace 
+
 2012-05-17
     0.3.11 send only minimum amount of HTTP environ vars
     0.3.10 Send start time for errors, use simplejson if possible
