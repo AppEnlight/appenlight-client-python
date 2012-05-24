@@ -12,70 +12,72 @@ log = logging.getLogger(__name__)
 
 class ErrormatorMiddleware(object):
 
-    __version__ = '0.2'
+    __version__ = '0.3'
 
     def __init__(self):
         log.debug('setting errormator middleware')
         if not hasattr(ErrormatorMiddleware, 'client'):
             base_config = getattr(settings, 'ERRORMATOR', {})
             ErrormatorMiddleware.errormator_client = Client(config=base_config)
-        self.uuid = uuid.uuid4()
 
     def process_request(self, request):
-        self.uuid = uuid.uuid4()
-        self.processed_exception = False
+        request.__processed_exception__ = False
+        request.__traceback__ = None
         environ = request.environ
         environ['errormator.request_id'] = str(uuid.uuid4())
         # inject client instance reference to environ
         if 'errormator.client' not in environ:
             environ['errormator.client'] = self.errormator_client
-        self.start_time = datetime.datetime.utcnow()
+        request.__start_time__ = datetime.datetime.utcnow()
         return None
 
     def process_exception(self, request, exception):
-        self.processed_exception = True
+        request.__processed_exception__ = True
         environ = request.environ
         if isinstance(exception, Http404):
             http_status = 404
-            traceback = None
         else:
             http_status = 500
             exc_type, exc_value, tb = sys.exc_info()
-            traceback = get_current_traceback(skip=1, show_hidden_frames=True,
+            request.__traceback__ = get_current_traceback(skip=1, show_hidden_frames=True,
                                               ignore_system_exceptions=True)
 
         # report 500's and 404's
         if not self.errormator_client.config['report_errors']:
             return None
 
-        self.errormator_client.py_report(environ, traceback,
+        self.errormator_client.py_report(environ, request.__traceback__,
                                          message=None,
                                          http_status=http_status,
-                                         start_time=self.start_time)
+                                         start_time=request.__start_time__)
+        
 
     def process_response(self, request, response):
         environ = request.environ
 
-        if response.status_code == 404 and not self.processed_exception:
+        if response.status_code == 404 and not request.__processed_exception__:
             self.process_exception(request, Http404())
 
         # report slowness
         if self.errormator_client.config['slow_requests']:
             # do we have slow queries ?
             end_time = datetime.datetime.utcnow()
-            delta = end_time - self.start_time
+            delta = end_time - request.__start_time__
             records = self.errormator_client.datastore_handler.get_records()
             self.errormator_client.datastore_handler.clear_records()
             if (delta >= self.errormator_client.config['slow_request_time']
                 or records):
                 self.errormator_client.py_slow_report(environ,
-                                self.start_time, end_time, records)
+                                request.__start_time__, end_time, records)
+                # force log fetching
+                request.__traceback__ = True
 
         if self.errormator_client.config['logging']:
             records = self.errormator_client.log_handler.get_records()
             self.errormator_client.log_handler.clear_records()
             self.errormator_client.py_log(environ, records=records,
-                                r_uuid=environ['errormator.request_id'])
+                                r_uuid=environ['errormator.request_id'],
+                                traceback=request.__traceback__)
         # send all data we gathered immediately at the end of request
         self.errormator_client.check_if_deliver(
                 self.errormator_client.config['force_send'] or

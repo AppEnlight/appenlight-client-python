@@ -1,4 +1,7 @@
 CHANGELOG:
+2012-05-24
+    0.3.13 allow option to send logs only on errors
+           small django middleware changes
 
 2012-05-23
     0.3.12 allow configurable env and request vars blacklisting/whitelisting

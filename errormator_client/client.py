@@ -55,7 +55,7 @@ log = logging.getLogger(__name__)
 
 
 class Client(object):
-    __version__ = '0.3.12'
+    __version__ = '0.3.13'
     __protocol_version__ = '0.3'
 
     def __init__(self, config):
@@ -75,6 +75,7 @@ class Client(object):
             errormator.slow_requests - record slow requests in application (needs to be enabled for slow datastore recording)
             errormator.logging - enable hooking to application loggers
             errormator.logging.level - minimum log level for log capture
+            errormator.logging_on_error - send logs only from erroneous/slow requests (default false) 
             errormator.datastores - enable query execution tracking for various datastore layers
             errormator.slow_request_time - (float/int) time in seconds after request is considered being slow (default 30)
             errormator.slow_query_time - (float/int) time in seconds after datastore sql query is considered being slow (default 7)
@@ -87,7 +88,7 @@ class Client(object):
             (by default client will always send following info 'REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE' + all keys that start with HTTP* this list be extended with additional keywords set in config)
             errormator.request_keys_blacklist - list of keywords that should be blanked from request object - can be string with comma separated list of words in lowercase
             (by default client will always blank keys that contain following words 'password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf', this list be extended with additional keywords set in config)
-            errormator.log_namespace_blacklist = list of namespaces that should be ignores when gathering log entries, can be string with comma separated list of namespaces
+            errormator.log_namespace_blacklist - list of namespaces that should be ignores when gathering log entries, can be string with comma separated list of namespaces
             (by default the client ignores own entries: errormator_client.client)
             
         """
@@ -111,6 +112,7 @@ class Client(object):
         self.config['slow_request_time'] = datetime.timedelta(seconds=self.config['slow_request_time'])
         self.config['slow_query_time'] = datetime.timedelta(seconds=self.config['slow_query_time'])
         self.config['logging'] = asbool(config.get('errormator.logging', True))
+        self.config['logging_on_error'] = asbool(config.get('errormator.logging_on_error', False))
         self.config['datastores'] = asbool(config.get('errormator.datastores', True))
         self.config['report_404'] = asbool(config.get('errormator.report_404', False))
         self.config['report_errors'] = asbool(config.get('errormator.report_errors', True))
@@ -286,11 +288,14 @@ class Client(object):
                                           report_data.get('error_type'), url,))
         return True
 
-    def py_log(self, environ, records=None, r_uuid=None):
+    def py_log(self, environ, records=None, r_uuid=None, traceback=None):
         log_entries = []
         if not records:
             records = self.log_handler.get_records()
             self.log_handler.clear_records()
+
+        if self.config['logging_on_error'] and traceback is None:
+            return False
 
         for record in records:
             if record.name in self.config['log_namespace_blacklist']:
@@ -316,7 +321,7 @@ class Client(object):
         with self.log_queue_lock:
             self.log_queue.extend(log_entries)
         log.debug('add %s log entries to queue' % len(records))
-        return {}
+        return True
 
     def py_slow_report(self, environ, start_time, end_time, records=()):
         report_data, errormator_info = self.create_report_structure(environ,

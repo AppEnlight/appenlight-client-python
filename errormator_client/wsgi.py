@@ -9,12 +9,11 @@ log = logging.getLogger(__name__)
 
 class ErrormatorWSGIWrapper(object):
 
-    __version__ = '0.2'
+    __version__ = '0.3'
 
     def __init__(self, app, errormator_client):
         self.app = app
         self.errormator_client = errormator_client
-        self.uuid = uuid.uuid4()
 
     def __call__(self, environ, start_response):
         """Run the application and conserve the traceback frames.
@@ -95,11 +94,14 @@ class ErrormatorWSGIWrapper(object):
                     or records):
                     self.errormator_client.py_slow_report(environ,
                                     start_time, end_time, records)
+                    # force log fetching
+                    traceback = True
             if self.errormator_client.config['logging']:
                 records = self.errormator_client.log_handler.get_records()
                 self.errormator_client.log_handler.clear_records()
                 self.errormator_client.py_log(environ, records=records,
-                                    r_uuid=environ['errormator.request_id'])
+                                    r_uuid=environ['errormator.request_id'],
+                                    traceback=traceback)
             # send all data we gathered immediately at the end of request
             self.errormator_client.check_if_deliver(
                     self.errormator_client.config['force_send'] or

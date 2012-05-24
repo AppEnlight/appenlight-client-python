@@ -14,6 +14,7 @@ in your ini add::
     errormator.api_key = YOUR_API_KEY
     #404 gathering
     errormator.report_404 = true
+    ... other config vars go here....
 
     [pipeline:main]
         pipeline =
@@ -47,6 +48,7 @@ additional config variables you can set in config object::
     errormator.slow_requests - record slow requests in application (needs to be enabled for slow datastore recording)
     errormator.logging - enable hooking to application loggers
     errormator.logging.level - minimum log level for log capture
+    errormator.logging_on_error - send logs only from erroneous/slow requests (default false)
     errormator.datastores - enable query execution tracking for various datastore layers 
     errormator.slow_request_time - (float/int) time in seconds after request is considered being slow 
     (default 30)
@@ -60,8 +62,8 @@ additional config variables you can set in config object::
     (can be string with comma separated list of words in lowercase)
     (by default client will always send following info 'REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE' 
     + all keys that start with HTTP* this list be extended with additional keywords set in config)
-    (errormator.request_keys_blacklist - list of keywords that should be blanked from request object
-    can be string with comma separated list of words in lowercase)
+    errormator.request_keys_blacklist - list of keywords that should be blanked from request object
+    (can be string with comma separated list of words in lowercase)
     (by default client will always blank keys that contain following words 
     'password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf', this list be extended with additional keywords set in config)
     errormator.log_namespace_blacklist = list of namespaces that should be ignores when gathering log entries
