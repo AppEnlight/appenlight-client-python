@@ -108,14 +108,39 @@ Modify your settings file to contain::
 Additionally middleware stack needs to be modified with additional middleware::
 
     MIDDLEWARE_CLASSES = (
-        'django.middleware.common.CommonMiddleware',
         'errormator_client.django_middleware.ErrormatorMiddleware',
+        'django.middleware.common.CommonMiddleware',
         ...
 
 
+Please note that errormator middleware should be the first one in stack to 
+function properly.
 
-Exception views in pyramid and Errormator
-=========================================
+Changing default scaffold configuration in Pyramid Web Framework
+================================================================
+
+Default scaffolds in pyramid 1.3 have a section called *[app:main]* - 
+errormator client expects that you are using *wsgi pipeline* instead to 
+position itself in it.
+
+The easiest way to accomplish that is to alter your configuration file to look 
+like this::
+
+    [app:main] becomes [app:yourappname] 
+
+and inside your configuration, **above [server:main]** directive following 
+directive should appear::
+
+    [pipeline:main]
+    pipeline =
+        ... your other middleware you may have ...
+        errormator_client
+        yourappname
+ 
+
+
+Exception views in Pyramid Web Framework and Errormator
+=======================================================
 
 Pyramid uses exception views to serve nice html templates when exception occurs.
 Unfortunately this means that exception is handled BEFORE it reaches errormator's
