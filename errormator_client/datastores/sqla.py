@@ -16,6 +16,8 @@ def sqlalchemy_07_listener(delta, datastore_handler):
 
     @event.listens_for(Engine, "after_cursor_execute")
     def _after_cursor_execute(conn, cursor, stmt, params, context, execmany):
+        if not hasattr(conn,'err_query_start'):
+            return
         td = datetime.datetime.utcnow() - conn.err_query_start
         if td >= delta:
             duration = float('%s.%s' % (
