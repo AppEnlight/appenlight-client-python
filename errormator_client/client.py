@@ -103,12 +103,12 @@ class Client(object):
         self.config['reraise_exceptions'] = asbool(
                 config.get('errormator.reraise_exceptions', True))
         self.config['slow_requests'] = asbool(config.get('errormator.slow_requests', True))
-        self.config['slow_request_time'] = float(config.get('errormator.slow_request.time', 30))
-        self.config['slow_query_time'] = float(config.get('errormator.slow_query.time', 7))
-        if self.config['slow_request_time'] < 1:
-            self.config['slow_request_time'] = 1.0
-        if self.config['slow_query_time'] < 1:
-            self.config['slow_query_time'] = 1.0
+        self.config['slow_request_time'] = float(config.get('errormator.slow_request.time', 3))
+        self.config['slow_query_time'] = float(config.get('errormator.slow_query.time', 1))
+        if self.config['slow_request_time'] < 0.5:
+            self.config['slow_request_time'] = 0.5
+        if self.config['slow_query_time'] < 0.5:
+            self.config['slow_query_time'] = 0.5
         self.config['slow_request_time'] = datetime.timedelta(seconds=self.config['slow_request_time'])
         self.config['slow_query_time'] = datetime.timedelta(seconds=self.config['slow_query_time'])
         self.config['logging'] = asbool(config.get('errormator.logging', True))
