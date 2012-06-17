@@ -79,8 +79,8 @@ additional config variables you can set in config object::
     errormator.logging_on_error - send logs only from erroneous/slow requests (default false)
     errormator.datastores - enable query execution tracking for various datastore layers 
     errormator.slow_request_time - (float/int) time in seconds after request is considered being slow 
-    (default 30)
-    errormator.slow_query_time - (float/int) time in seconds after datastore sql query is considered being slow (default 7)
+    (default 3)
+    errormator.slow_query_time - (float/int) time in seconds after datastore sql query is considered being slow (default 1)
     errormator.datastores.sqlalchemy = default true - tries to enable sqlalchemy query logging
     errormator.report_404 - enables 404 error logging (default False)
     errormator.report_errors - enables 500 error logging (default True)
