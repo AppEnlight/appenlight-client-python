@@ -5,14 +5,17 @@ def add_timing(min_duration=0.5):
     module = import_module('urllib')
 
     def gather_args_open(opener, url, *args, **kwargs):
-        return {'type':'urllib.URLopener.open', 'parameters':url}
+        return {'type':'remote_call',
+                'statement':'urllib.URLopener.open',
+                'parameters':url}
     
     deco_func_or_method(module, 'URLopener.open', time_trace,
                           gather_args_open, min_duration)
     
     
     def gather_args_urlretrieve(url, *args, **kwargs):
-        return {'type':'urllib.urlretrieve', 'parameters':url}
+        return {'type':'remote_call',
+                'statement':'urllib.urlretrieve', 'parameters':url}
     
     deco_func_or_method(module, 'urlretrieve', time_trace,
                           gather_args_urlretrieve, min_duration

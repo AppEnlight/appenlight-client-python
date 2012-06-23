@@ -105,10 +105,10 @@ class Client(object):
         self.config['slow_requests'] = asbool(config.get('errormator.slow_requests', True))
         self.config['slow_request_time'] = float(config.get('errormator.slow_request.time', 3))
         self.config['slow_query_time'] = float(config.get('errormator.slow_query.time', 1))
-        if self.config['slow_request_time'] < 0.5:
-            self.config['slow_request_time'] = 0.5
-        if self.config['slow_query_time'] < 0.5:
-            self.config['slow_query_time'] = 0.5
+        if self.config['slow_request_time'] < 0.1:
+            self.config['slow_request_time'] = 0.1
+        if self.config['slow_query_time'] < 0.1:
+            self.config['slow_query_time'] = 0.1
         self.config['slow_request_time'] = datetime.timedelta(seconds=self.config['slow_request_time'])
         self.config['slow_query_time'] = datetime.timedelta(seconds=self.config['slow_query_time'])
         self.config['logging'] = asbool(config.get('errormator.logging', True))
@@ -129,7 +129,7 @@ class Client(object):
                 'REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE']
         environ_whitelist = aslist(config.get('errormator.environ_keys_whitelist'), ',')
         self.config['environ_keys_whitelist'].extend(environ_whitelist)
-        self.config['log_namespace_blacklist'] = aslist(config.get('errormator.log_namespace_blacklist','errormator_client.client'), ',')
+        self.config['log_namespace_blacklist'] = aslist(config.get('errormator.log_namespace_blacklist', 'errormator_client.client'), ',')
 
         self.filter_callable = config.get('errormator.filter_callable')
         if self.filter_callable:
@@ -143,8 +143,8 @@ class Client(object):
         else:
             self.filter_callable = self.data_filter
 
-        if self.config['buffer_flush_interval'] < 2:
-            self.config['buffer_flush_interval'] = 2
+        if self.config['buffer_flush_interval'] < 1:
+            self.config['buffer_flush_interval'] = 1
         # register logging
         import errormator_client.logger
         if self.config['logging']:
@@ -153,8 +153,18 @@ class Client(object):
                                       'NOTSET').lower(), logging.NOTSET)
             self.log_handler.setLevel(level)
 
-        # register datastore metrics
-        if self.config['datastores'] and self.config['slow_requests']:
+        # register slow call metrics
+        if self.config['datastores'] or self.config['slow_requests']:
+            self.config['timing'] = config.get('errormator.timing', {})
+            for k, v in config.items():
+                if k.startswith('errormator.timing'):
+                    try:
+                        self.config['timing'][k[18:]] = float(v)
+                    except (TypeError, ValueError), e:
+                        self.config['timing'][k[18:]] = False
+            import errormator_client.timing
+            errormator_client.timing.register_timing(self.config)
+            
             self.datastore_handler = errormator_client.logger.register_datastores()
             if asbool(config.get('errormator.datastores.sqlalchemy', True)):
                 try:
@@ -335,7 +345,8 @@ class Client(object):
         report_data['report_details'][0]['end_time'] = end_time
         report_data['report_details'][0]['slow_calls'] = []
         for record in records:
-            report_data['report_details'][0]['slow_calls'].append(record.errormator_data)
+            r = getattr(record, 'errormator_data', record)
+            report_data['report_details'][0]['slow_calls'].append(r)
         with self.slow_report_queue_lock:
             self.slow_report_queue.append(report_data)
         log.info('slow request/queries detected: %s' % url)

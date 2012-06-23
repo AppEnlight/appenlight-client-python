@@ -10,7 +10,8 @@ def add_timing(min_duration=0.5):
         else:
             g_url = url
             
-        return {'type':'urllib2.OpenerDirector.open', 'parameters':g_url}
+        return {'type':'remote_call',
+                'statement':'urllib2.OpenerDirector.open', 'parameters':g_url}
     
     deco_func_or_method(module, 'OpenerDirector.open', time_trace,
                           gather_args_open, min_duration)

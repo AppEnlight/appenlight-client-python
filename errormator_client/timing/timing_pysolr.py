@@ -4,17 +4,17 @@ from errormator_client.timing import time_trace
 import pysolr
 
 def add_timing(min_duration=0.5):
-    module = import_module('pysorl')
+    module = import_module('pysolr')
 
     def general_factory(slow_call_name):
-        def gather_args(*args, **kwargs):
-            return {'type':slow_call_name, }
+        def gather_args(solr, *args, **kwargs):
+            return {'type':'solr', 'statement':slow_call_name}
     
-    def gather_args_search(q, *args, **kwargs):
-        return {'type':'Solr.search', 'statement':q}
+    def gather_args_search(solr, q, *args, **kwargs):
+        return {'type':'solr', 'statement':q}
 
-    def gather_args_more_like_this(q, *args, **kwargs):
-        return {'type':'Solr.search', 'statement':q}
+    def gather_args_more_like_this(solr, q, *args, **kwargs):
+        return {'type':'solr', 'statement':q}
     
     deco_func_or_method(module, 'Solr.search', time_trace,
                           gather_args_search, min_duration)

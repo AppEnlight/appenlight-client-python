@@ -1,6 +1,7 @@
 import uuid
 import datetime
 from errormator_client.exceptions import get_current_traceback
+from errormator_client.timing import local_timing
 import logging
 import sys
 
@@ -85,11 +86,14 @@ class ErrormatorWSGIWrapper(object):
 
             # report slowness
             if self.errormator_client.config['slow_requests']:
-                # do we have slow queries ?
+                # do we have slow calls ?
                 end_time = datetime.datetime.utcnow()
                 delta = end_time - start_time
                 records = self.errormator_client.datastore_handler.get_records()
                 self.errormator_client.datastore_handler.clear_records()
+                if hasattr(local_timing, '_errormator'):
+                    for record in local_timing._errormator.get_slow_calls():
+                        records.append(record)
                 if (delta >= self.errormator_client.config['slow_request_time']
                     or records):
                     self.errormator_client.py_slow_report(environ,
