@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='errormator_client',
-      version='0.3.14',
+      version='0.4',
       description='Client for Errormator reporting - supporting WSGI and django (http://errormator.com)',
       classifiers=[
           'Intended Audience :: Developers',
@@ -20,7 +20,8 @@ setup(name='errormator_client',
       zip_safe=True,
       packages=find_packages(),
       install_requires=[
-          "webob"
+          "webob",
+          "decorator"
       ],
       entry_points="""
       [paste.filter_app_factory]

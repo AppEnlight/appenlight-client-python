@@ -13,3 +13,5 @@ syntax: regexp
 ^.*\.egg-info$
 syntax: regexp
 ^\.pydevproject$
+syntax: regexp
+^local_tests\.py$
