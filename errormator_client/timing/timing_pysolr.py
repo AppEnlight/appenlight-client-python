@@ -5,7 +5,9 @@ import pysolr
 
 def add_timing(min_duration=0.5):
     module = import_module('pysolr')
-
+    if not module:
+        return
+    
     def general_factory(slow_call_name):
         def gather_args(solr, *args, **kwargs):
             return {'type':'solr', 'statement':slow_call_name}

@@ -3,7 +3,9 @@ from errormator_client.timing import time_trace
 
 def add_timing(min_duration=0.5):
     module = import_module('urllib2')
-
+    if not module:
+        return
+    
     def gather_args_open(opener, url, *args, **kwargs):
         if not isinstance(url, basestring):
             g_url = url.get_full_url()

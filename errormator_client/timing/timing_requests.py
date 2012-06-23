@@ -3,7 +3,9 @@ from errormator_client.timing import time_trace
 
 def add_timing(min_duration=0.5):
     module = import_module('requests')
-
+    if not module:
+        return
+    
     def gather_args_url(method, url, *args, **kwargs):           
         return {'type':'remote_call',
                 'statement':'requests.request', 'parameters':url}

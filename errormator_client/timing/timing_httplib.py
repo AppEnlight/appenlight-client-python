@@ -3,7 +3,9 @@ from errormator_client.timing import time_trace
 
 def add_timing(min_duration=0.5):
     module = import_module('httplib')
-
+    if not module:
+        return
+    
     def gather_args_host(c):
         return {'type':'remote_call',
                 'statement':'httplib.HTTPConnection.connect',
