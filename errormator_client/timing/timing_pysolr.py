@@ -11,6 +11,7 @@ def add_timing(min_duration=0.5):
     def general_factory(slow_call_name):
         def gather_args(solr, *args, **kwargs):
             return {'type':'solr', 'statement':slow_call_name}
+        return gather_args
     
     def gather_args_search(solr, q, *args, **kwargs):
         return {'type':'solr', 'statement':q}
