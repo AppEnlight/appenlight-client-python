@@ -82,4 +82,5 @@ def register_timing(config):
         log.info('%s slow time:%s' % (mod, min_time))
         if min_time:
             callable = import_from_module('errormator_client.timing.%s:add_timing' % mod)
-            callable(min_time)
+            if callable:
+                callable(min_time)
