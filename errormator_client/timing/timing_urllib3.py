@@ -1,7 +1,7 @@
 from errormator_client.utils import import_module, deco_func_or_method
 from errormator_client.timing import time_trace
 
-def add_timing(min_duration=0.5):
+def add_timing(min_duration=1):
     module = import_module('urllib3')
     if not module:
         return

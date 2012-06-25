@@ -78,9 +78,15 @@ def register_timing(config):
     timing_modules = ['timing_urllib', 'timing_urllib2', 'timing_urllib3',
                       'timing_requests', 'timing_httplib', 'timing_pysolr']
     for mod in timing_modules:
-        min_time = float(config['timing'].get(mod.replace("timing_",''), 0.5))
-        log.info('%s slow time:%s' % (mod, min_time))
-        if min_time:
+        min_time = config['timing'].get(mod.replace("timing_",''))
+        if min_time is not False:
+            log.info('%s slow time:%s' % (mod, min_time or 'default'))
             callable = import_from_module('errormator_client.timing.%s:add_timing' % mod)
             if callable:
-                callable(min_time)
+                if min_time:
+                    callable(min_time)
+                else:
+                    callable()
+        else:
+            log.info('not tracking slow time:%s' % mod)
+        
