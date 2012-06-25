@@ -295,7 +295,7 @@ class Client(object):
         with self.report_queue_lock:
             self.report_queue.append(report_data)
         log.warning(u'%s code: %s @%s' % (http_status,
-                                          report_data.get('error_type'), url,))
+                            report_data.get('error_type'), url.decode('utf8','ignore'),))
         return True
 
     def py_log(self, environ, records=None, r_uuid=None, traceback=None):
