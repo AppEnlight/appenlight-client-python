@@ -80,7 +80,7 @@ def register_timing(config):
     for mod in timing_modules:
         min_time = config['timing'].get(mod.replace("timing_",''))
         if min_time is not False:
-            log.info('%s slow time:%s' % (mod, min_time or 'default'))
+            log.debug('%s slow time:%s' % (mod, min_time or 'default'))
             callable = import_from_module('errormator_client.timing.%s:add_timing' % mod)
             if callable:
                 if min_time:
@@ -88,5 +88,5 @@ def register_timing(config):
                 else:
                     callable()
         else:
-            log.info('not tracking slow time:%s' % mod)
+            log.debug('not tracking slow time:%s' % mod)
         
