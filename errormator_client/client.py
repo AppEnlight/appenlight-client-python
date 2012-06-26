@@ -374,10 +374,20 @@ class Client(object):
                         pass
         # provide better details for 500's
         if include_params:
-            parsed_environ['COOKIES'] = dict(req.cookies)
-            parsed_environ['GET'] = dict([(k, req.GET.getall(k)) for k in req.GET])
-            parsed_environ['POST'] = dict([(k, req.POST.getall(k))
+            try:
+                parsed_environ['COOKIES'] = dict(req.cookies)
+            except Exception as e:
+                parsed_environ['COOKIES'] = {}
+            try:
+                parsed_environ['GET'] = dict([(k, req.GET.getall(k)) for k in req.GET])
+            except Exception as e:
+                parsed_environ['GET'] = {}
+            try:
+                parsed_environ['POST'] = dict([(k, req.POST.getall(k))
                                            for k in req.POST])
+            except Exception as e:
+                parsed_environ['POST'] = {}
+                
         # figure out real ip
         if environ.get("HTTP_X_FORWARDED_FOR"):
             remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[0].strip()
