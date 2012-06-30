@@ -154,7 +154,7 @@ class Client(object):
             self.log_handler.setLevel(level)
 
         # register slow call metrics
-        if self.config['datastores'] or self.config['slow_requests']:
+        if self.config['slow_requests']:
             self.config['timing'] = config.get('errormator.timing', {})
             for k, v in config.items():
                 if k.startswith('errormator.timing'):
@@ -164,18 +164,7 @@ class Client(object):
                         self.config['timing'][k[18:]] = False
             import errormator_client.timing
             errormator_client.timing.register_timing(self.config)
-            
             self.datastore_handler = errormator_client.logger.register_datastores()
-            if asbool(config.get('errormator.datastores.sqlalchemy', True)):
-                try:
-                    # register sqlalchemy logger
-                    import errormator_client.datastores.sqla
-                    errormator_client.datastores.sqla.sqlalchemy_07_listener(
-                                                self.config['slow_query_time'],
-                                                self.datastore_handler)
-                except ImportError as e:
-                    log.warning(e)
-                    log.warning('Sqlalchemy older than 0.7 - logging disabled')
 
         self.endpoints = {
                           "reports": '/api/reports',
@@ -295,7 +284,7 @@ class Client(object):
         with self.report_queue_lock:
             self.report_queue.append(report_data)
         log.warning(u'%s code: %s @%s' % (http_status,
-                            report_data.get('error_type'), url.decode('utf8','ignore'),))
+                            report_data.get('error_type'), url.decode('utf8', 'ignore'),))
         return True
 
     def py_log(self, environ, records=None, r_uuid=None, traceback=None):
