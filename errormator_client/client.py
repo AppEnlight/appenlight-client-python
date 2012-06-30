@@ -77,9 +77,7 @@ class Client(object):
             errormator.logging.level - minimum log level for log capture
             errormator.logging_on_error - send logs only from erroneous/slow requests (default false) 
             errormator.datastores - enable query execution tracking for various datastore layers
-            errormator.slow_request_time - (float/int) time in seconds after request is considered being slow (default 30)
-            errormator.slow_query_time - (float/int) time in seconds after datastore sql query is considered being slow (default 7)
-            errormator.datastores.sqlalchemy = default true - tries to enable sqlalchemy query logging
+            errormator.slow_request_time - (float/int) time in seconds after request is considered being slow (default 3)
             errormator.report_404 - enables 404 error logging (default False)
             errormator.report_errors - enables 500 error logging (default True)
             errormator.buffer_flush_interval - how often send data to mothership Errormator (default 5)
