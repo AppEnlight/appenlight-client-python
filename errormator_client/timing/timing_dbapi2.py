@@ -107,19 +107,18 @@ def add_timing(module_name, min_duration=1):
         def __call__(self, *args, **kwargs):
             return TimerWrapper(self._e_object(*args, **kwargs))
     
-    if module_name == 'sqlite3':
-        module.dbapi2.connect = Wrapper(module.dbapi2.connect)
-    elif module_name == 'pg8000':
-        module.DBAPI.connect = Wrapper(module.DBAPI.connect)
-    elif module_name == 'psycopg2':
+    if module_name == 'psycopg2':
         """ psycopg2 does a weird type check when someone does 
             psycopg2.extensions.register_type
             we need to go around this issue by monkey patching it """
         import psycopg2.extensions
         org_register_type = psycopg2.extensions.register_type
         def new_register_type(obj, scope):
-            print 'new type'
             return org_register_type(obj, getattr(scope, '_e_object', scope))
         psycopg2.extensions.register_type = new_register_type
+    if module_name == 'sqlite3':
+        module.dbapi2.connect = Wrapper(module.dbapi2.connect)
+    elif module_name == 'pg8000':
+        module.DBAPI.connect = Wrapper(module.DBAPI.connect)
     else:
         module.connect = Wrapper(module.connect)
