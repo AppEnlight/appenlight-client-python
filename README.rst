@@ -76,8 +76,7 @@ additional config variables you can set in config object::
     errormator.slow_requests - record slow requests in application (needs to be enabled for slow datastore recording)
     errormator.logging - enable hooking to application loggers
     errormator.logging.level - minimum log level for log capture
-    errormator.logging_on_error - send logs only from erroneous/slow requests (default false)
-    errormator.datastores - enable query execution tracking for various datastore layers 
+    errormator.logging_on_error - send logs only from erroneous/slow requests (default false) 
     errormator.slow_request_time - (float/int) time in seconds after request is considered being slow 
     (default 3)
     errormator.report_404 - enables 404 error logging (default False)
@@ -112,15 +111,17 @@ All of client capabilities are enabled by default (usually 1s is considered slow
 but you can change the amount of time a call is considered slow by passing 
 variable to client settings ini ::
 
-errormator.timing.pysolr = 0.1
-errormator.timing.dbapi2_psycopg2 = 0.1
+    errormator.timing.pysolr = 0.1
+    errormator.timing.dbapi2_psycopg2 = 0.1
 
 Or add a key to your settings object ::
+
 
     'errormator.timing':{'dbapi2_psycopg2':0.1,
                          'dbapi2_MySQLdb':0.1,
                          'timing_pysolr':0.1,
                          }
+
 
 If for some reason you want to disable timing of specific library - just set the 
 time value to false.
