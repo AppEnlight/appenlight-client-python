@@ -80,8 +80,6 @@ additional config variables you can set in config object::
     errormator.datastores - enable query execution tracking for various datastore layers 
     errormator.slow_request_time - (float/int) time in seconds after request is considered being slow 
     (default 3)
-    errormator.slow_query_time - (float/int) time in seconds after datastore sql query is considered being slow (default 1)
-    errormator.datastores.sqlalchemy = default true - tries to enable sqlalchemy query logging
     errormator.report_404 - enables 404 error logging (default False)
     errormator.report_errors - enables 500 error logging (default True)
     errormator.buffer_flush_interval - how often send data to mothership Errormator (default 5)
@@ -97,6 +95,35 @@ additional config variables you can set in config object::
     errormator.log_namespace_blacklist = list of namespaces that should be ignores when gathering log entries
     (can be string with comma separated list of namespaces
     by default the client ignores own entries: errormator_client.client)
+    
+    
+Errormator client also provides slow call and datastore timing capabilities, 
+currently out of the box folliwing libraries are supported:
+
+* urllib
+* urllib2
+* urllib3
+* requests
+* pysolr
+* httplib
+* most used dbapi2 drivers
+
+All of client capabilities are enabled by default (usually 1s is considered slow), 
+but you can change the amount of time a call is considered slow by passing 
+variable to client settings ini ::
+
+errormator.timing.pysolr = 0.1
+errormator.timing.dbapi2_psycopg2 = 0.1
+
+Or add a key to your settings object ::
+
+    'errormator.timing':{'dbapi2_psycopg2':0.1,
+                         'dbapi2_MySQLdb':0.1,
+                         'timing_pysolr':0.1,
+                         }
+
+If for some reason you want to disable timing of specific library - just set the 
+time value to false.
 
 Configuring errormator and django
 =================================

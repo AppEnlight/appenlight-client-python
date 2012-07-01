@@ -118,6 +118,7 @@ def add_timing(module_name, min_duration=1):
         psycopg2.extensions.register_type = new_register_type
     if module_name == 'sqlite3':
         module.dbapi2.connect = Wrapper(module.dbapi2.connect)
+        module.connect = Wrapper(module.connect)
     elif module_name == 'pg8000':
         module.DBAPI.connect = Wrapper(module.DBAPI.connect)
     else:
