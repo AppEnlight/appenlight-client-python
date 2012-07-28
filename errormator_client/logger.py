@@ -250,8 +250,3 @@ def register_logging():
     thread_tracking_handler = ThreadTrackingHandler()
     logging.root.addHandler(thread_tracking_handler)
     return thread_tracking_handler
-
-def register_datastores():
-    datastore_tracking_handler = ThreadTrackingHandler()
-    datastore_tracking_handler.setLevel(logging.DEBUG)
-    return datastore_tracking_handler

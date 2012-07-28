@@ -65,7 +65,6 @@ class Client(object):
             errormator = true
             errormator.server_url = https://api.errormator.com
             errormator.api_key = YOUR_API_KEY
-            errormator.report_404 = true
         
         additional config keys you can set in config object::
         
@@ -76,7 +75,6 @@ class Client(object):
             errormator.logging - enable hooking to application loggers
             errormator.logging.level - minimum log level for log capture
             errormator.logging_on_error - send logs only from erroneous/slow requests (default false) 
-            errormator.datastores - enable query execution tracking for various datastore layers
             errormator.slow_request_time - (float/int) time in seconds after request is considered being slow (default 3)
             errormator.report_404 - enables 404 error logging (default False)
             errormator.report_errors - enables 500 error logging (default True)
@@ -96,22 +94,17 @@ class Client(object):
         self.config['server_name'] = config.get('errormator.server_name') or socket.getfqdn()
         self.config['client'] = config.get('errormator.client', 'python')
         self.config['api_key'] = config.get('errormator.api_key')
-        self.config['server_url'] = config.get('errormator.server_url')
+        self.config['server_url'] = config.get('errormator.server_url','https://api.errormator.com')
         self.config['timeout'] = int(config.get('errormator.timeout', 10))
         self.config['reraise_exceptions'] = asbool(
                 config.get('errormator.reraise_exceptions', True))
         self.config['slow_requests'] = asbool(config.get('errormator.slow_requests', True))
         self.config['slow_request_time'] = float(config.get('errormator.slow_request.time', 3))
-        self.config['slow_query_time'] = float(config.get('errormator.slow_query.time', 1))
-        if self.config['slow_request_time'] < 0.1:
-            self.config['slow_request_time'] = 0.1
-        if self.config['slow_query_time'] < 0.1:
-            self.config['slow_query_time'] = 0.1
+        if self.config['slow_request_time'] < 0.01:
+            self.config['slow_request_time'] = 0.01
         self.config['slow_request_time'] = datetime.timedelta(seconds=self.config['slow_request_time'])
-        self.config['slow_query_time'] = datetime.timedelta(seconds=self.config['slow_query_time'])
         self.config['logging'] = asbool(config.get('errormator.logging', True))
         self.config['logging_on_error'] = asbool(config.get('errormator.logging_on_error', False))
-        self.config['datastores'] = asbool(config.get('errormator.datastores', True))
         self.config['report_404'] = asbool(config.get('errormator.report_404', False))
         self.config['report_errors'] = asbool(config.get('errormator.report_errors', True))
         self.config['buffer_flush_interval'] = int(config.get('errormator.buffer_flush_interval', 5))
@@ -121,7 +114,7 @@ class Client(object):
                                            config.get('errormator.bad_request_keys')), ',')
         self.config['request_keys_blacklist'].extend(user_blacklist)
         if config.get('errormator.bad_request_keys'):
-            log.warning('errormator.bad_request_keys is deprecated use request_keys_blacklist')
+            log.warning('errormator.bad_request_keys is deprecated use request_keys_blacklist') #pragma: nocover
 
         self.config['environ_keys_whitelist'] = [
                 'REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE']
@@ -162,7 +155,6 @@ class Client(object):
                         self.config['timing'][k[18:]] = False
             import errormator_client.timing
             errormator_client.timing.register_timing(self.config)
-            self.datastore_handler = errormator_client.logger.register_datastores()
 
         self.endpoints = {
                           "reports": '/api/reports',

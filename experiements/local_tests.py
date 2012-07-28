@@ -99,9 +99,11 @@ c.fetchone()
 
 print 'oursql'
 
-conn = oursql.connect(host='127.0.0.1', user='test', passwd='test', port=3306)
+
+conn = oursql.connect(host='127.0.0.1', user='test', passwd='test', port=3306,db='dejong_pointstoshop')
 curs = conn.cursor(oursql.DictCursor)
-curs.execute('SELECT 5/6, "OURSQL"')
+curs.execute('SELECT * from users limit 10')
+print curs.rowcount 
 
 print 'sqlite3'
 conn = sqlite3.connect(':memory:')
