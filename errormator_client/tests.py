@@ -1,7 +1,11 @@
 import unittest
 import datetime
+import logging
 
 from errormator_client import client
+
+def example_filter_callable(structure, section=None):
+    return 'filtered-data'
 
 TEST_ENVIRON = {
                 'bfg.routes.matchdict': {'action': u'error'},
@@ -168,12 +172,20 @@ class TestClientConfig(unittest.TestCase):
 
     def test_default_buffer_flush_interval(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['buffer_flush_interval'], 5)
+        self.assertEqual(self.client.config['buffer_flush_interval'],
+                         datetime.timedelta(seconds=5))
 
     def test_custom_buffer_flush_interval(self):
         config = {'errormator.buffer_flush_interval':"10"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['buffer_flush_interval'], 10)
+        self.assertEqual(self.client.config['buffer_flush_interval'],
+                         datetime.timedelta(seconds=10))
+
+    def test_custom_small_buffer_flush_interval(self):
+        config = {'errormator.buffer_flush_interval':"0"}
+        self.setUpClient(config)
+        self.assertEqual(self.client.config['buffer_flush_interval'],
+                         datetime.timedelta(seconds=1))
 
     def test_default_force_send(self):
         self.setUpClient()
@@ -219,54 +231,73 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['log_namespace_blacklist'],
                 ['aa', 'bb', 'cc.dd'])
 
+    def test_default_filter_callable(self):
+        self.setUpClient()
+        self.assertEqual(self.client.filter_callable, self.client.data_filter)
 
-#        self.filter_callable = config.get('errormator.filter_callable')
-#        if self.filter_callable:
-#            try:
-#                parts = self.filter_callable.split(':')
-#                _tmp = __import__(parts[0], globals(), locals(), [parts[1], ], -1)
-#                self.filter_callable = getattr(_tmp, parts[1])
-#            except ImportError as e:
-#                self.filter_callable = self.data_filter
-#                log.error('Could not import filter callable, using default, %s' % e)
-#        else:
-#            self.filter_callable = self.data_filter
-#
-#        if self.config['buffer_flush_interval'] < 1:
-#            self.config['buffer_flush_interval'] = 1
-#        # register logging
-#        import errormator_client.logger
-#        if self.config['logging']:
-#            self.log_handler = errormator_client.logger.register_logging()
-#            level = LEVELS.get(config.get('errormator.logging.level',
-#                                      'NOTSET').lower(), logging.NOTSET)
-#            self.log_handler.setLevel(level)
-#
-#        # register slow call metrics
-#        if self.config['slow_requests']:
-#            self.config['timing'] = config.get('errormator.timing', {})
-#            for k, v in config.items():
-#                if k.startswith('errormator.timing'):
-#                    try:
-#                        self.config['timing'][k[18:]] = float(v)
-#                    except (TypeError, ValueError), e:
-#                        self.config['timing'][k[18:]] = False
-#            import errormator_client.timing
-#            errormator_client.timing.register_timing(self.config)
-#
-#        self.endpoints = {
-#                          "reports": '/api/reports',
-#                          "slow_reports":'/api/slow_reports',
-#                          "logs":'/api/logs',
-#                          }
+    def test_bad_filter_callable(self):
+        config = {'errormator.filter_callable':"foo.bar.baz:callable_name"}
+        self.setUpClient(config)
+        self.assertEqual(self.client.filter_callable, self.client.data_filter)
 
+    def test_custom_filter_callable(self):
+        config = {'errormator.filter_callable':"errormator_client.tests:example_filter_callable"}
+        self.setUpClient(config)
+        self.assertEqual(self.client.filter_callable, example_filter_callable)
 
+    def test_default_logging_handler_present(self):
+        self.setUpClient()
+        self.assertEqual(hasattr(self.client, 'log_handler'), True)
 
+    def test_custom_logging_handler_present(self):
+        config = {'errormator.logging':"false"}
+        self.setUpClient(config)
+        self.assertEqual(hasattr(self.client, 'log_handler'), False)
 
+    def test_default_logging_handler_level(self):
+        self.setUpClient()
+        self.assertEqual(self.client.log_handler.level, logging.NOTSET)
 
+    def test_custom_logging_handler_level(self):
+        config = {'errormator.logging.level':"CRITICAL"}
+        self.setUpClient(config)
+        self.assertEqual(self.client.log_handler.level, logging.CRITICAL)
 
+    def test_default_timing_config(self):
+        self.setUpClient()
+        self.assertEqual(self.client.config['timing'], {})
 
+    def test_timing_config_disable(self):
+        config = {'errormator.timing.dbapi2_psycopg2':'false'}
+        self.setUpClient(config)
+        self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'], False)
 
+    def test_timing_config_custom(self):
+        config = {'errormator.timing.dbapi2_psycopg2':'5'}
+        self.setUpClient(config)
+        self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'], 5)
+
+    def test_timing_config_mixed(self):
+        config = {'errormator.timing.dbapi2_psycopg2':'5',
+                  'errormator.timing':{'urllib':11, 'dbapi2_oursql':6}
+                  }
+        self.setUpClient(config)
+        self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'], 5)
+        self.assertEqual(self.client.config['timing']['dbapi2_oursql'], 6)
+        self.assertEqual(self.client.config['timing']['urllib'], 11)
+
+class TestClientSending(unittest.TestCase):
+
+    def setUpClient(self, config={}):
+        self.client = client.Client(config)
+
+    def test_check_if_deliver_false(self):
+        self.setUpClient()
+        self.assertEqual(self.client.check_if_deliver(), False)
+
+    def test_check_if_deliver_forced(self):
+        self.setUpClient()
+        self.assertEqual(self.client.check_if_deliver(force_send=True), True)
 
 
 if __name__ == '__main__':

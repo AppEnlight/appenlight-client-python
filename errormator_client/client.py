@@ -65,9 +65,9 @@ class Client(object):
             errormator = true
             errormator.server_url = https://api.errormator.com
             errormator.api_key = YOUR_API_KEY
-        
+
         additional config keys you can set in config object::
-        
+
             errormator.server_name - identifier for Instance/Server Name your application is running on (default: auto determined fqdn of server)
             errormator.timeout - connection timeout when communicating with API
             errormator.reraise_exceptions - reraise exceptions when wsgi catches exception
@@ -86,7 +86,7 @@ class Client(object):
             (by default client will always blank keys that contain following words 'password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf', this list be extended with additional keywords set in config)
             errormator.log_namespace_blacklist - list of namespaces that should be ignores when gathering log entries, can be string with comma separated list of namespaces
             (by default the client ignores own entries: errormator_client.client)
-            
+
         """
         self.config = {}
         # general options
@@ -94,7 +94,7 @@ class Client(object):
         self.config['server_name'] = config.get('errormator.server_name') or socket.getfqdn()
         self.config['client'] = config.get('errormator.client', 'python')
         self.config['api_key'] = config.get('errormator.api_key')
-        self.config['server_url'] = config.get('errormator.server_url','https://api.errormator.com')
+        self.config['server_url'] = config.get('errormator.server_url', 'https://api.errormator.com')
         self.config['timeout'] = int(config.get('errormator.timeout', 10))
         self.config['reraise_exceptions'] = asbool(
                 config.get('errormator.reraise_exceptions', True))
@@ -136,6 +136,8 @@ class Client(object):
 
         if self.config['buffer_flush_interval'] < 1:
             self.config['buffer_flush_interval'] = 1
+        self.config['buffer_flush_interval'] = datetime.timedelta(
+                            seconds=self.config['buffer_flush_interval'])
         # register logging
         import errormator_client.logger
         if self.config['logging']:
@@ -216,12 +218,14 @@ class Client(object):
 
     def check_if_deliver(self, force_send=False):
         delta = datetime.datetime.now() - self.last_submit
-        if delta.seconds > self.config['buffer_flush_interval'] or force_send:
+        if delta > self.config['buffer_flush_interval'] or force_send:
             submit_report_data_t = threading.Thread(target=self.submit_report_data)
             submit_report_data_t.start()
             submit_other_data_t = threading.Thread(target=self.submit_other_data)
             submit_other_data_t.start()
             self.last_submit = datetime.datetime.now()
+            return True
+        return False
 
     def remote_call(self, data, endpoint):
         GET_vars = urllib.urlencode({'protocol_version': self.__protocol_version__})
