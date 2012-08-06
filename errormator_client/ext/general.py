@@ -20,8 +20,7 @@ def gather_data(client, environ, gather_slowness=True, gather_logs=True):
     now = datetime.datetime.utcnow()
     if client.config['slow_requests'] and gather_slowness:
         # do we have slow calls ?
-        records = client.datastore_handler.get_records()
-        client.datastore_handler.clear_records()
+        records = []
         if hasattr(local_timing, '_errormator'):
             for record in local_timing._errormator.get_slow_calls():
                 records.append(record)

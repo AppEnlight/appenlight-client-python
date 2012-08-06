@@ -321,9 +321,6 @@ class Client(object):
                     server=self.config['server_name'], include_params=True)
         report_data = self.filter_callable(report_data, 'slow_report')
         url = report_data['report_details'][0]['url']
-        if not records:
-            records = self.datastore_handler.get_records()
-            self.datastore_handler.clear_records()
         report_data['report_details'][0]['start_time'] = start_time
         report_data['report_details'][0]['end_time'] = end_time
         report_data['report_details'][0]['slow_calls'] = []
@@ -378,7 +375,10 @@ class Client(object):
             remote_addr = (environ.get("HTTP_X_REAL_IP")
                            or environ.get('REMOTE_ADDR'))
         parsed_environ['REMOTE_ADDR'] = remote_addr
-        errormator_info['URL'] = req.url
+        try:
+            errormator_info['URL'] = req.url
+        except (UnicodeEncodeError, UnicodeDecodeError), e:
+            errormator_info['URL'] = '/invalid-encoded-url'
         return parsed_environ, errormator_info
 
 

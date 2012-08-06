@@ -89,8 +89,7 @@ class ErrormatorWSGIWrapper(object):
                 # do we have slow calls ?
                 end_time = datetime.datetime.utcnow()
                 delta = end_time - start_time
-                records = self.errormator_client.datastore_handler.get_records()
-                self.errormator_client.datastore_handler.clear_records()
+                records = []
                 if hasattr(local_timing, '_errormator'):
                     for record in local_timing._errormator.get_slow_calls():
                         records.append(record)
