@@ -117,7 +117,8 @@ class Client(object):
             log.warning('errormator.bad_request_keys is deprecated use request_keys_blacklist') #pragma: nocover
 
         self.config['environ_keys_whitelist'] = [
-                'REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE']
+                'REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE',
+                'HTTP_REFERER']
         environ_whitelist = aslist(config.get('errormator.environ_keys_whitelist'), ',')
         self.config['environ_keys_whitelist'].extend(environ_whitelist)
         self.config['log_namespace_blacklist'] = aslist(config.get('errormator.log_namespace_blacklist', 'errormator_client.client'), ',')

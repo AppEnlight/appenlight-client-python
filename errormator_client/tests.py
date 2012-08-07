@@ -211,14 +211,15 @@ class TestClientConfig(unittest.TestCase):
     def test_default_environ_keys_whitelist(self):
         self.setUpClient()
         self.assertEqual(self.client.config['environ_keys_whitelist'],
-                ['REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE'])
+                ['REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE',
+                 'HTTP_REFERER'])
 
     def test_custom_environ_keys_whitelist(self):
         config = {'errormator.environ_keys_whitelist':"aa,bb,cc"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['environ_keys_whitelist'],
                 ['REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE',
-                 'aa', 'bb', 'cc'])
+                 'HTTP_REFERER', 'aa', 'bb', 'cc'])
 
     def test_default_log_namespace_blacklist(self):
         self.setUpClient()
