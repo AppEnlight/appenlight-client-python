@@ -55,7 +55,7 @@ log = logging.getLogger(__name__)
 
 
 class Client(object):
-    __version__ = '0.4'
+    __version__ = '0.4.1'
     __protocol_version__ = '0.3'
 
     def __init__(self, config):
@@ -109,7 +109,8 @@ class Client(object):
         self.config['report_errors'] = asbool(config.get('errormator.report_errors', True))
         self.config['buffer_flush_interval'] = int(config.get('errormator.buffer_flush_interval', 5))
         self.config['force_send'] = asbool(config.get('errormator.force_send', False))
-        self.config['request_keys_blacklist'] = ['password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf']
+        self.config['request_keys_blacklist'] = ['password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf',
+                                                 'session']
         user_blacklist = aslist(config.get('errormator.request_keys_blacklist',
                                            config.get('errormator.bad_request_keys')), ',')
         self.config['request_keys_blacklist'].extend(user_blacklist)
@@ -186,7 +187,9 @@ class Client(object):
                     raise KeyboardInterrupt()
                 except Exception as e:
                     log.warning('REPORTS: connection issue: %s' % e)
-        send()
+                    return False
+            return True
+        return send()
         # FIXME: reintroduce threads
 
     def submit_other_data(self):
@@ -214,7 +217,8 @@ class Client(object):
                     raise KeyboardInterrupt()
                 except Exception as e:
                     log.warning('LOGS: connection issue: %s' % e)
-        send()
+            return True
+        return send()
         # FIXME: reintroduce threads
 
     def check_if_deliver(self, force_send=False):
@@ -388,6 +392,7 @@ class Client(object):
         (parsed_environ, errormator_info) = self.process_environ(environ, traceback,
                                                             include_params)
         report_data = {'client': 'Python', 'report_details': []}
+        report_data['error_type'] = 'Unknown'
         if traceback:
             exception_text = traceback.exception
             traceback_text = traceback.plaintext

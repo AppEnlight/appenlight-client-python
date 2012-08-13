@@ -1,15 +1,19 @@
 import unittest
 import datetime
 import logging
-
+import socket
 from errormator_client import client
+from errormator_client.exceptions import get_current_traceback
+from errormator_client.logger import register_logging
+
+
 
 def example_filter_callable(structure, section=None):
     return 'filtered-data'
 
 TEST_ENVIRON = {
                 'bfg.routes.matchdict': {'action': u'error'},
-'HTTP_COOKIE': 'country=US; http_referer="http://localhost:5000/"; __utma=111872281.364819761.1329226608.1329827682.1329832005.16; __utmz=111872281.1329226608.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); _chartbeat2=y7h8jjwkw7rs69z7.1329226611838; test_group_id=5; sessionId=ec3ae1fce62f51178a88d5adef2851e5;',
+'HTTP_COOKIE': 'country=US; http_referer="http://localhost:5000/"; test_group_id=5; sessionId=ec3ae5;',
 'SERVER_SOFTWARE': 'waitress',
 'SCRIPT_NAME': '',
 'REQUEST_METHOD': 'GET',
@@ -31,8 +35,52 @@ TEST_ENVIRON = {
 'wsgi.run_once': False,
 'wsgi.multiprocess': False,
 'HTTP_ACCEPT_LANGUAGE': 'en-us,en;q=0.5',
-'HTTP_ACCEPT_ENCODING': 'gzip, deflate'
+'HTTP_ACCEPT_ENCODING': 'gzip, deflate',
+'REMOTE_USER':'foo'
 }
+
+PARSED_REPORT_404 = {
+                     'report_details': [{'username': '',
+                        'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
+                        'ip': '127.0.0.1',
+                        'request': {'COOKIES': {u'country': u'US',
+                                                u'sessionId': u'***',
+                                                u'test_group_id': u'5',
+                                                u'http_referer': u'http://localhost:5000/'},
+                                    'POST': {},
+                                    'GET': {u'aaa': [u'1'], u'bbb': [u'2']}},
+                        'user_agent': u'', 'message': u''}],
+                     'error_type': '404 Not Found',
+                     'server': socket.getfqdn(), # different on every machine
+                     'priority': 5,
+                     'client': 'Python',
+                     'http_status': 404}
+
+PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):', #this will be different everywhere
+                     'report_details': [{'username': u'foo',
+                                         'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
+                                         'ip': '127.0.0.1',
+                                         'request': {
+                                                     'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                                     'COOKIES': {u'country': u'US',
+                                                                 u'sessionId': u'***',
+                                                                 u'test_group_id': u'5',
+                                                                  u'http_referer': u'http://localhost:5000/'},
+                                                     'SERVER_NAME': u'localhost',
+                                                     'GET': {u'aaa': [u'1'], u'bbb': [u'2']},
+                                                     'HTTP_ACCEPT_LANGUAGE': u'en-us,en;q=0.5',
+                                                     'REMOTE_USER': u'foo',
+                                                     'HTTP_HOST': u'localhost:6543',
+                                                     'POST': {},
+                                                     'HTTP_CACHE_CONTROL': u'max-age=0',
+                                                     'HTTP_ACCEPT_ENCODING': u'gzip, deflate'},
+                                         'user_agent': u'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
+                                         'message': u''}],
+                     'error_type': u'Exception: Test Exception',
+                     'server': 'ergo-webreactor',
+                     'priority': 5,
+                     'client': 'Python',
+                     'http_status': 500}
 
 class TestClientConfig(unittest.TestCase):
 
@@ -199,14 +247,15 @@ class TestClientConfig(unittest.TestCase):
     def test_default_request_keys_blacklist(self):
         self.setUpClient()
         self.assertEqual(self.client.config['request_keys_blacklist'],
-                ['password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf'])
+                ['password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf',
+                 'session'])
 
     def test_custom_request_keys_blacklist(self):
         config = {'errormator.request_keys_blacklist':"aa,bb,cc"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['request_keys_blacklist'],
                          ['password', 'passwd', 'pwd', 'auth_tkt', 'secret',
-                          'csrf', 'aa', 'bb', 'cc'])
+                          'csrf', 'session', 'aa', 'bb', 'cc'])
 
     def test_default_environ_keys_whitelist(self):
         self.setUpClient()
@@ -244,7 +293,8 @@ class TestClientConfig(unittest.TestCase):
     def test_custom_filter_callable(self):
         config = {'errormator.filter_callable':"errormator_client.tests:example_filter_callable"}
         self.setUpClient(config)
-        self.assertEqual(self.client.filter_callable, example_filter_callable)
+        self.assertEqual(self.client.filter_callable.__name__,
+                         example_filter_callable.__name__)
 
     def test_default_logging_handler_present(self):
         self.setUpClient()
@@ -287,6 +337,9 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['timing']['dbapi2_oursql'], 6)
         self.assertEqual(self.client.config['timing']['urllib'], 11)
 
+def generate_error():
+    pass
+
 class TestClientSending(unittest.TestCase):
 
     def setUpClient(self, config={}):
@@ -300,6 +353,66 @@ class TestClientSending(unittest.TestCase):
         self.setUpClient()
         self.assertEqual(self.client.check_if_deliver(force_send=True), True)
 
+
+class TestErrorParsing(unittest.TestCase):
+    def setUpClient(self, config={}):
+        self.client = client.Client(config)
+
+    def test_py_report_404(self):
+        self.setUpClient()
+        self.client.py_report(TEST_ENVIRON, http_status=404)
+        self.assertEqual(self.client.report_queue[0], PARSED_REPORT_404)
+
+    def test_py_report_500_no_traceback(self):
+        self.setUpClient()
+        self.client.py_report(TEST_ENVIRON, http_status=500)
+        bogus_500_report = PARSED_REPORT_404.copy()
+        bogus_500_report['http_status'] = 500
+        bogus_500_report['error_type'] = 'Unknown'
+        self.assertEqual(self.client.report_queue[0], bogus_500_report)
+
+    def test_py_report_500_traceback(self):
+        self.setUpClient()
+        try:
+            raise Exception('Test Exception')
+        except:
+            traceback = get_current_traceback(skip=1, show_hidden_frames=True,
+                                              ignore_system_exceptions=True)
+        self.client.py_report(TEST_ENVIRON, traceback=traceback,
+                              http_status=500)
+        self.client.report_queue[0]['traceback'] = 'Traceback (most recent call last):'
+        self.assertEqual(self.client.report_queue[0], PARSED_REPORT_500)
+
+class TestLogs(unittest.TestCase):
+    def setUpClient(self, config={}):
+        self.client = client.Client(config)
+
+    def test_py_log(self):
+        self.setUpClient()
+        handler = register_logging()
+        logger = logging.getLogger('testing')
+        logger.critical('test entry')
+        self.client.py_log(TEST_ENVIRON, records=handler.get_records())
+        fake_log = {'log_level': 'CRITICAL',
+                     'namespace': 'testing',
+                     'server': 'test-foo', # this will be different everywhere
+                     'request_id': None,
+                     'date': '2012-08-13T21:20:37.418.307066',
+                     'message': 'test entry'}
+        # update fields depenand on machine
+        self.client.log_queue[0]['date'] = fake_log['date']
+        self.client.log_queue[0]['server'] = fake_log['server']
+        self.assertEqual(self.client.log_queue[0], fake_log)
+
+class TestSending(unittest.TestCase):
+    def setUpClient(self, config={}):
+        self.client = client.Client(config)
+
+    def test_send_error_failure(self):
+        self.setUpClient()
+        self.client.py_report(TEST_ENVIRON, http_status=404)
+        self.client.submit_report_data()
+        self.assertEqual(self.client.report_queue, [])
 
 if __name__ == '__main__':
     unittest.main()  # pragma: nocover

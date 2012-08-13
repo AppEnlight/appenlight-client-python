@@ -1,4 +1,21 @@
 CHANGELOG:
+==========
+
+2012-08-13
+    0.4.1 Small bugfixes and better defaults, cleanups
+
+2012-07-01
+    0.4.0 Add time tracing features to the client
+          supported libs:
+            urllib
+            urllib2
+            urllib3
+            requests
+            pysolr
+            httplib
+            most common dbapi2 drivers
+          
+
 2012-05-24
     0.3.13 allow option to send logs only on errors
            small django middleware changes
