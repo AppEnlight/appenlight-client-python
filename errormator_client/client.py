@@ -145,7 +145,7 @@ class Client(object):
         if self.config['logging']:
             self.log_handler = errormator_client.logger.register_logging()
             level = LEVELS.get(config.get('errormator.logging.level',
-                                      'NOTSET').lower(), logging.NOTSET)
+                                      'WARNING').lower(), logging.WARNING)
             self.log_handler.setLevel(level)
 
         # register slow call metrics
