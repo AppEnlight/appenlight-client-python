@@ -307,7 +307,7 @@ class TestClientConfig(unittest.TestCase):
 
     def test_default_logging_handler_level(self):
         self.setUpClient()
-        self.assertEqual(self.client.log_handler.level, logging.NOTSET)
+        self.assertEqual(self.client.log_handler.level, logging.WARNING)
 
     def test_custom_logging_handler_level(self):
         config = {'errormator.logging.level':"CRITICAL"}

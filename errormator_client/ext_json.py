@@ -77,10 +77,17 @@ try:
         raise TypeError("%r is not JSON serializable" % (obj,))
     # we handle decimals our own it makes unified behavior of json vs 
     # simplejson
-    _sj.dumps = functools.partial(_sj.dumps, default=extended_encode,
-                                  use_decimal=False)
-    _sj.dump = functools.partial(_sj.dump, default=extended_encode,
-                                 use_decimal=False)
+    sj_version = [int(x) for x in _sj.__version__.split('.')]
+    major, minor = sj_version[0], sj_version[1]
+    if major < 2 or (major == 2 and minor < 1):
+        # simplejson < 2.1 doesnt support use_decimal
+        _sj.dumps = functools.partial(_sj.dumps, default=extended_encode)
+        _sj.dump = functools.partial(_sj.dump, default=extended_encode)
+    else:
+        _sj.dumps = functools.partial(_sj.dumps, default=extended_encode,
+                                      use_decimal=False)
+        _sj.dump = functools.partial(_sj.dump, default=extended_encode,
+                                     use_decimal=False)
     simplejson = _sj
 
 except ImportError:
