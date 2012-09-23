@@ -53,7 +53,7 @@ def _e_trace(info_gatherer, min_duration, callable, *args, **kw):
     duration = round(end - start, 4)
     if duration < min_duration:
         return result
-    info = {'timestamp':datetime.datetime.fromtimestamp(start),
+    info = {'timestamp':datetime.datetime.utcfromtimestamp(start),
             'duration':duration}
     info.update(info_gatherer(*args, **kw))
     path, traces = stack_inspector()
@@ -78,7 +78,7 @@ def trace_factory(info_gatherer, min_duration):
         duration = round(end - start, 4)
         if duration < min_duration:
             return result
-        info = {'timestamp':datetime.datetime.fromtimestamp(start),
+        info = {'timestamp':datetime.datetime.utcfromtimestamp(start),
                 'duration':duration}
         info.update(info_gatherer(*args, **kw))
         path, traces = stack_inspector()
