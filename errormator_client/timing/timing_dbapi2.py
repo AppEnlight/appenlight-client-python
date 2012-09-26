@@ -18,7 +18,6 @@ def gather_query(query, *args, **kwargs):
             'statement':query,
             'parameters':args}
     
-    
 gather_commit = general_factory('COMMIT')
 gather_fetch = general_factory('fetch')
 gather_fetchmany = general_factory('fetchmany')
@@ -28,8 +27,7 @@ gather_next = general_factory('next')
 gather_rollback = general_factory('ROLLBACK')
 
 
-
-def add_timing(module_name, min_duration=0.1):
+def add_timing(module_name, min_duration=0.2):
     module = import_module(module_name)
     if not module:
         return
@@ -95,6 +93,8 @@ def add_timing(module_name, min_duration=0.1):
     
     class Wrapper(object):
         
+        _e_attached_wrapper = True
+        
         def __init__(self, class_obj):
             # assign to superclass or face the infinite recursion consequences
             object.__setattr__(self, '_e_object', class_obj)
@@ -118,9 +118,15 @@ def add_timing(module_name, min_duration=0.1):
             return org_register_type(obj, getattr(scope, '_e_object', scope))
         psycopg2.extensions.register_type = new_register_type
     if module_name == 'sqlite3':
+        if hasattr(module.dbapi2.connect, '_e_attached_wrapper'):
+            return
         module.dbapi2.connect = Wrapper(module.dbapi2.connect)
         module.connect = Wrapper(module.connect)
     elif module_name == 'pg8000':
+        if hasattr(module.DBAPI.connect, '_e_attached_wrapper'):
+            return
         module.DBAPI.connect = Wrapper(module.DBAPI.connect)
     else:
+        if hasattr(module.connect, '_e_attached_wrapper'):
+            return
         module.connect = Wrapper(module.connect)

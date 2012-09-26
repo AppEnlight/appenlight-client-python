@@ -12,8 +12,8 @@ from errormator_client.timing import register_timing, local_timing
 
 
 timing_modules = ['urllib', 'urllib2', 'urllib3', 'requests', 'httplib',
-                  'pysolr','sqlite3']
-register_timing({'timing':dict([(m, 0.001) for m in timing_modules])})
+                  'pysolr', 'dbapi2_sqlite3']
+register_timing({'timing':dict([(m, 0.00001) for m in timing_modules])})
 
 # TODO: investigate why magic in tests 
 # doesn't work if we are not doing an import here 
@@ -491,34 +491,53 @@ class TestTimingHTTPLibs(unittest.TestCase):
         opener = urllib.URLopener()
         f = opener.open("http://www.ubuntu.com/")
         result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
 
     def test_urllib_urlretrieve(self):
         urllib.urlretrieve("http://www.ubuntu.com/")
         result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
 
     def test_urllib2(self):
         import urllib2
         urllib2.urlopen("http://www.ubuntu.com/")
         result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
 
     def test_urllib3(self):
         import urllib3
         http = urllib3.PoolManager()
         r = http.request('GET', "http://www.ubuntu.com/")
         result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
         
     def test_requests(self):
         import requests
         r = requests.get("http://www.ubuntu.com/")
         result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
 
     def test_httplib(self):
         import httplib
         h2 = httplib.HTTPConnection("www.ubuntu.com")
         h2.request("GET", "/")
         result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
 
+class TestDBApi2Drivers(unittest.TestCase):
     
+    def setUp(self):
+        self.stmt = '''SELECT 1+2+3 as result''' 
+    
+    def test_sqlite(self):
+        import sqlite3
+        conn = sqlite3.connect(':memory:')
+        c = conn.cursor()
+        c.execute(self.stmt)
+        c.fetchone()[0]
+        result = local_timing._errormator.get_slow_calls()
+        print result
+        
 
 if __name__ == '__main__':
     unittest.main()  # pragma: nocover
