@@ -1,6 +1,11 @@
 CHANGELOG:
 ==========
 
+2012-09-26
+    Bugfixes and better defaults, cleanups
+    Ensure that we are not decorating code with timing methods twice
+    Better transport handling 
+
 2012-08-13
     0.4.1 Small bugfixes and better defaults, cleanups
 

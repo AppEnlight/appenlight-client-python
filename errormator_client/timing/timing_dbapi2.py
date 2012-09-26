@@ -27,7 +27,7 @@ gather_next = general_factory('next')
 gather_rollback = general_factory('ROLLBACK')
 
 
-def add_timing(module_name, min_duration=0.2):
+def add_timing(module_name, min_duration=0.3):
     module = import_module(module_name)
     if not module:
         return
