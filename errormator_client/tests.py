@@ -2,11 +2,10 @@ import unittest
 import datetime
 import logging
 import socket
-from errormator_client import client
+from errormator_client import client, make_errormator_middleware
 from errormator_client.exceptions import get_current_traceback
 from errormator_client.logger import register_logging
-
-
+from errormator_client.wsgi import ErrormatorWSGIWrapper
 
 def example_filter_callable(structure, section=None):
     return 'filtered-data'
@@ -39,6 +38,10 @@ TEST_ENVIRON = {
 'REMOTE_USER':'foo'
 }
 
+REQ_START_TIME = datetime.datetime(2012, 9, 26, 18, 17, 54, 461254)
+REQ_END_TIME = datetime.datetime(2012, 9, 26, 18, 18, 4, 461259)
+SERVER_NAME = socket.getfqdn() # different on every machine
+
 PARSED_REPORT_404 = {
                      'report_details': [{'username': '',
                         'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
@@ -51,7 +54,7 @@ PARSED_REPORT_404 = {
                                     'GET': {u'aaa': [u'1'], u'bbb': [u'2']}},
                         'user_agent': u'', 'message': u''}],
                      'error_type': '404 Not Found',
-                     'server': socket.getfqdn(), # different on every machine
+                     'server': SERVER_NAME,
                      'priority': 5,
                      'client': 'Python',
                      'http_status': 404}
@@ -77,10 +80,31 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):', #this w
                                          'user_agent': u'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
                                          'message': u''}],
                      'error_type': u'Exception: Test Exception',
-                     'server': 'ergo-webreactor',
+                     'server': SERVER_NAME,
                      'priority': 5,
                      'client': 'Python',
                      'http_status': 500}
+
+PARSED_SLOW_REPORT = {
+                      'report_details': [{'username': '',
+                                          'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
+                                          'ip': '127.0.0.1',
+                                          'start_time': REQ_START_TIME,
+                                          'slow_calls': [],
+                                          'request': {'COOKIES': {u'country': u'US',
+                                                                  u'sessionId': u'***',
+                                                                  u'test_group_id': u'5',
+                                                                  u'http_referer': u'http://localhost:5000/'},
+                                                      'POST': {},
+                                                      'GET': {u'aaa': [u'1'], u'bbb': [u'2']}},
+                                          'user_agent': u'',
+                                          'message': u'',
+                                          'end_time': REQ_END_TIME}],
+                      'error_type': 'Unknown',
+                      'server': SERVER_NAME,
+                      'priority': 5,
+                      'client': 'Python',
+                      'http_status': 200}
 
 class TestClientConfig(unittest.TestCase):
 
@@ -353,6 +377,23 @@ class TestClientSending(unittest.TestCase):
         self.setUpClient()
         self.assertEqual(self.client.check_if_deliver(force_send=True), True)
 
+    def test_send_error_failure_queue(self):
+        self.setUpClient()
+        self.client.py_report(TEST_ENVIRON, http_status=404)
+        result = self.client.submit_data()
+        self.assertEqual(self.client.report_queue, [])
+
+    def test_send_error_failure(self):
+        self.setUpClient()
+        self.client.py_report(TEST_ENVIRON, http_status=404)
+        result = self.client.submit_data()
+        self.assertEqual(result['reports'], False)
+        
+    def test_send_error_io(self):
+        self.setUpClient()
+        self.client.py_report(TEST_ENVIRON, http_status=404)
+        result = self.client.submit_data()
+        self.assertEqual(result['reports'], False)
 
 class TestErrorParsing(unittest.TestCase):
     def setUpClient(self, config={}):
@@ -404,15 +445,33 @@ class TestLogs(unittest.TestCase):
         self.client.log_queue[0]['server'] = fake_log['server']
         self.assertEqual(self.client.log_queue[0], fake_log)
 
-class TestSending(unittest.TestCase):
+class TestSlowReportParsing(unittest.TestCase):
     def setUpClient(self, config={}):
         self.client = client.Client(config)
 
-    def test_send_error_failure(self):
+    def test_py_report_slow(self):
         self.setUpClient()
-        self.client.py_report(TEST_ENVIRON, http_status=404)
-        self.client.submit_report_data()
-        self.assertEqual(self.client.report_queue, [])
+        self.maxDiff = None
+        self.client.py_slow_report(TEST_ENVIRON, start_time=REQ_START_TIME,
+                                   end_time=REQ_END_TIME)
+        self.assertEqual(self.client.slow_report_queue[0], PARSED_SLOW_REPORT)
+
+class TestMakeMiddleware(unittest.TestCase):
+    
+    def test_make_middleware(self):
+        def app(environ, start_response):
+            start_response('200 OK', [('content-type', 'text/html')])
+            return ['Hello world!']
+        app = make_errormator_middleware(app, {})        
+        self.assertTrue(isinstance(app, ErrormatorWSGIWrapper))
+
+    def test_make_middleware_disabled(self):
+        def app(environ, start_response):
+            start_response('200 OK', [('content-type', 'text/html')])
+            return ['Hello world!']
+        app = make_errormator_middleware(app, {'errormator':False})        
+        self.assertFalse(isinstance(app, ErrormatorWSGIWrapper))
+        
 
 if __name__ == '__main__':
     unittest.main()  # pragma: nocover

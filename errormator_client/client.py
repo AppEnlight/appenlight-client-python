@@ -175,59 +175,42 @@ class Client(object):
         self.uuid = uuid.uuid4()
         self.last_submit = datetime.datetime.now()
 
-    def submit_report_data(self):
-        def send():
-            with self.report_queue_lock:
-                to_send_items = self.report_queue[:250]
-                self.report_queue = self.report_queue[250:]
-            if to_send_items:
-                try:
-                    self.remote_call(to_send_items, self.endpoints['reports'])
-                except KeyboardInterrupt as e:
-                    raise KeyboardInterrupt()
-                except Exception as e:
-                    log.warning('REPORTS: connection issue: %s' % e)
-                    return False
-            return True
-        return send()
-        # FIXME: reintroduce threads
+    def submit_data(self):
+        results = {'reports':False,
+                   'logs':False,
+                   'slow_reports':False
+                   }
+        with self.report_queue_lock:
+            reports = self.report_queue[:250]
+            self.report_queue = self.report_queue[250:]
+        with self.slow_report_queue_lock:
+            slow_reports = self.slow_report_queue[:250]
+            self.slow_report_queue = self.slow_report_queue[250:]
+        with self.log_queue_lock:
+            logs = self.log_queue[:2000]
+            self.log_queue = self.log_queue[2000:]
+        results['reports'] = self.api_create_submit(reports, 'reports')
+        results['slow_reports'] = self.api_create_submit(slow_reports,
+                                                         'slow_reports')
+        results['logs'] = self.api_create_submit(logs, 'logs')
+        return results
 
-    def submit_other_data(self):
-        def send():
-            with self.slow_report_queue_lock:
-                slow_to_send_items = self.slow_report_queue[:250]
-                self.slow_report_queue = self.slow_report_queue[250:]
-            with self.log_queue_lock:
-                logs_to_send_items = self.log_queue[:2000]
-                self.log_queue = self.log_queue[2000:]
-
-            if slow_to_send_items:
-                try:
-                    self.remote_call(slow_to_send_items,
-                                 self.endpoints['slow_reports'])
-                except KeyboardInterrupt as e:
-                    raise KeyboardInterrupt()
-                except Exception as e:
-                    log.warning('SLOW REPORTS: connection issue: %s' % e)
-            if logs_to_send_items:
-                try:
-                    self.remote_call(logs_to_send_items,
-                                 self.endpoints['logs'])
-                except KeyboardInterrupt as e:
-                    raise KeyboardInterrupt()
-                except Exception as e:
-                    log.warning('LOGS: connection issue: %s' % e)
-            return True
-        return send()
-        # FIXME: reintroduce threads
+    def api_create_submit(self, to_send_items, endpoint):
+        if to_send_items:
+            try:
+                self.remote_call(to_send_items, self.endpoints[endpoint])
+            except KeyboardInterrupt as e:
+                raise KeyboardInterrupt()
+            except Exception as e:
+                log.warning('%s: connection issue: %s' % (endpoint,e))
+                return False
+        return True
 
     def check_if_deliver(self, force_send=False):
         delta = datetime.datetime.now() - self.last_submit
         if delta > self.config['buffer_flush_interval'] or force_send:
-            submit_report_data_t = threading.Thread(target=self.submit_report_data)
-            submit_report_data_t.start()
-            submit_other_data_t = threading.Thread(target=self.submit_other_data)
-            submit_other_data_t.start()
+            submit_data_t = threading.Thread(target=self.submit_data)
+            submit_data_t.start()
             self.last_submit = datetime.datetime.now()
             return True
         return False

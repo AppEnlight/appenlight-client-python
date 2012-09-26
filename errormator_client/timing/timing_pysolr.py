@@ -3,7 +3,7 @@ from errormator_client.timing import time_trace
 
 import pysolr
 
-def add_timing(min_duration=0.5):
+def add_timing(min_duration=0.3):
     module = import_module('pysolr')
     if not module:
         return
