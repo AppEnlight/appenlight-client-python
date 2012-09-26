@@ -47,6 +47,11 @@ def deco_func_or_method(module, name, deco_f, gatherer, min_duration):
     callable = getattr(module, _tmp[0], None)
     # decorate and set new value for foo.bar
     if len(_tmp) == 1 and callable:
+        # _e_attached_tracer means this is already decorated
+        # so don't do it twice - should not often happen in production,
+        # but very important for tests
+        if hasattr(callable, '_e_attached_tracer'):
+            return
         callable = deco_f(callable, gatherer, min_duration)
         setattr(module, _tmp[0], callable)
     # decorate and set new value for foo.Bar.baz
@@ -54,6 +59,8 @@ def deco_func_or_method(module, name, deco_f, gatherer, min_duration):
         cls_to_update = callable 
         callable = getattr(callable, _tmp[1], None)
         if callable:
+            if hasattr(callable, '_e_attached_tracer'):
+                return
             setattr(cls_to_update, _tmp[1],
                     deco_f(getattr(callable, 'im_func', callable), gatherer,
                            min_duration)

@@ -7,6 +7,13 @@ import sys
 import time
 import threading
 
+if sys.platform == "win32":
+    # On Windows, the best timer is time.clock()
+    default_timer = time.clock
+else:
+    # On most other platforms the best timer is time.time()
+    default_timer = time.time
+
 class ErrormatorLocalStorage(object):
         
     def add_slow_call(self, call):
@@ -47,6 +54,7 @@ def stack_inspector():
     return path, traces
 
 def _e_trace(info_gatherer, min_duration, callable, *args, **kw):
+    """ Used to wrap dbapi2 driver methods """
     start = default_timer()
     result = callable(*args, **kw)
     end = default_timer()
@@ -63,14 +71,10 @@ def _e_trace(info_gatherer, min_duration, callable, *args, **kw):
         local_timing._errormator.add_slow_call(info)
     return result
 
-if sys.platform == "win32":
-    # On Windows, the best timer is time.clock()
-    default_timer = time.clock
-else:
-    # On most other platforms the best timer is time.time()
-    default_timer = time.time
-
 def trace_factory(info_gatherer, min_duration):
+    """ Used to auto decorate callables in deco_func_or_method for other 
+        non dbapi2 modules """
+    
     def _e_trace(f, *args, **kw):
         start = default_timer()
         result = f(*args, **kw)
@@ -86,18 +90,20 @@ def trace_factory(info_gatherer, min_duration):
             if not hasattr(local_timing, '_errormator'):
                 local_timing._errormator = ErrormatorLocalStorage()
             local_timing._errormator.add_slow_call(info)
-        return result
+        return result 
     return _e_trace
 
 def time_trace(f, gatherer, min_duration):
-    return decorator(trace_factory(gatherer, min_duration), f)
+    deco =  decorator(trace_factory(gatherer, min_duration), f)
+    deco._e_attached_tracer = True
+    return deco
 
 
 def register_timing(config):
     timing_modules = ['timing_urllib', 'timing_urllib2', 'timing_urllib3',
                       'timing_requests', 'timing_httplib', 'timing_pysolr']
     for mod in timing_modules:
-        min_time = config['timing'].get(mod.replace("timing_", ''))
+        min_time = config['timing'].get(mod.replace("timing_", '')) 
         if min_time is not False:
             log.debug('%s slow time:%s' % (mod, min_time or 'default'))
             callable = import_from_module('errormator_client.timing.%s:add_timing' % mod)

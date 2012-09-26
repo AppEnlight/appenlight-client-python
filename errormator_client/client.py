@@ -75,7 +75,7 @@ class Client(object):
             errormator.logging - enable hooking to application loggers
             errormator.logging.level - minimum log level for log capture
             errormator.logging_on_error - send logs only from erroneous/slow requests (default false) 
-            errormator.slow_request_time - (float/int) time in seconds after request is considered being slow (default 3)
+            errormator.slow_request_time - (float/int) time in seconds after request is considered being slow (default 1)
             errormator.report_404 - enables 404 error logging (default False)
             errormator.report_errors - enables 500 error logging (default True)
             errormator.buffer_flush_interval - how often send data to mothership Errormator (default 5)
@@ -99,7 +99,7 @@ class Client(object):
         self.config['reraise_exceptions'] = asbool(
                 config.get('errormator.reraise_exceptions', True))
         self.config['slow_requests'] = asbool(config.get('errormator.slow_requests', True))
-        self.config['slow_request_time'] = float(config.get('errormator.slow_request.time', 3))
+        self.config['slow_request_time'] = float(config.get('errormator.slow_request.time', 1))
         if self.config['slow_request_time'] < 0.01:
             self.config['slow_request_time'] = 0.01
         self.config['slow_request_time'] = datetime.timedelta(seconds=self.config['slow_request_time'])

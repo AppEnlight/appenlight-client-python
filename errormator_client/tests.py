@@ -7,6 +7,18 @@ from errormator_client.exceptions import get_current_traceback
 from errormator_client.logger import register_logging
 from errormator_client.wsgi import ErrormatorWSGIWrapper
 
+from errormator_client.timing import ErrormatorLocalStorage
+from errormator_client.timing import register_timing, local_timing
+
+
+timing_modules = ['urllib', 'urllib2', 'urllib3', 'requests', 'httplib',
+                  'pysolr','sqlite3']
+register_timing({'timing':dict([(m, 0.001) for m in timing_modules])})
+
+# TODO: investigate why magic in tests 
+# doesn't work if we are not doing an import here 
+import urllib
+
 def example_filter_callable(structure, section=None):
     return 'filtered-data'
 
@@ -192,7 +204,7 @@ class TestClientConfig(unittest.TestCase):
     def test_default_slow_request_time(self):
         self.setUpClient()
         self.assertEqual(self.client.config['slow_request_time'],
-                         datetime.timedelta(seconds=3))
+                         datetime.timedelta(seconds=1))
 
     def test_custom_slow_request_time(self):
         config = {'errormator.slow_request.time':"2"}
@@ -471,7 +483,42 @@ class TestMakeMiddleware(unittest.TestCase):
             return ['Hello world!']
         app = make_errormator_middleware(app, {'errormator':False})        
         self.assertFalse(isinstance(app, ErrormatorWSGIWrapper))
+
+
+class TestTimingHTTPLibs(unittest.TestCase):
+    
+    def test_urllib_URLOpener_open(self):
+        opener = urllib.URLopener()
+        f = opener.open("http://www.ubuntu.com/")
+        result = local_timing._errormator.get_slow_calls()
+
+    def test_urllib_urlretrieve(self):
+        urllib.urlretrieve("http://www.ubuntu.com/")
+        result = local_timing._errormator.get_slow_calls()
+
+    def test_urllib2(self):
+        import urllib2
+        urllib2.urlopen("http://www.ubuntu.com/")
+        result = local_timing._errormator.get_slow_calls()
+
+    def test_urllib3(self):
+        import urllib3
+        http = urllib3.PoolManager()
+        r = http.request('GET', "http://www.ubuntu.com/")
+        result = local_timing._errormator.get_slow_calls()
         
+    def test_requests(self):
+        import requests
+        r = requests.get("http://www.ubuntu.com/")
+        result = local_timing._errormator.get_slow_calls()
+
+    def test_httplib(self):
+        import httplib
+        h2 = httplib.HTTPConnection("www.ubuntu.com")
+        h2.request("GET", "/")
+        result = local_timing._errormator.get_slow_calls()
+
+    
 
 if __name__ == '__main__':
     unittest.main()  # pragma: nocover
