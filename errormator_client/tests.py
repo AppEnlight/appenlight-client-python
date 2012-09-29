@@ -12,12 +12,10 @@ from errormator_client.timing import register_timing, local_timing
 
 
 timing_modules = ['urllib', 'urllib2', 'urllib3', 'requests', 'httplib',
-                  'pysolr', 'dbapi2_sqlite3']
+                  'pysolr', 'mako', 'jinja2', 'dbapi2_sqlite3',
+                  'dbapi2_psycopg2', 'dbapi2_pg8000', 'dbapi2_postgresql',
+                  'dbapi2_MySQLdb', 'dbapi2_oursql', 'dbapi2_odbc', 'dbapi2_pymsql']
 register_timing({'timing':dict([(m, 0.00001) for m in timing_modules])})
-
-# TODO: investigate why magic in tests 
-# doesn't work if we are not doing an import here 
-import urllib
 
 def example_filter_callable(structure, section=None):
     return 'filtered-data'
@@ -488,12 +486,14 @@ class TestMakeMiddleware(unittest.TestCase):
 class TestTimingHTTPLibs(unittest.TestCase):
     
     def test_urllib_URLOpener_open(self):
+        import urllib
         opener = urllib.URLopener()
         f = opener.open("http://www.ubuntu.com/")
         result = local_timing._errormator.get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_urllib_urlretrieve(self):
+        import urllib
         urllib.urlretrieve("http://www.ubuntu.com/")
         result = local_timing._errormator.get_slow_calls()
         self.assertEqual(len(result), 1)
@@ -530,14 +530,175 @@ class TestDBApi2Drivers(unittest.TestCase):
         self.stmt = '''SELECT 1+2+3 as result''' 
     
     def test_sqlite(self):
-        import sqlite3
+        try:
+            import sqlite3
+        except ImportError:
+            return
         conn = sqlite3.connect(':memory:')
         c = conn.cursor()
         c.execute(self.stmt)
-        c.fetchone()[0]
+        c.fetchone()
+        c.close()
+        conn.close()
         result = local_timing._errormator.get_slow_calls()
-        print result
+        self.assertEqual(len(result), 1)
+    
+    def test_psycopg2(self):
+        try:
+            import psycopg2
+        except ImportError:
+            return
+        conn = psycopg2.connect("user=postgres host=127.0.0.1")
+        c = conn.cursor()
+        psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, c)
+        c.execute(self.stmt)
+        c.fetchone()
+        c.close()
+        conn.close()
+        result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
         
+    def test_pg8000(self):
+        try:
+            import pg8000
+        except ImportError:
+            return
+        conn = pg8000.DBAPI.connect(host="localhost", user="test", password="test")
+        c = conn.cursor()
+        c.execute(self.stmt)
+        c.fetchone()
+        c.close()
+        conn.close()
+        result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
+        
+    def test_postgresql(self):
+        try:
+            import postgresql
+        except ImportError:
+            return
+        conn = postgresql.open('pq://test:test@localhost')
+        c = conn.cursor()
+        c.execute(self.stmt)
+        c.fetchone()[0]
+        c.close()
+        conn.close()
+        result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
+
+    def test_mysqldb(self):
+        try:
+            import MySQLdb
+        except ImportError:
+            return
+        conn = MySQLdb.connect(passwd="test", user="test")
+        c = conn.cursor()
+        c.execute(self.stmt)
+        c.fetchone()
+        c.close()
+        conn.close()
+        result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
+
+    def test_oursql(self):
+        import oursql
+        conn = oursql.connect(passwd="test", user="test")
+        c = conn.cursor(oursql.DictCursor)
+        c.execute(self.stmt)
+        c.fetchone()
+        c.close()
+        conn.close()
+        result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
+
+    def test_odbc(self):
+        try:
+            import pyodbc
+        except ImportError:
+            return
+        conn = pyodbc.connect('Driver={MySQL};Server=127.0.0.1;Port=3306;Database=information_schema;User=test; Password=test;Option=3;')
+        c = conn.cursor()
+        c.execute(self.stmt)
+        c.fetchone()
+        c.close()
+        conn.close()
+        result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
+
+    def test_pymysql(self):
+        try:
+            import pymysql
+        except ImportError:
+            return
+        conn = pymysql.connect(host='127.0.0.1', user='test', passwd='test')
+        c = conn.cursor()
+        c.execute(self.stmt)
+        c.fetchone()
+        c.close()
+        conn.close()
+        result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
+
+
+
+class TestMako(unittest.TestCase):
+   
+    def test_render(self):
+        from mako.template import Template
+        template = Template('''
+        <%
+        import time
+        time.sleep(0.2)
+        %>
+        xxxxx ${1+2} yyyyyy
+        
+        ''')
+        template.render()
+        result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
+
+    def test_render_unicode(self):
+        from mako.template import Template
+        template = Template(u'''
+        <%
+        import time
+        time.sleep(0.2)
+        %>
+        xxxxx ${1+2} yyyyyy
+        
+        ''')
+        template.render_unicode()
+        result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)        
+
+    def test_template_lookup(self):
+        from mako.lookup import TemplateLookup
+        lookup = TemplateLookup()
+        lookup.put_string("base.html", '''
+        <%
+        import time
+        time.sleep(0.2)
+        %>
+            <html><body></body></html>
+        ''')
+        template = lookup.get_template("base.html")
+        template.render_unicode()
+        result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)     
+
+class TestJinja2(unittest.TestCase):
+   
+    def test_render(self):
+        from jinja2 import Template
+        template = Template('''
+        xxxxx {{1+2}} yyyyyy
+        
+        ''')
+        print template, Template
+        template.render()
+        result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: nocover

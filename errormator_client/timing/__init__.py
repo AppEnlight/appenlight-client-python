@@ -94,14 +94,15 @@ def trace_factory(info_gatherer, min_duration):
     return _e_trace
 
 def time_trace(f, gatherer, min_duration):
-    deco =  decorator(trace_factory(gatherer, min_duration), f)
+    deco = decorator(trace_factory(gatherer, min_duration), f)
     deco._e_attached_tracer = True
     return deco
 
 
 def register_timing(config):
     timing_modules = ['timing_urllib', 'timing_urllib2', 'timing_urllib3',
-                      'timing_requests', 'timing_httplib', 'timing_pysolr']
+                      'timing_requests', 'timing_httplib', 'timing_pysolr',
+                      'timing_mako', 'timing_jinja2']
     for mod in timing_modules:
         min_time = config['timing'].get(mod.replace("timing_", '')) 
         if min_time is not False:
