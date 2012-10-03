@@ -44,6 +44,8 @@ from webob import Request
 # are we running python 3.x ?
 PY3 = sys.version_info[0] == 3
 
+ERRORMATOR_CLIENT = None
+
 DATE_FRMT = '%Y-%m-%dT%H:%M:%S.%f'
 LEVELS = {'debug': logging.DEBUG,
           'info': logging.INFO,
@@ -202,7 +204,7 @@ class Client(object):
             except KeyboardInterrupt as e:
                 raise KeyboardInterrupt()
             except Exception as e:
-                log.warning('%s: connection issue: %s' % (endpoint,e))
+                log.warning('%s: connection issue: %s' % (endpoint, e))
                 return False
         return True
 
@@ -407,15 +409,23 @@ class Client(object):
         report_data.update(errormator_info)
         return report_data, errormator_info
 
+def make_errormator_client(path_to_ini=None, config=dict()):
+    global ERRORMATOR_CLIENT
+    if ERRORMATOR_CLIENT is None:
+        log.info('creating new errormator client')
+        ERRORMATOR_CLIENT = Client(config=config) 
 
 def make_errormator_middleware(app, global_config, **kw):
+    global ERRORMATOR_CLIENT
     config = global_config.copy()
     config.update(kw)
     #this shuts down all errormator functionalities
     if not asbool(config.get('errormator', True)):
         return app
+    if not ERRORMATOR_CLIENT:
+        log.warning('Errormator client not initialized - Consult client documentation')
+        return app
 
-    client = Client(config=config)
     from errormator_client.wsgi import ErrormatorWSGIWrapper
-    app = ErrormatorWSGIWrapper(app, client)
+    app = ErrormatorWSGIWrapper(app, ERRORMATOR_CLIENT)
     return app

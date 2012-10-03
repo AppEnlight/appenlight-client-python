@@ -1,12 +1,10 @@
 from errormator_client.utils import import_module, deco_func_or_method
 from errormator_client.timing import time_trace, import_from_module, _e_trace
 
-def add_timing(min_duration=0.1):
+def add_timing(min_duration=0.05):
     module = import_module('jinja2')
-    min_duration = 0
     if not module:
         return
-    
     class Wrapper(object):
         
         _e_attached_wrapper = True
@@ -30,7 +28,10 @@ def add_timing(min_duration=0.1):
            
             deco_func_or_method(module, 'Template.render', time_trace,
                           gather_args_render, min_duration)
+            deco_func_or_method(module, 'Environment.compile', time_trace,
+                          gather_args_render, min_duration)
             return self._e_object(*args, **kwargs)
+        
     if hasattr(module.Template, '_e_attached_wrapper'):
         return        
     module.Template = Wrapper(module.Template)

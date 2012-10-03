@@ -7,15 +7,16 @@ from errormator_client.exceptions import get_current_traceback
 from errormator_client.logger import register_logging
 from errormator_client.wsgi import ErrormatorWSGIWrapper
 
-from errormator_client.timing import ErrormatorLocalStorage
-from errormator_client.timing import register_timing, local_timing
-
-
 timing_modules = ['urllib', 'urllib2', 'urllib3', 'requests', 'httplib',
-                  'pysolr', 'mako', 'jinja2', 'dbapi2_sqlite3',
+                  'pysolr', 'mako', 'jinja2', 'timing_django_templates',
+                  'pymongo', 'dbapi2_sqlite3',
                   'dbapi2_psycopg2', 'dbapi2_pg8000', 'dbapi2_postgresql',
-                  'dbapi2_MySQLdb', 'dbapi2_oursql', 'dbapi2_odbc', 'dbapi2_pymsql']
-register_timing({'timing':dict([(m, 0.00001) for m in timing_modules])})
+                  'dbapi2_MySQLdb', 'dbapi2_oursql', 'dbapi2_odbc',
+                  'dbapi2_pymysql']
+timing_conf = {'errormator.timing':dict([(m, 0.000001) for m in timing_modules])}
+
+client.make_errormator_client(config=timing_conf)
+from errormator_client.timing import local_timing
 
 def example_filter_callable(structure, section=None):
     return 'filtered-data'
@@ -472,7 +473,8 @@ class TestMakeMiddleware(unittest.TestCase):
         def app(environ, start_response):
             start_response('200 OK', [('content-type', 'text/html')])
             return ['Hello world!']
-        app = make_errormator_middleware(app, {})        
+        client.make_errormator_client()
+        app = make_errormator_middleware(app, {})
         self.assertTrue(isinstance(app, ErrormatorWSGIWrapper))
 
     def test_make_middleware_disabled(self):
@@ -484,6 +486,12 @@ class TestMakeMiddleware(unittest.TestCase):
 
 
 class TestTimingHTTPLibs(unittest.TestCase):
+    
+    def setUpClient(self, config={}):
+        self.client = client.Client(config)
+        
+    def setUp(self):
+        self.setUpClient(timing_conf)
     
     def test_urllib_URLOpener_open(self):
         import urllib
@@ -526,7 +534,11 @@ class TestTimingHTTPLibs(unittest.TestCase):
 
 class TestDBApi2Drivers(unittest.TestCase):
     
+    def setUpClient(self, config={}):
+        self.client = client.Client(config)
+    
     def setUp(self):
+        self.setUpClient(timing_conf)
         self.stmt = '''SELECT 1+2+3 as result''' 
     
     def test_sqlite(self):
@@ -640,16 +652,24 @@ class TestDBApi2Drivers(unittest.TestCase):
         self.assertEqual(len(result), 1)
 
 
-
 class TestMako(unittest.TestCase):
    
+    def setUpClient(self, config={}):
+        self.client = client.Client(timing_conf)
+        
+    def setUp(self):
+        self.setUpClient(timing_conf)
+   
     def test_render(self):
-        from mako.template import Template
-        template = Template('''
+        try:
+            import mako
+        except ImportError:
+            return
+        template = mako.template.Template('''
         <%
         import time
-        time.sleep(0.2)
-        %>
+        time.sleep(0.01)
+        %> 
         xxxxx ${1+2} yyyyyy
         
         ''')
@@ -658,12 +678,15 @@ class TestMako(unittest.TestCase):
         self.assertEqual(len(result), 1)
 
     def test_render_unicode(self):
-        from mako.template import Template
-        template = Template(u'''
+        try:
+            import mako
+        except ImportError:
+            return
+        template = mako.template.Template(u'''
         <%
         import time
-        time.sleep(0.2)
-        %>
+        time.sleep(0.01)
+        %> 
         xxxxx ${1+2} yyyyyy
         
         ''')
@@ -672,13 +695,17 @@ class TestMako(unittest.TestCase):
         self.assertEqual(len(result), 1)        
 
     def test_template_lookup(self):
+        try:
+            import mako
+        except ImportError:
+            return
         from mako.lookup import TemplateLookup
         lookup = TemplateLookup()
         lookup.put_string("base.html", '''
         <%
         import time
-        time.sleep(0.2)
-        %>
+        time.sleep(0.01)
+        %> 
             <html><body></body></html>
         ''')
         template = lookup.get_template("base.html")
@@ -688,17 +715,48 @@ class TestMako(unittest.TestCase):
 
 class TestJinja2(unittest.TestCase):
    
-    def test_render(self):
-        from jinja2 import Template
-        template = Template('''
-        xxxxx {{1+2}} yyyyyy
+    def setUpClient(self, config={}):
+        self.client = client.Client(config)
         
+    def setUp(self):
+        self.setUpClient(timing_conf)
+   
+    def test_render(self):
+        try:
+            import jinja2
+        except ImportError:
+            return
+        template = jinja2.Template('''
+        xxxxx {{1+2}} yyyyyy
         ''')
-        print template, Template
         template.render()
         result = local_timing._errormator.get_slow_calls()
         self.assertEqual(len(result), 1)
 
+class TestDjangoTemplates(unittest.TestCase):
+   
+    def setUpClient(self, config={}):
+        self.client = client.Client(config)
+        
+    def setUp(self):
+        self.setUpClient(timing_conf)
+   
+    def test_render(self):
+        try:
+            from django import template
+        except ImportError:
+            return
+        from django.conf import settings
+        settings.configure(TEMPLATE_DIRS=("/whatever/templates",))
+        import time
+        ctx = template.Context()
+        ctx.update({'time':lambda :time.sleep(0.06)})
+        template = template.Template('''
+        xxxxx {{ time }} yyyyyy
+        ''')
+        template.render(ctx)
+        result = local_timing._errormator.get_slow_calls()
+        self.assertEqual(len(result), 1)
 
 if __name__ == '__main__':
     unittest.main()  # pragma: nocover

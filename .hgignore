@@ -15,3 +15,7 @@ syntax: regexp
 ^\.pydevproject$
 syntax: regexp
 ^local_tests\.py$
+syntax: regexp
+^\.coverage$
+syntax: regexp
+^errormator_client/\.coverage$

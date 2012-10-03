@@ -1,13 +1,12 @@
 from errormator_client.utils import import_module, deco_func_or_method
 from errormator_client.timing import time_trace, import_from_module, _e_trace
 
-def add_timing(min_duration=0.1):
+def add_timing(min_duration=0.05):
     module = import_module('mako')
     if not module:
         return
     
     from mako import template
-    from mako import runtime
     
     class Wrapper(object):
         
