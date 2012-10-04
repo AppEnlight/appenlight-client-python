@@ -21,7 +21,8 @@ setup(name='errormator_client',
       packages=find_packages(),
       include_package_data=True,
       package_data={
-        '': ['*.txt', '*.rst', '*.ini']
+        '': ['*.txt', '*.rst', '*.ini'],
+        'errormator_client': ['templates/*.ini'],
         },
       install_requires=[
           "webob",

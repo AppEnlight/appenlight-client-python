@@ -19,3 +19,5 @@ syntax: regexp
 ^\.coverage$
 syntax: regexp
 ^errormator_client/\.coverage$
+syntax: regexp
+^build$
