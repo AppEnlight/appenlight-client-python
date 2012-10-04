@@ -32,5 +32,7 @@ setup(name='errormator_client',
       [paste.filter_app_factory]
       main = errormator_client.client:make_errormator_middleware
       errormator = errormator_client.client:make_errormator_middleware
+      [console_scripts]
+      errormator_client = errormator_client.cli:cli_start
       """,
       )
