@@ -107,7 +107,7 @@ def register_timing(config):
                       'timing_django_templates']
     
     for mod in timing_modules:
-        min_time = config['timing'].get(mod.replace("timing_", '')) 
+        min_time = config['timing'].get(mod.replace("timing_", '').lower()) 
         if min_time is not False:
             log.debug('%s slow time:%s' % (mod, min_time or 'default'))
             callable = import_from_module('errormator_client.timing.%s:add_timing' % mod)
@@ -123,7 +123,7 @@ def register_timing(config):
                   'cx_Oracle', 'kinterbasdb', 'postgresql', 'pymysql']
     import errormator_client.timing.timing_dbapi2 as dbapi2
     for mod in db_modules:
-        min_time = config['timing'].get('dbapi2_%s' % mod)
+        min_time = config['timing'].get('dbapi2_%s' % mod.lower())
         log.debug('%s dbapi query time:%s' % (mod, min_time or 'default'))
         if min_time is not False:
             if min_time:

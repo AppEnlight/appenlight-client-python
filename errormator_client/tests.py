@@ -2,20 +2,22 @@ import unittest
 import datetime
 import logging
 import socket
+import pkg_resources
 from errormator_client import client, make_errormator_middleware
 from errormator_client.exceptions import get_current_traceback
 from errormator_client.logger import register_logging
 from errormator_client.wsgi import ErrormatorWSGIWrapper
 
-timing_modules = ['urllib', 'urllib2', 'urllib3', 'requests', 'httplib',
-                  'pysolr', 'mako', 'jinja2', 'timing_django_templates',
-                  'pymongo', 'dbapi2_sqlite3',
-                  'dbapi2_psycopg2', 'dbapi2_pg8000', 'dbapi2_postgresql',
-                  'dbapi2_MySQLdb', 'dbapi2_oursql', 'dbapi2_odbc',
-                  'dbapi2_pymysql']
-timing_conf = {'errormator.timing':dict([(m, 0.000001) for m in timing_modules])}
 
-client.make_errormator_client(config=timing_conf)
+fname = pkg_resources.resource_filename('errormator_client',
+                                        'templates/default_template.ini')
+timing_conf = client.get_config(path_to_config=fname)
+for k,v in timing_conf.iteritems(): 
+    if 'errormator.timing' in k:
+        timing_conf[k] = 0.000001
+
+
+client.Client(config=timing_conf)
 from errormator_client.timing import local_timing
 
 def example_filter_callable(structure, section=None):
@@ -473,7 +475,6 @@ class TestMakeMiddleware(unittest.TestCase):
         def app(environ, start_response):
             start_response('200 OK', [('content-type', 'text/html')])
             return ['Hello world!']
-        client.make_errormator_client()
         app = make_errormator_middleware(app, {})
         self.assertTrue(isinstance(app, ErrormatorWSGIWrapper))
 

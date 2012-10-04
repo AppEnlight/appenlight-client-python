@@ -25,7 +25,7 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-
+from __future__ import with_statement
 import datetime
 import logging
 import sys
@@ -36,6 +36,8 @@ import socket
 import urllib
 import urllib2
 import uuid
+import ConfigParser
+import os
 
 from errormator_client.ext_json import json
 from errormator_client.utils import asbool, aslist
@@ -43,8 +45,6 @@ from webob import Request
 
 # are we running python 3.x ?
 PY3 = sys.version_info[0] == 3
-
-ERRORMATOR_CLIENT = None
 
 DATE_FRMT = '%Y-%m-%dT%H:%M:%S.%f'
 LEVELS = {'debug': logging.DEBUG,
@@ -57,10 +57,10 @@ log = logging.getLogger(__name__)
 
 
 class Client(object):
-    __version__ = '0.4.1'
+    __version__ = '0.4.5'
     __protocol_version__ = '0.3'
 
-    def __init__(self, config):
+    def __init__(self, config=None):
         """
         at minimum client expects following keys to be present::
         
@@ -409,23 +409,29 @@ class Client(object):
         report_data.update(errormator_info)
         return report_data, errormator_info
 
-def make_errormator_client(path_to_ini=None, config=dict()):
-    global ERRORMATOR_CLIENT
-    if ERRORMATOR_CLIENT is None:
-        log.info('creating new errormator client')
-        ERRORMATOR_CLIENT = Client(config=config) 
+def get_config(config=None, path_to_config=None, section_name='errormator'):
+    if path_to_config:
+        with open(path_to_config) as f:
+            parser = ConfigParser.SafeConfigParser()
+            parser.readfp(f)
+            try:
+                config = dict(parser.items(section_name))
+            except ConfigParser.NoSectionError as e:
+                config = {}
+                log.warning('No section name called %s in file' % section_name)
+            return config                    
+    return config
 
 def make_errormator_middleware(app, global_config, **kw):
-    global ERRORMATOR_CLIENT
     config = global_config.copy()
     config.update(kw)
     #this shuts down all errormator functionalities
     if not asbool(config.get('errormator', True)):
         return app
-    if not ERRORMATOR_CLIENT:
-        log.warning('Errormator client not initialized - Consult client documentation')
-        return app
-
+    ini_path = os.environ.get('ERRORMATOR_INI',
+                              config.get('errormator.config_path'))
+    config = get_config(config=config, path_to_config=ini_path)
+    client = Client(config)
     from errormator_client.wsgi import ErrormatorWSGIWrapper
-    app = ErrormatorWSGIWrapper(app, ERRORMATOR_CLIENT)
+    app = ErrormatorWSGIWrapper(app, client)
     return app

@@ -19,6 +19,10 @@ setup(name='errormator_client',
       license='BSD',
       zip_safe=True,
       packages=find_packages(),
+      include_package_data=True,
+      package_data={
+        '': ['*.txt', '*.rst', '*.ini']
+        },
       install_requires=[
           "webob",
           "decorator"
