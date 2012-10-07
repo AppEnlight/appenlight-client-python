@@ -37,7 +37,7 @@ def stack_inspector():
     path = []
     traces = 0
     for frame in stack:
-        if frame[3] == '_e_trace':
+        if frame[3] == '_e_trace':             
             traces += 1
             continue
         name = []
@@ -66,13 +66,14 @@ def _e_trace(info_gatherer, min_duration, callable, *args, **kw):
             'duration':duration}
     info.update(info_gatherer(*args, **kw))
     path, traces = stack_inspector()
+    # traces >= 2 means that this call was in some other lib thats was timed 
     if traces < 2:
         if not hasattr(local_timing, '_errormator'):
             local_timing._errormator = ErrormatorLocalStorage()
         local_timing._errormator.add_slow_call(info)
     return result
 
-def trace_factory(info_gatherer, min_duration):
+def trace_factory(info_gatherer, min_duration, is_template=False):
     """ Used to auto decorate callables in deco_func_or_method for other 
         non dbapi2 modules """
     
@@ -87,6 +88,7 @@ def trace_factory(info_gatherer, min_duration):
                 'duration':duration}
         info.update(info_gatherer(*args, **kw))
         path, traces = stack_inspector()
+        # traces >= 2 means that this call was in some other lib thats was timed
         if traces < 2:
             if not hasattr(local_timing, '_errormator'):
                 local_timing._errormator = ErrormatorLocalStorage()
@@ -94,9 +96,11 @@ def trace_factory(info_gatherer, min_duration):
         return result 
     return _e_trace
 
-def time_trace(f, gatherer, min_duration):
+def time_trace(f, gatherer, min_duration, is_template=False):
     deco = decorator(trace_factory(gatherer, min_duration), f)
     deco._e_attached_tracer = True
+    if is_template:
+        deco._e_is_template = True
     return deco
 
 

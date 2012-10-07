@@ -42,7 +42,8 @@ def import_from_module(name):
     except ImportError as e:
         log.debug('Could not import from module: %s' % e)
         
-def deco_func_or_method(module, name, deco_f, gatherer, min_duration):
+def deco_func_or_method(module, name, deco_f, gatherer, min_duration,
+                        is_template=False):
     _tmp = name.split('.')
     callable = getattr(module, _tmp[0], None)
     # decorate and set new value for foo.bar
@@ -52,7 +53,7 @@ def deco_func_or_method(module, name, deco_f, gatherer, min_duration):
         # but very important for tests
         if hasattr(callable, '_e_attached_tracer'):
             return
-        callable = deco_f(callable, gatherer, min_duration)
+        callable = deco_f(callable, gatherer, min_duration, is_template)
         setattr(module, _tmp[0], callable)
     # decorate and set new value for foo.Bar.baz
     elif len(_tmp) > 1 and callable:
@@ -63,7 +64,7 @@ def deco_func_or_method(module, name, deco_f, gatherer, min_duration):
                 return
             setattr(cls_to_update, _tmp[1],
                     deco_f(getattr(callable, 'im_func', callable), gatherer,
-                           min_duration)
+                           min_duration, is_template)
                     )
     else:
         log.debug("can't decorate %s " % name)

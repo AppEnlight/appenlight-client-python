@@ -16,7 +16,7 @@ def add_timing(min_duration=0.05):
     if hasattr(environment.Template, '_e_attached_wrapper'):
         return
     deco_func_or_method(environment, 'Template.render', time_trace,
-                          gather_template, min_duration)
+                          gather_template, min_duration, is_template=True)
     
     environment.Environment.template_class = environment.Template
     module.Template = environment.Template
