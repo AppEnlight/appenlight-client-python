@@ -1,7 +1,7 @@
 from __future__ import with_statement
 import os
 import pkg_resources
-from optparse import OptionParser
+import sys
 from errormator_client import client
 import logging
 logging.basicConfig()
@@ -33,6 +33,7 @@ class CommandRouter(object):
                 with open(ini_path, 'w') as f:
                     f.write(ini_str)
                 print '\nCreated new errormator client config: %s' % ini_path
+                print 'REMEMBER TO UPDATE YOUR API KEY IN INI FILE'
             
         print "\n\nFinished"
     
@@ -50,17 +51,34 @@ class CommandRouter(object):
         errormator_client.py_log({}, [record])
         result = errormator_client.submit_data()
         if not result['logs']:
-            print 'something went wront, please check your API key'
+            print 'something went wrong, please check your API key'
         else:
             print 'Test entry transmitted correctly'
-        
+
+    @classmethod
+    def pserve(self, *args, **kwargs):
+        argv = sys.argv
+        quiet = False
+        ini_path = os.environ.get('ERRORMATOR_INI')
+        if not ini_path:
+            print "ERRORMATOR_INI variable is missing from environment/run cmd"
+            print "Aborting"
+            return
+        config = client.get_config(path_to_config=ini_path)
+        if not config.get('errormator'):
+            print 'Basic config keys seems missing'
+            print "Aborting"
+            return
+        client.Client(config)
+        from pyramid.scripts import pserve
+        command = pserve.PServeCommand(argv[1:], quiet=quiet)
+        return command.run()
         
 
 def cli_start():
-    parser = OptionParser()
-    (options, args) = parser.parse_args()
-    command = args[0]
-    command_args = args[1:]
+    args = sys.argv
+    command = args[1]
+    command_args = args[2:]
     callable = getattr(CommandRouter, command, None)
     if not callable:
         print 'There is no command like %s' % command

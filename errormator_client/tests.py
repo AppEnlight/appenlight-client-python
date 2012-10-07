@@ -16,7 +16,6 @@ for k,v in timing_conf.iteritems():
     if 'errormator.timing' in k:
         timing_conf[k] = 0.000001
 
-
 client.Client(config=timing_conf)
 from errormator_client.timing import local_timing
 
@@ -717,20 +716,19 @@ class TestMako(unittest.TestCase):
 class TestJinja2(unittest.TestCase):
    
     def setUpClient(self, config={}):
-        self.client = client.Client(config)
-        
-    def setUp(self):
-        self.setUpClient(timing_conf)
+        self.client = client.Client(timing_conf)
    
     def test_render(self):
         try:
             import jinja2
         except ImportError:
             return
+        import time
         template = jinja2.Template('''
+        {{sleep(0.06)}}
         xxxxx {{1+2}} yyyyyy
         ''')
-        template.render()
+        template.render(sleep=time.sleep)
         result = local_timing._errormator.get_slow_calls()
         self.assertEqual(len(result), 1)
 

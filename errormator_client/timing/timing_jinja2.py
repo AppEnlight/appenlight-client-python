@@ -5,33 +5,18 @@ def add_timing(min_duration=0.05):
     module = import_module('jinja2')
     if not module:
         return
-    class Wrapper(object):
+    
+    from jinja2 import environment
+   
+    def gather_template(template, *args, **kwargs):
+        return {'type':'template',
+                'statement':'render_jinja2',
+                'parameters':''}
         
-        _e_attached_wrapper = True
-        
-        def __init__(self, class_obj):
-            # assign to superclass or face the infinite recursion consequences
-            object.__setattr__(self, '_e_object', class_obj)
-        
-        def __setattr__(self, name, value):
-            return setattr(self._e_object, name, value)
-        
-        def __getattr__(self, name):
-            return getattr(self._e_object, name)
-        
-        def __call__(self, *args, **kwargs):
-            tmpl = kwargs.get('filename', 'textual')
-            def gather_args_render(*args, **kwargs):
-                return {'type':'template',
-                        'statement':'jinja2_render',
-                        'parameters':tmpl}
-           
-            deco_func_or_method(module, 'Template.render', time_trace,
-                          gather_args_render, min_duration)
-            deco_func_or_method(module, 'Environment.compile', time_trace,
-                          gather_args_render, min_duration)
-            return self._e_object(*args, **kwargs)
-        
-    if hasattr(module.Template, '_e_attached_wrapper'):
-        return        
-    module.Template = Wrapper(module.Template)
+    if hasattr(environment.Template, '_e_attached_wrapper'):
+        return
+    deco_func_or_method(environment, 'Template.render', time_trace,
+                          gather_template, min_duration)
+    
+    environment.Environment.template_class = environment.Template
+    module.Template = environment.Template

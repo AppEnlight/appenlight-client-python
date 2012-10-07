@@ -10,8 +10,8 @@ def add_timing(min_duration=0.05):
     
     def gather_template(template, *args, **kwargs):
         return {'type':'template',
-                'statement':'Template.render',
-                'parameters':template.name}
+                'statement':'render_django',
+                'parameters':''}
     
     if hasattr(template.Template, 'render'):
         deco_func_or_method(template, 'Template.render', time_trace,

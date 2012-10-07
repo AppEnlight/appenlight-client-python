@@ -38,6 +38,7 @@ import urllib2
 import uuid
 import ConfigParser
 import os
+import decorator
 
 from errormator_client.ext_json import json
 from errormator_client.utils import asbool, aslist
@@ -60,7 +61,7 @@ class Client(object):
     __version__ = '0.4.5'
     __protocol_version__ = '0.3'
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, register_timing=True):
         """
         at minimum client expects following keys to be present::
         
@@ -422,15 +423,36 @@ def get_config(config=None, path_to_config=None, section_name='errormator'):
             return config                    
     return config
 
-def make_errormator_middleware(app, global_config, **kw):
+def decorate(ini_file=None, register_timing=True):
+    def make_errormator_middleware(app, global_config={}, **kw):
+        config = global_config.copy()
+        config.update(kw)
+        #this shuts down all errormator functionalities
+        if not asbool(config.get('errormator', True)):
+            return app
+        log.critical('ERRORMATOR MIDDLEWARE')
+        ini_path = os.environ.get('ERRORMATOR_INI',
+                                  config.get('errormator.config_path',
+                                             ini_file))
+        config = get_config(config=config, path_to_config=ini_path)
+        client = Client(config)
+        from errormator_client.wsgi import ErrormatorWSGIWrapper
+        app = ErrormatorWSGIWrapper(app, client)
+        return app    
+    def foo(f):
+        return decorator.decorator(make_errormator_middleware, f)
+    return foo
+    
+#TODO: refactor this to share the code
+def make_errormator_middleware(app, global_config={}, **kw):
     config = global_config.copy()
     config.update(kw)
+    ini_path = os.environ.get('ERRORMATOR_INI',
+                              config.get('errormator.config_path'))
+    config = get_config(config=config, path_to_config=ini_path)    
     #this shuts down all errormator functionalities
     if not asbool(config.get('errormator', True)):
         return app
-    ini_path = os.environ.get('ERRORMATOR_INI',
-                              config.get('errormator.config_path'))
-    config = get_config(config=config, path_to_config=ini_path)
     client = Client(config)
     from errormator_client.wsgi import ErrormatorWSGIWrapper
     app = ErrormatorWSGIWrapper(app, client)
