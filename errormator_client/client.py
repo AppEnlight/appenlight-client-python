@@ -69,7 +69,7 @@ class Client(object):
             errormator.server_url = https://api.errormator.com
             errormator.api_key = YOUR_API_KEY
 
-        additional config keys you can set in config object::
+        additional config keys you can set::
 
             errormator.server_name - identifier for Instance/Server Name your application is running on (default: auto determined fqdn of server)
             errormator.timeout - connection timeout when communicating with API
@@ -452,6 +452,9 @@ def make_errormator_middleware(app, global_config={}, **kw):
     config = get_config(config=config, path_to_config=ini_path)    
     #this shuts down all errormator functionalities
     if not asbool(config.get('errormator', True)):
+        log.warning('''ERRORMATOR_INI config variable is missing from 
+                    environment or errormator.config_path 
+                    not passed in app global config''')
         return app
     client = Client(config)
     from errormator_client.wsgi import ErrormatorWSGIWrapper
