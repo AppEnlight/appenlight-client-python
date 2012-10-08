@@ -76,6 +76,18 @@ class CommandRouter(object):
 
 def cli_start():
     args = sys.argv
+    if not args:
+        print """
+        Possible commands
+        makeini [ERRORMATOR_INI_NAME] - creates new config file for errormator
+        
+        testini [ERRORMATOR_INI_NAME] - sends a test log entry to test your API key
+        
+        pserve  [APP_CONFIG.ini]      - ensures errormator client decorates all 
+                                        libs before pyramid's pserve command is 
+                                        executed
+        """
+        return
     command = args[1]
     command_args = args[2:]
     callable = getattr(CommandRouter, command, None)
