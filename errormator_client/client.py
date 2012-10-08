@@ -411,6 +411,8 @@ class Client(object):
         return report_data, errormator_info
 
 def get_config(config=None, path_to_config=None, section_name='errormator'):
+    if not config and not path_to_config:
+        path_to_config = os.environ.get('ERRORMATOR_INI')
     if path_to_config:
         config = {}
         if not os.path.exists(path_to_config):
