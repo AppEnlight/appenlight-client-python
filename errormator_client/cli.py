@@ -76,7 +76,7 @@ class CommandRouter(object):
 
 def cli_start():
     args = sys.argv
-    if not args:
+    if len(args) < 2:
         print """
         Possible commands
         makeini [ERRORMATOR_INI_NAME] - creates new config file for errormator
@@ -85,7 +85,7 @@ def cli_start():
         
         pserve  [APP_CONFIG.ini]      - ensures errormator client decorates all 
                                         libs before pyramid's pserve command is 
-                                        executed
+                                        executed, use instead normal pserve command
         """
         return
     command = args[1]
