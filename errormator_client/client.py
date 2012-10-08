@@ -450,7 +450,10 @@ def decorate(ini_file=None, register_timing=True):
     
 #TODO: refactor this to share the code
 def make_errormator_middleware(app, global_config={}, **kw):
-    config = global_config.copy()
+    if global_config:
+        config = global_config.copy()
+    else:
+        config = {}
     config.update(kw)
     ini_path = os.environ.get('ERRORMATOR_INI',
                               config.get('errormator.config_path'))
