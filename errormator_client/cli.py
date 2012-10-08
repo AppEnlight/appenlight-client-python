@@ -60,16 +60,15 @@ class CommandRouter(object):
         argv = sys.argv
         quiet = False
         ini_path = os.environ.get('ERRORMATOR_INI')
+        config = {}
         if not ini_path:
             print "ERRORMATOR_INI variable is missing from environment/run cmd"
-            print "Aborting"
-            return
-        config = client.get_config(path_to_config=ini_path)
+        else:
+            config = client.get_config(path_to_config=ini_path)
         if not config.get('errormator'):
-            print 'Basic config keys seems missing'
-            print "Aborting"
-            return
-        client.Client(config)
+            print 'WARNING Could not instantiate the client properly'
+        else:
+            client.Client(config)
         from pyramid.scripts import pserve
         command = pserve.PServeCommand(argv[1:], quiet=quiet)
         return command.run()
