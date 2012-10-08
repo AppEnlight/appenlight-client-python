@@ -412,13 +412,16 @@ class Client(object):
 
 def get_config(config=None, path_to_config=None, section_name='errormator'):
     if path_to_config:
+        config = {}
+        if not os.path.exists(path_to_config):
+            log.warning("Couldn't locate %s " % path_to_config)
+            return config            
         with open(path_to_config) as f:
             parser = ConfigParser.SafeConfigParser()
             parser.readfp(f)
             try:
                 config = dict(parser.items(section_name))
             except ConfigParser.NoSectionError as e:
-                config = {}
                 log.warning('No section name called %s in file' % section_name)
             return config                    
     return config
