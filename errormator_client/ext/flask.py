@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from flask import request
 from flask.signals import got_request_exception
-from errormator_client import make_errormator_middleware, get_config
+from errormator_client.client import make_errormator_middleware, get_config
 from errormator_client.ext.general import gather_data
 
 
