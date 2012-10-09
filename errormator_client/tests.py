@@ -378,7 +378,7 @@ def generate_error():
 
 class TestClientSending(unittest.TestCase):
 
-    def setUpClient(self, config={}):
+    def setUpClient(self, config={'errormator.api_key':'blargh!'}):
         self.client = client.Client(config)
 
     def test_check_if_deliver_false(self):
