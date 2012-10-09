@@ -1,7 +1,7 @@
 from errormator_client.utils import import_module, deco_func_or_method
 from errormator_client.timing import time_trace, import_from_module, _e_trace
 
-def add_timing(min_duration=0.05):
+def add_timing(min_duration=0.15):
     module = import_module('mako')
     if not module:
         return

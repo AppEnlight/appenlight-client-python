@@ -459,10 +459,11 @@ def make_errormator_middleware(app, global_config={}, **kw):
                               config.get('errormator.config_path'))
     config = get_config(config=config, path_to_config=ini_path)    
     #this shuts down all errormator functionalities
-    if not asbool(config.get('errormator', True)):
+    if not asbool(config.get('errormator', False)):
         log.warning('''ERRORMATOR_INI config variable is missing from 
                     environment or errormator.config_path 
-                    not passed in app global config''')
+                    not passed in app global config, 
+                    or errormator disabled in config''')
         return app
     client = Client(config)
     from errormator_client.wsgi import ErrormatorWSGIWrapper
