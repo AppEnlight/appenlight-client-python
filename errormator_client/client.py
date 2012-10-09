@@ -220,7 +220,8 @@ class Client(object):
 
     def remote_call(self, data, endpoint):
         if not self.config['api_key']:
-            log.warning('no api key set - dropping payload')            
+            log.warning('no api key set - dropping payload')
+            return False          
         GET_vars = urllib.urlencode({'protocol_version': self.__protocol_version__})
         server_url = '%s%s?%s' % (self.config['server_url'], endpoint, GET_vars,)
         headers = {'content-type': 'application/json',
