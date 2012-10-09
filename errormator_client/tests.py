@@ -474,14 +474,14 @@ class TestMakeMiddleware(unittest.TestCase):
         def app(environ, start_response):
             start_response('200 OK', [('content-type', 'text/html')])
             return ['Hello world!']
-        app = make_errormator_middleware(app, {})
+        app = make_errormator_middleware(app, {'errormator':True})
         self.assertTrue(isinstance(app, ErrormatorWSGIWrapper))
 
     def test_make_middleware_disabled(self):
         def app(environ, start_response):
             start_response('200 OK', [('content-type', 'text/html')])
             return ['Hello world!']
-        app = make_errormator_middleware(app, {'errormator':False})        
+        app = make_errormator_middleware(app, {})        
         self.assertFalse(isinstance(app, ErrormatorWSGIWrapper))
 
 

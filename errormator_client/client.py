@@ -219,6 +219,8 @@ class Client(object):
         return False
 
     def remote_call(self, data, endpoint):
+        if not self.config['api_key']:
+            log.warning('no api key set - dropping payload')            
         GET_vars = urllib.urlencode({'protocol_version': self.__protocol_version__})
         server_url = '%s%s?%s' % (self.config['server_url'], endpoint, GET_vars,)
         headers = {'content-type': 'application/json',
@@ -426,7 +428,7 @@ def get_config(config=None, path_to_config=None, section_name='errormator'):
             except ConfigParser.NoSectionError as e:
                 log.warning('No section name called %s in file' % section_name)
             return config                    
-    return config
+    return config or {}
 
 def decorate(ini_file=None, register_timing=True):
     def make_errormator_middleware(app, global_config={}, **kw):
