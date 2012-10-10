@@ -1,6 +1,13 @@
 CHANGELOG:
 ==========
 
+2012-10-10
+    0.5.0 BACKWARDS INCOMPATIBLE with pre 0.5 versions, please consult 
+          integration documentation/readme 
+          Added timing to django, mako, jinja2, pymongo
+          Single thread spawned for all endpoint transports
+          Configuration based on separate ini file                 
+
 2012-09-26
     Bugfixes and better defaults, cleanups
     Ensure that we are not decorating code with timing methods twice

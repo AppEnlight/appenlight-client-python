@@ -20,36 +20,44 @@ Install ``errormator_client`` using pip::
 
     pip install errormator-client
 
+.. warning::
+    Errormator client 0.5 is **BACKWARDS INCOMPATIBLE** with previous versions,
+    please read integration documentation.
+
 Main Documentation location
 ===========================
 
-Errormator developer documentation contains most up to date information
+Errormator developer documentation contains most up to date information, 
+including implementation guides in popular python web frameworks. 
 
 https://errormator.com/page/api/main
     
 Usage
 =====
 
-usage (example for pyramid or other WSGI pipeline compatible solutions like Zope):
+Before you can use the client inside your application you first need to 
+navigate to the directory that stores your application configuration and issue
+following command::
+
+    $ENV/bin/python/errormator_client makeini errormator.ini
+
+Usage (example for pyramid or other WSGI pipeline compatible solutions like Zope):
 
 In your INI file you need to add::
 
-
     [filter:errormator_client]
     use = egg:errormator_client
-    debug = false
-    errormator = true
-    errormator.server_url = https://api.errormator.com
-    errormator.api_key = YOUR_API_KEY
-    #404 gathering
-    errormator.report_404 = true
-    ... other config vars go here....
+    errormator.config_path = %(here)s/errormator.ini #optional if you don't want to set ERRORMATOR_INI env var
 
     [pipeline:main]
-        pipeline =
+    pipeline =
+        .....your other pipeline entries ....
         errormator_client
-        .....your other pipeline entries .... 
         app_name
+
+To minimize configuration complexity, the client by default will look for 
+ERRORMATOR_INI environment variable that will supply absolute path 
+to config file.
 
 for pylons app you can modify config/middleware.py:
 import the callable and add this lines::
@@ -61,42 +69,10 @@ import the callable and add this lines::
 
 and add in your ini::
 
-    errormator = true
-    errormator.server_url = https://api.errormator.com
-    errormator.api_key = YOUR_API_KEY
-    errormator.report_404 = true
+    errormator.config_path = %(here)s/errormator.ini #optional if you don't want to set ERRORMATOR_INI env var
 
-
-additional config variables you can set in config object::
-
-    errormator.server_name - identifier for Instance/Server Name your application is running on 
-    (default: auto determined fqdn of server)
-    errormator.timeout - connection timeout when communicating with API
-    errormator.reraise_exceptions - reraise exceptions when wsgi catches exception
-    errormator.slow_requests - record slow requests in application (needs to be enabled for slow datastore recording)
-    errormator.logging - enable hooking to application loggers
-    errormator.logging.level - minimum log level for log capture
-    errormator.logging_on_error - send logs only from erroneous/slow requests (default false) 
-    errormator.slow_request_time - (float/int) time in seconds after request is considered being slow 
-    (default 3)
-    errormator.report_404 - enables 404 error logging (default False)
-    errormator.report_errors - enables 500 error logging (default True)
-    errormator.buffer_flush_interval - how often send data to mothership Errormator (default 5)
-    errormator.force_send - send all data after request is finished - handy for crons or other voliatile applications
-    errormator.environ_keys_whitelist - list of addotonal keywords that should be grabbed from environ object
-    (can be string with comma separated list of words in lowercase)
-    (by default client will always send following info 'REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE' 
-    + all keys that start with HTTP* this list be extended with additional keywords set in config)
-    errormator.request_keys_blacklist - list of keywords that should be blanked from request object
-    (can be string with comma separated list of words in lowercase)
-    (by default client will always blank keys that contain following words 
-    'password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf', this list be extended with additional keywords set in config)
-    errormator.log_namespace_blacklist = list of namespaces that should be ignores when gathering log entries
-    (can be string with comma separated list of namespaces
-    by default the client ignores own entries: errormator_client.client)
-    
-    
-Errormator client also provides slow call and datastore timing capabilities, 
+       
+Errormator client provides slow call and datastore timing capabilities, 
 currently out of the box folliwing libraries are supported:
 
 * urllib
@@ -106,22 +82,10 @@ currently out of the box folliwing libraries are supported:
 * pysolr
 * httplib
 * most used dbapi2 drivers
-
-All of client capabilities are enabled by default (usually 1s is considered slow), 
-but you can change the amount of time a call is considered slow by passing 
-variable to client settings ini ::
-
-    errormator.timing.pysolr = 0.1
-    errormator.timing.dbapi2_psycopg2 = 0.1
-
-Or add a key to your settings object ::
-
-
-    'errormator.timing':{'dbapi2_psycopg2':0.1,
-                         'dbapi2_MySQLdb':0.1,
-                         'timing_pysolr':0.1,
-                         }
-
+* mongodb
+* mako templates
+* jinja2 templates
+* django templates
 
 If for some reason you want to disable timing of specific library - just set the 
 time value to false.
@@ -133,20 +97,8 @@ For django framework there is separate compatible middleware provided.
 
 Modify your settings file to contain::
 
-    ERRORMATOR = {
-            'errormator': True,
-            'errormator.server_url': 'https://api.errormator.com',
-            'errormator.api_key': 'YOUR_API_KEY',
-            'errormator.catch_callback': False,
-            'errormator.report_404': True,
-            'errormator.logging': True,
-            'errormator.logging.level': 'WARNING',
-            'errormator.slow_request': True,
-            'errormator.slow_request.time': 30,
-            'errormator.slow_request.sqlalchemy': True,
-            'errormator.slow_query.time': 7,
-            'errormator.buffer_flush_time': 5,
-              }
+    import errormator_client.client as e_client
+    ERRORMATOR = e_client.get_config()
 
 Additionally middleware stack needs to be modified with additional middleware::
 
@@ -158,6 +110,9 @@ Additionally middleware stack needs to be modified with additional middleware::
 
 Please note that errormator middleware should be the first one in stack to 
 function properly.
+
+Run your django app providing ERRORMATOR_INI env variable containing absolute 
+path to your config file.
 
 Changing default scaffold configuration in Pyramid Web Framework
 ================================================================
