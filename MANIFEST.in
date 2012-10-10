@@ -1,0 +1,2 @@
+include *.txt *.ini *.cfg *.rst
+recursive-include errormator_client *.ico *.png *.css *.gif *.jpg *.pt *.txt *.mak *.mako *.js *.html *.xml *.jinja2 *.rst *.ini
