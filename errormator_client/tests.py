@@ -208,13 +208,13 @@ class TestClientConfig(unittest.TestCase):
                          datetime.timedelta(seconds=1))
 
     def test_custom_slow_request_time(self):
-        config = {'errormator.slow_request.time': "2"}
+        config = {'errormator.slow_request_time': "2"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['slow_request_time'],
                          datetime.timedelta(seconds=2))
 
     def test_too_low_custom_slow_request_time(self):
-        config = {'errormator.slow_request.time': "0.001"}
+        config = {'errormator.slow_request_time': "0.001"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['slow_request_time'],
                          datetime.timedelta(seconds=0.01))
