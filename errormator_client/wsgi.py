@@ -64,9 +64,9 @@ class ErrormatorWSGIWrapper(object):
                         [('Content-Type', 'text/html; charset=utf-8')])
             except Exception as e:
                 environ['wsgi.errors'].write(
-                    'ErrormatorWSGIWrapper middleware catched exception in streamed'
-                    ' response at a point where response headers were already'
-                    ' sent.\n')
+            'ErrormatorWSGIWrapper middleware catched exception in streamed'
+            ' response at a point where response headers were already'
+            ' sent.\n')
             else:
                 return 'Server Error'
         finally:

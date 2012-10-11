@@ -2,6 +2,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 def asbool(obj):
     if isinstance(obj, (str, unicode)):
         obj = obj.strip().lower()
@@ -13,6 +14,7 @@ def asbool(obj):
             raise ValueError(
                 "String is not true/false: %r" % obj)
     return bool(obj)
+
 
 def aslist(obj, sep=None, strip=True):
     if isinstance(obj, basestring):
@@ -26,13 +28,14 @@ def aslist(obj, sep=None, strip=True):
         return []
     else:
         return [obj]
-    
-    
+
+
 def import_module(name):
     try:
         return __import__(name, globals(), locals(), [], -1)
     except ImportError as e:
         log.debug('Could not import module: %s' % e)
+
 
 def import_from_module(name):
     try:
@@ -41,7 +44,8 @@ def import_from_module(name):
         return getattr(_tmp, parts[1])
     except ImportError as e:
         log.debug('Could not import from module: %s' % e)
-        
+
+
 def deco_func_or_method(module, name, deco_f, gatherer, min_duration,
                         is_template=False):
     _tmp = name.split('.')
@@ -57,7 +61,7 @@ def deco_func_or_method(module, name, deco_f, gatherer, min_duration,
         setattr(module, _tmp[0], callable)
     # decorate and set new value for foo.Bar.baz
     elif len(_tmp) > 1 and callable:
-        cls_to_update = callable 
+        cls_to_update = callable
         callable = getattr(callable, _tmp[1], None)
         if callable:
             if hasattr(callable, '_e_attached_tracer'):

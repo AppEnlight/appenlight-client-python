@@ -8,13 +8,15 @@ logging.basicConfig()
 
 cwd = os.getcwd()
 
-class CommandRouter(object):   
-    
+
+class CommandRouter(object):
+
     @classmethod
     def makeini(cls, ini_name):
         while True:
             print '\nCurrent directory: %s' % cwd
-            question = '\nThere is no ini file in current directory, create one? y/n: '
+            question = '''\nThere is no ini file in current directory,
+                        create one? y/n: '''
             confirm = raw_input(question).lower()
             if confirm and confirm in ['y', 'yes']:
                 confirm = True
@@ -34,9 +36,9 @@ class CommandRouter(object):
                     f.write(ini_str)
                 print '\nCreated new errormator client config: %s' % ini_path
                 print 'REMEMBER TO UPDATE YOUR API KEY IN INI FILE'
-            
+
         print "\n\nFinished"
-    
+
     @classmethod
     def testini(cls, ini_name):
         print '\nCurrent directory: %s' % cwd
@@ -45,9 +47,9 @@ class CommandRouter(object):
         print 'INI file read - creating client'
         errormator_client = client.Client(config)
         print 'Client created, sending test entry'
-        record = logging.makeLogRecord({'name':'errormator.client.test',
-                                'message':'Test entry'})
-        
+        record = logging.makeLogRecord({'name': 'errormator.client.test',
+                                'message': 'Test entry'})
+
         errormator_client.py_log({}, [record])
         result = errormator_client.submit_data()
         if not result['logs']:
@@ -72,26 +74,26 @@ class CommandRouter(object):
         from pyramid.scripts import pserve
         command = pserve.PServeCommand(argv[1:], quiet=quiet)
         return command.run()
-        
+
 
 def cli_start():
     args = sys.argv
     if len(args) < 2:
         print """
-        Possible commands
-        makeini [ERRORMATOR_INI_NAME] - creates new config file for errormator
-        
-        testini [ERRORMATOR_INI_NAME] - sends a test log entry to test your API key
-        
-        pserve  [APP_CONFIG.ini]      - ensures errormator client decorates all 
-                                        libs before pyramid's pserve command is 
-                                        executed, use instead normal pserve command
+    Possible commands
+    makeini [ERRORMATOR_INI_NAME] - creates new config file for errormator
+
+    testini [ERRORMATOR_INI_NAME] - sends a test log entry to test your API key
+
+    pserve  [APP_CONFIG.ini]      - ensures errormator client decorates all
+                                    libs before pyramid's pserve command is
+                                    executed, use instead normal pserve command
         """
         return
     command = args[1]
     command_args = args[2:]
-    callable = getattr(CommandRouter, command, None)
-    if not callable:
+    e_callable = getattr(CommandRouter, command, None)
+    if not e_callable:
         print 'There is no command like %s' % command
     else:
         callable(*command_args)

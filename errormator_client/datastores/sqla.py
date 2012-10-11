@@ -16,7 +16,7 @@ def sqlalchemy_07_listener(delta, datastore_handler):
 
     @event.listens_for(Engine, "after_cursor_execute")
     def _after_cursor_execute(conn, cursor, stmt, params, context, execmany):
-        if not hasattr(conn,'err_query_start'):
+        if not hasattr(conn, 'err_query_start'):
             return
         td = datetime.datetime.utcnow() - conn.err_query_start
         if td >= delta:
@@ -24,13 +24,13 @@ def sqlalchemy_07_listener(delta, datastore_handler):
                         (td.seconds + td.days * 24 * 3600) * 10 ** 6 / 10 ** 6,
                              td.microseconds)
                              )
-            query_info = {'type':'sqlalchemy',
-                          'timestamp':conn.err_query_start,
+            query_info = {'type': 'sqlalchemy',
+                          'timestamp': conn.err_query_start,
                           'duration': duration,
                           'statement': stmt,
                           'parameters': params
                     }
             log_slow.debug('slow query detected',
-                             extra={'errormator_data':query_info}
+                             extra={'errormator_data': query_info}
                               )
         delattr(conn, 'err_query_start')

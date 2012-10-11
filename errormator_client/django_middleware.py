@@ -40,8 +40,9 @@ class ErrormatorMiddleware(object):
         else:
             http_status = 500
             exc_type, exc_value, tb = sys.exc_info()
-            request.__traceback__ = get_current_traceback(skip=1, show_hidden_frames=True,
-                                              ignore_system_exceptions=True)
+            request.__traceback__ = get_current_traceback(skip=1,
+                                            show_hidden_frames=True,
+                                            ignore_system_exceptions=True)
 
         # report 500's and 404's
         if not self.errormator_client.config['report_errors']:
@@ -51,7 +52,6 @@ class ErrormatorMiddleware(object):
                                          message=None,
                                          http_status=http_status,
                                          start_time=request.__start_time__)
-        
 
     def process_response(self, request, response):
         environ = request.environ

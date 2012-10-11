@@ -32,7 +32,7 @@ import sys
 import threading
 import time
 import socket
-#import requests
+# import requests
 import urllib
 import urllib2
 import uuid
@@ -64,78 +64,73 @@ class Client(object):
     def __init__(self, config=None, register_timing=True):
         """
         at minimum client expects following keys to be present::
-        
+
             errormator = true
             errormator.server_url = https://api.errormator.com
             errormator.api_key = YOUR_API_KEY
-
-        additional config keys you can set::
-
-            errormator.server_name - identifier for Instance/Server Name your application is running on (default: auto determined fqdn of server)
-            errormator.timeout - connection timeout when communicating with API
-            errormator.reraise_exceptions - reraise exceptions when wsgi catches exception
-            errormator.slow_requests - record slow requests in application (needs to be enabled for slow datastore recording)
-            errormator.logging - enable hooking to application loggers
-            errormator.logging.level - minimum log level for log capture
-            errormator.logging_on_error - send logs only from erroneous/slow requests (default false) 
-            errormator.slow_request_time - (float/int) time in seconds after request is considered being slow (default 1)
-            errormator.report_404 - enables 404 error logging (default False)
-            errormator.report_errors - enables 500 error logging (default True)
-            errormator.buffer_flush_interval - how often send data to mothership Errormator (default 5)
-            errormator.force_send - send all data after request is finished - handy for crons or other voliatile applications
-            errormator.environ_keys_whitelist - list of addotonal keywords that should be grabbed from environ object - can be string with comma separated list of words in lowercase
-            (by default client will always send following info 'REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE' + all keys that start with HTTP* this list be extended with additional keywords set in config)
-            errormator.request_keys_blacklist - list of keywords that should be blanked from request object - can be string with comma separated list of words in lowercase
-            (by default client will always blank keys that contain following words 'password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf', this list be extended with additional keywords set in config)
-            errormator.log_namespace_blacklist - list of namespaces that should be ignores when gathering log entries, can be string with comma separated list of namespaces
-            (by default the client ignores own entries: errormator_client.client)
 
         """
         self.config = {}
         # general options
         self.config['enabled'] = asbool(config.get('errormator', True))
-        self.config['server_name'] = config.get('errormator.server_name') or socket.getfqdn()
+        self.config['server_name'] = config.get('errormator.server_name') \
+                                                            or socket.getfqdn()
         self.config['client'] = config.get('errormator.client', 'python')
         self.config['api_key'] = config.get('errormator.api_key')
-        self.config['server_url'] = config.get('errormator.server_url', 'https://api.errormator.com')
+        self.config['server_url'] = config.get('errormator.server_url',
+                                               'https://api.errormator.com')
         self.config['timeout'] = int(config.get('errormator.timeout', 10))
         self.config['reraise_exceptions'] = asbool(
                 config.get('errormator.reraise_exceptions', True))
-        self.config['slow_requests'] = asbool(config.get('errormator.slow_requests', True))
-        self.config['slow_request_time'] = float(config.get('errormator.slow_request.time', 1))
+        self.config['slow_requests'] = asbool(
+                                config.get('errormator.slow_requests', True))
+        self.config['slow_request_time'] = float(
+                                config.get('errormator.slow_request.time', 1))
         if self.config['slow_request_time'] < 0.01:
             self.config['slow_request_time'] = 0.01
-        self.config['slow_request_time'] = datetime.timedelta(seconds=self.config['slow_request_time'])
+        self.config['slow_request_time'] = datetime.timedelta(
+                                    seconds=self.config['slow_request_time'])
         self.config['logging'] = asbool(config.get('errormator.logging', True))
-        self.config['logging_on_error'] = asbool(config.get('errormator.logging_on_error', False))
-        self.config['report_404'] = asbool(config.get('errormator.report_404', False))
-        self.config['report_errors'] = asbool(config.get('errormator.report_errors', True))
-        self.config['buffer_flush_interval'] = int(config.get('errormator.buffer_flush_interval', 5))
-        self.config['force_send'] = asbool(config.get('errormator.force_send', False))
-        self.config['request_keys_blacklist'] = ['password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf',
+        self.config['logging_on_error'] = asbool(
+                            config.get('errormator.logging_on_error', False))
+        self.config['report_404'] = asbool(config.get('errormator.report_404',
+                                                      False))
+        self.config['report_errors'] = asbool(
+                                config.get('errormator.report_errors', True))
+        self.config['buffer_flush_interval'] = int(
+                            config.get('errormator.buffer_flush_interval', 5))
+        self.config['force_send'] = asbool(config.get('errormator.force_send',
+                                                      False))
+        self.config['request_keys_blacklist'] = ['password', 'passwd', 'pwd',
+                                                 'auth_tkt', 'secret', 'csrf',
                                                  'session']
         user_blacklist = aslist(config.get('errormator.request_keys_blacklist',
-                                           config.get('errormator.bad_request_keys')), ',')
+                            config.get('errormator.bad_request_keys')), ',')
         self.config['request_keys_blacklist'].extend(user_blacklist)
         if config.get('errormator.bad_request_keys'):
-            log.warning('errormator.bad_request_keys is deprecated use request_keys_blacklist') #pragma: nocover
+            log.warning('errormator.bad_request_keys is deprecated use request_keys_blacklist')  # pragma: nocover
 
         self.config['environ_keys_whitelist'] = [
                 'REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE',
                 'HTTP_REFERER']
-        environ_whitelist = aslist(config.get('errormator.environ_keys_whitelist'), ',')
+        environ_whitelist = aslist(
+                        config.get('errormator.environ_keys_whitelist'), ',')
         self.config['environ_keys_whitelist'].extend(environ_whitelist)
-        self.config['log_namespace_blacklist'] = aslist(config.get('errormator.log_namespace_blacklist', 'errormator_client.client'), ',')
+        self.config['log_namespace_blacklist'] = aslist(
+                            config.get('errormator.log_namespace_blacklist',
+                                       'errormator_client.client'), ',')
 
         self.filter_callable = config.get('errormator.filter_callable')
         if self.filter_callable:
             try:
                 parts = self.filter_callable.split(':')
-                _tmp = __import__(parts[0], globals(), locals(), [parts[1], ], -1)
+                _tmp = __import__(parts[0], globals(), locals(),
+                                  [parts[1], ], -1)
                 self.filter_callable = getattr(_tmp, parts[1])
             except ImportError as e:
                 self.filter_callable = self.data_filter
-                log.error('Could not import filter callable, using default, %s' % e)
+                msg = 'Could not import filter callable, using default, %s' % e
+                log.error(msg)
         else:
             self.filter_callable = self.data_filter
 
@@ -165,8 +160,8 @@ class Client(object):
 
         self.endpoints = {
                           "reports": '/api/reports',
-                          "slow_reports":'/api/slow_reports',
-                          "logs":'/api/logs',
+                          "slow_reports": '/api/slow_reports',
+                          "logs": '/api/logs',
                           }
 
         self.report_queue = []
@@ -179,9 +174,9 @@ class Client(object):
         self.last_submit = datetime.datetime.now()
 
     def submit_data(self):
-        results = {'reports':False,
-                   'logs':False,
-                   'slow_reports':False
+        results = {'reports': False,
+                   'logs': False,
+                   'slow_reports': False
                    }
         with self.report_queue_lock:
             reports = self.report_queue[:250]
@@ -221,11 +216,13 @@ class Client(object):
     def remote_call(self, data, endpoint):
         if not self.config['api_key']:
             log.warning('no api key set - dropping payload')
-            return False          
-        GET_vars = urllib.urlencode({'protocol_version': self.__protocol_version__})
-        server_url = '%s%s?%s' % (self.config['server_url'], endpoint, GET_vars,)
+            return False
+        GET_vars = urllib.urlencode({
+                                'protocol_version': self.__protocol_version__})
+        server_url = '%s%s?%s' % (self.config['server_url'], endpoint,
+                                  GET_vars,)
         headers = {'content-type': 'application/json',
-                   'x-errormator-api-key':self.config['api_key']}
+                   'x-errormator-api-key': self.config['api_key']}
         log.info('sending out %s entries to %s' % (len(data), endpoint,))
         try:
             req = urllib2.Request(server_url,
@@ -249,9 +246,10 @@ class Client(object):
 
     def data_filter(self, structure, section=None):
         if section in ['error_report', 'slow_report']:
-            keys_to_check = (structure['report_details'][0]['request'].get('COOKIES'),
-                              structure['report_details'][0]['request'].get('POST')
-                              )
+            keys_to_check = (
+                    structure['report_details'][0]['request'].get('COOKIES'),
+                    structure['report_details'][0]['request'].get('POST')
+                    )
 
         for source in filter(None, keys_to_check):
             for k in source.iterkeys():
@@ -272,7 +270,8 @@ class Client(object):
         with self.report_queue_lock:
             self.report_queue.append(report_data)
         log.warning(u'%s code: %s @%s' % (http_status,
-                            report_data.get('error_type'), url.decode('utf8', 'ignore'),))
+                            report_data.get('error_type'),
+                            url.decode('utf8', 'ignore'),))
         return True
 
     def py_log(self, environ, records=None, r_uuid=None, traceback=None):
@@ -295,15 +294,17 @@ class Client(object):
             try:
                 message = record.getMessage()
                 log_entries.append(
-                        {'log_level':record.levelname,
-                         "namespace":record.name,
-                        'message':'%s' % (message.encode('utf8') if isinstance(message, unicode) else message,),
+                        {'log_level': record.levelname,
+                         "namespace": record.name,
+                        'message': '%s' % (message.encode('utf8') \
+                                          if isinstance(message, unicode) \
+                                          else message,),
                         'server': self.config['server_name'],
-                        'date':time_string,
-                        'request_id':r_uuid
+                        'date': time_string,
+                        'request_id': r_uuid
                         })
             except (TypeError, UnicodeDecodeError, UnicodeEncodeError), e:
-                #handle some weird case where record.getMessage() fails
+                # handle some weird case where record.getMessage() fails
                 log.warning(e)
         with self.log_queue_lock:
             self.log_queue.extend(log_entries)
@@ -332,13 +333,13 @@ class Client(object):
         errormator_info = {}
         req = Request(environ)
         for key, value in req.environ.items():
-            if key.startswith('errormator.') and key not in ('errormator.client',
-                                                        'errormator.force_send',
-                                                        'errormator.log',
-                                                        'errormator.report'):
+            if key.startswith('errormator.') \
+            and key not in ('errormator.client', 'errormator.force_send',
+                            'errormator.log', 'errormator.report'):
                 errormator_info[key[11:]] = unicode(value)
             else:
-                if traceback and (key.startswith('HTTP') or key in self.config['environ_keys_whitelist']):
+                if traceback and (key.startswith('HTTP') or \
+                                key in self.config['environ_keys_whitelist']):
                     try:
                         if isinstance(value, str):
                             parsed_environ[key] = value.decode('utf8')
@@ -353,7 +354,8 @@ class Client(object):
             except Exception as e:
                 parsed_environ['COOKIES'] = {}
             try:
-                parsed_environ['GET'] = dict([(k, req.GET.getall(k)) for k in req.GET])
+                parsed_environ['GET'] = dict([(k, req.GET.getall(k))\
+                                              for k in req.GET])
             except Exception as e:
                 parsed_environ['GET'] = {}
             try:
@@ -361,10 +363,11 @@ class Client(object):
                                            for k in req.POST])
             except Exception as e:
                 parsed_environ['POST'] = {}
-                
+
         # figure out real ip
         if environ.get("HTTP_X_FORWARDED_FOR"):
-            remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[0].strip()
+            remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[0]\
+                                                                    .strip()
         else:
             remote_addr = (environ.get("HTTP_X_REAL_IP")
                            or environ.get('REMOTE_ADDR'))
@@ -375,10 +378,11 @@ class Client(object):
             errormator_info['URL'] = '/invalid-encoded-url'
         return parsed_environ, errormator_info
 
-
     def create_report_structure(self, environ, traceback=None, message=None,
-                http_status=200, server='unknown server', include_params=False):
-        (parsed_environ, errormator_info) = self.process_environ(environ, traceback,
+            http_status=200, server='unknown server', include_params=False):
+        (parsed_environ, errormator_info) = self.process_environ(
+                                                            environ,
+                                                            traceback,
                                                             include_params)
         report_data = {'client': 'Python', 'report_details': []}
         report_data['error_type'] = 'Unknown'
@@ -399,12 +403,15 @@ class Client(object):
         detail_entry['ip'] = parsed_environ.get('REMOTE_ADDR', u'')
         detail_entry['user_agent'] = parsed_environ.get('HTTP_USER_AGENT', u'')
         detail_entry['username'] = parsed_environ.get('REMOTE_USER',
-                                                parsed_environ.get('username', ''))
+                                                parsed_environ.get('username',
+                                                                   ''))
         detail_entry['url'] = errormator_info.pop('URL', 'unknown')
         if 'request_id' in errormator_info:
-            detail_entry['request_id'] = errormator_info.pop('request_id', None)
-        detail_entry['message'] = message or errormator_info.get('message', u'')
-        #conserve bandwidth pop keys that we dont need in request details
+            detail_entry['request_id'] = errormator_info.pop('request_id',
+                                                             None)
+        detail_entry['message'] = message or errormator_info.get('message',
+                                                                 u'')
+        # conserve bandwidth pop keys that we dont need in request details
         exclude_keys = ('HTTP_USER_AGENT', 'REMOTE_ADDR', 'HTTP_COOKIE',
                         'errormator.client')
         for k in exclude_keys:
@@ -413,6 +420,7 @@ class Client(object):
         report_data.update(errormator_info)
         return report_data, errormator_info
 
+
 def get_config(config=None, path_to_config=None, section_name='errormator'):
     if not config and not path_to_config:
         path_to_config = os.environ.get('ERRORMATOR_INI')
@@ -420,7 +428,7 @@ def get_config(config=None, path_to_config=None, section_name='errormator'):
         config = {}
         if not os.path.exists(path_to_config):
             log.warning("Couldn't locate %s " % path_to_config)
-            return config            
+            return config
         with open(path_to_config) as f:
             parser = ConfigParser.SafeConfigParser()
             parser.readfp(f)
@@ -428,14 +436,15 @@ def get_config(config=None, path_to_config=None, section_name='errormator'):
                 config = dict(parser.items(section_name))
             except ConfigParser.NoSectionError as e:
                 log.warning('No section name called %s in file' % section_name)
-            return config                    
+            return config
     return config or {}
+
 
 def decorate(ini_file=None, register_timing=True):
     def make_errormator_middleware(app, global_config={}, **kw):
         config = global_config.copy()
         config.update(kw)
-        #this shuts down all errormator functionalities
+        # this shuts down all errormator functionalities
         if not asbool(config.get('errormator', True)):
             return app
         log.critical('ERRORMATOR MIDDLEWARE')
@@ -446,12 +455,14 @@ def decorate(ini_file=None, register_timing=True):
         client = Client(config)
         from errormator_client.wsgi import ErrormatorWSGIWrapper
         app = ErrormatorWSGIWrapper(app, client)
-        return app    
+        return app
+
     def foo(f):
         return decorator.decorator(make_errormator_middleware, f)
     return foo
-    
-#TODO: refactor this to share the code
+
+
+# TODO: refactor this to share the code
 def make_errormator_middleware(app, global_config={}, **kw):
     if global_config:
         config = global_config.copy()
@@ -460,12 +471,12 @@ def make_errormator_middleware(app, global_config={}, **kw):
     config.update(kw)
     ini_path = os.environ.get('ERRORMATOR_INI',
                               config.get('errormator.config_path'))
-    config = get_config(config=config, path_to_config=ini_path)    
-    #this shuts down all errormator functionalities
+    config = get_config(config=config, path_to_config=ini_path)
+    # this shuts down all errormator functionalities
     if not asbool(config.get('errormator', False)):
-        log.warning('''ERRORMATOR_INI config variable is missing from 
-                    environment or errormator.config_path 
-                    not passed in app global config, 
+        log.warning('''ERRORMATOR_INI config variable is missing from
+                    environment or errormator.config_path
+                    not passed in app global config,
                     or errormator disabled in config''')
         return app
     client = Client(config)

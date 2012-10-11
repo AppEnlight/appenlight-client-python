@@ -8,6 +8,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 def log_exception(sender, exception, **extra):
     errormator_client = request.environ['errormator.client']
     gather_data(errormator_client, request.environ, gather_slowness=False,
@@ -17,8 +18,8 @@ def log_exception(sender, exception, **extra):
 def add_errormator(app, config=None):
     """
         Adds Errormator to Flask,
-        
-        first looks at config var, then tries to read ERRORMATOR from app.config 
+
+        first looks at config var,then tries to read ERRORMATOR from app.config
     """
     if not config:
         config = app.config.get('ERRORMATOR')

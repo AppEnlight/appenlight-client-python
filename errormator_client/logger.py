@@ -217,6 +217,7 @@ following license:
 import logging
 import threading
 
+
 class ThreadTrackingHandler(logging.Handler):
     def __init__(self):
         if threading is None:
@@ -224,7 +225,7 @@ class ThreadTrackingHandler(logging.Handler):
                 "threading module is not available, "
                 "the logging panel cannot be used without it")
         logging.Handler.__init__(self)
-        self.records = {} # a dictionary that maps threads to log records
+        self.records = {}  # a dictionary that maps threads to log records
 
     def emit(self, record):
         self.get_records().append(record)
@@ -245,6 +246,7 @@ class ThreadTrackingHandler(logging.Handler):
             thread = threading.currentThread()
         if thread in self.records:
             del self.records[thread]
+
 
 def register_logging():
     thread_tracking_handler = ThreadTrackingHandler()

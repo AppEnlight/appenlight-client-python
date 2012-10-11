@@ -6,12 +6,13 @@ import uuid
 
 log = logging.getLogger(__name__)
 
+
 def gather_data(client, environ, gather_slowness=True, gather_logs=True):
     if not environ.get('wsgi.url_scheme'):
         environ['wsgi.url_scheme'] = ''
     if not environ.get('HTTP_HOST'):
         environ['HTTP_HOST'] = 'localhost'
-    if not environ.get('errormator.request_id'): 
+    if not environ.get('errormator.request_id'):
         environ['errormator.request_id'] = str(uuid.uuid4())
     traceback = get_current_traceback(skip=1, show_hidden_frames=True,
                                               ignore_system_exceptions=True)
@@ -28,7 +29,7 @@ def gather_data(client, environ, gather_slowness=True, gather_logs=True):
             client.py_slow_report(environ, now, now, records)
             # force log fetching
             traceback = True
-            
+
     if client.config['logging'] and gather_logs:
         records = client.log_handler.get_records()
         client.log_handler.clear_records()
