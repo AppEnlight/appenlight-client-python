@@ -23,6 +23,7 @@ Install ``errormator_client`` using pip::
 .. warning::
     Errormator client 0.5 is **BACKWARDS INCOMPATIBLE** with previous versions,
     please read integration documentation.
+    By default configuration is expected to be stored in separate ini file. 
 
 Main Documentation location
 ===========================
