@@ -85,7 +85,7 @@ class Client(object):
         self.config['slow_requests'] = asbool(
                                 config.get('errormator.slow_requests', True))
         self.config['slow_request_time'] = float(
-                                config.get('errormator.slow_request.time', 1))
+                                config.get('errormator.slow_request_time', 1))
         if self.config['slow_request_time'] < 0.01:
             self.config['slow_request_time'] = 0.01
         self.config['slow_request_time'] = datetime.timedelta(
