@@ -96,7 +96,6 @@ def add_timing(module_name, min_duration=0.3):
             return setattr(self._e_object, name, value)
 
         def __getattr__(self, name):
-            print '__getattr__', name
             return getattr(self._e_object, name)
 
         def __iter__(self):
