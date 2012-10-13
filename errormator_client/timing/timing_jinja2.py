@@ -12,7 +12,7 @@ def add_timing(min_duration=0.15):
     def gather_template(template, *args, **kwargs):
         return {'type': 'tmpl',
                 'subtype': 'jinja2',
-                'statement': 'render_jinja2',
+                'statement': 'render',
                 'parameters': ''}
 
     if hasattr(environment.Template, '_e_attached_wrapper'):

@@ -12,7 +12,7 @@ def add_timing(min_duration=0.15):
     def gather_template(template, *args, **kwargs):
         return {'type': 'tmpl',
                 'subtype': 'mako',
-                'statement': 'render_mako',
+                'statement': 'render',
                 'parameters': ''}
 
     if hasattr(template.Template, '_e_attached_wrapper'):
