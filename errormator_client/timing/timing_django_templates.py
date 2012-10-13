@@ -5,14 +5,15 @@ def add_timing(min_duration=0.15):
     module = import_module('django')
     if not module:
         return
-   
+
     from django import template
-    
+
     def gather_template(template, *args, **kwargs):
-        return {'type':'template',
-                'statement':'render_django',
-                'parameters':''}
-    
+        return {'type': 'tmpl',
+                'subtype': 'django',
+                'statement': 'render',
+                'parameters': ''}
+
     if hasattr(template.Template, 'render'):
         deco_func_or_method(template, 'Template.render', time_trace,
                           gather_template, min_duration, is_template=True)
