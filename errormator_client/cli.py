@@ -54,8 +54,10 @@ class CommandRouter(object):
         result = errormator_client.submit_data()
         if not result['logs']:
             print 'something went wrong, please check your API key'
+            return False
         else:
             print 'Test entry transmitted correctly'
+        return True
 
     @classmethod
     def pserve(self, *args, **kwargs):
@@ -96,4 +98,4 @@ def cli_start():
     if not e_callable:
         print 'There is no command like %s' % command
     else:
-        callable(*command_args)
+        e_callable(*command_args)
