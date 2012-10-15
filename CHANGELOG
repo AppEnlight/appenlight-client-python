@@ -1,6 +1,10 @@
 CHANGELOG:
 ==========
 
+2012-10-15
+    0.5.1 Introduced subtype to timing metrics
+          Bugfixes - This release will also work correctly on windows systems
+
 2012-10-10
     0.5.0 BACKWARDS INCOMPATIBLE with pre 0.5 versions, please consult 
           integration documentation/readme 
