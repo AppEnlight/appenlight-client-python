@@ -47,7 +47,7 @@ from webob import Request
 # are we running python 3.x ?
 PY3 = sys.version_info[0] == 3
 
-DATE_FRMT = '%Y-%m-%dT%H:%M:%S.%f'
+DATE_FRMT = '%Y-%m-%dT%H:%M:%S'
 LEVELS = {'debug': logging.DEBUG,
           'info': logging.INFO,
           'warning': logging.WARNING,
@@ -290,7 +290,7 @@ class Client(object):
                 time_string = datetime.datetime.utcnow().isoformat()
             else:
                 time_string = time.strftime(DATE_FRMT,
-                                time.gmtime(record.created)) % record.msecs
+                        time.gmtime(record.created)) + ('.%f' % record.msecs)
             try:
                 message = record.getMessage()
                 log_entries.append(
