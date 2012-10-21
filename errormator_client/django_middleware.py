@@ -67,6 +67,8 @@ class ErrormatorMiddleware(object):
             delta = datetime.timedelta(seconds=(end_time - request.__start_time__))
             records = []
             errormator_storage = get_local_storage(local_timing)
+            errormator_storage.request_stats['main'] = end_time - request.__start_time__
+            self.errormator_client.save_request_stats()
             for record in errormator_storage.get_slow_calls():
                 records.append(record)
             if (delta >= self.errormator_client.config['slow_request_time']

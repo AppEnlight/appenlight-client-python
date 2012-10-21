@@ -42,6 +42,7 @@ import decorator
 
 from errormator_client.ext_json import json
 from errormator_client.utils import asbool, aslist
+from errormator_client.timing import local_timing, get_local_storage
 from webob import Request
 
 # are we running python 3.x ?
@@ -162,6 +163,7 @@ class Client(object):
                           "reports": '/api/reports',
                           "slow_reports": '/api/slow_reports',
                           "logs": '/api/logs',
+                          "request_stats": '/api/request_stats'
                           }
 
         self.report_queue = []
@@ -170,13 +172,18 @@ class Client(object):
         self.slow_report_queue_lock = threading.RLock()
         self.log_queue = []
         self.log_queue_lock = threading.RLock()
+        self.request_stats = {}
+        self.request_stats_lock = threading.RLock()
         self.uuid = uuid.uuid4()
-        self.last_submit = datetime.datetime.now()
+        self.last_submit = datetime.datetime.utcnow()
+        self.last_request_stats_submit = datetime.datetime.utcnow()
 
     def submit_data(self):
+        self.last_submit = datetime.datetime.utcnow()
         results = {'reports': False,
                    'logs': False,
-                   'slow_reports': False
+                   'slow_reports': False,
+                   'request_stats': False
                    }
         with self.report_queue_lock:
             reports = self.report_queue[:250]
@@ -191,6 +198,20 @@ class Client(object):
         results['slow_reports'] = self.api_create_submit(slow_reports,
                                                          'slow_reports')
         results['logs'] = self.api_create_submit(logs, 'logs')
+        delta = datetime.datetime.utcnow() - self.last_request_stats_submit
+        if delta >= datetime.timedelta(seconds=60):
+            with self.request_stats_lock:
+                request_stats = self.request_stats
+                self.request_stats = {}
+            stat_list = []
+            for k, v in request_stats.iteritems():
+                stat_list.append({
+                                  "server": self.config['server_name'],
+                                  "metrics": v,
+                                  "timestamp": k.isoformat()
+                                  })
+            results['request_stats'] = self.api_create_submit(stat_list, 'request_stats')
+            self.last_request_stats_submit = datetime.datetime.utcnow()
         return results
 
     def api_create_submit(self, to_send_items, endpoint):
@@ -205,11 +226,10 @@ class Client(object):
         return True
 
     def check_if_deliver(self, force_send=False):
-        delta = datetime.datetime.now() - self.last_submit
+        delta = datetime.datetime.utcnow() - self.last_submit
         if delta > self.config['buffer_flush_interval'] or force_send:
             submit_data_t = threading.Thread(target=self.submit_data)
             submit_data_t.start()
-            self.last_submit = datetime.datetime.now()
             return True
         return False
 
@@ -326,6 +346,20 @@ class Client(object):
             self.slow_report_queue.append(report_data)
         log.info('slow request/queries detected: %s' % url)
         return True
+
+    def save_request_stats(self):
+        stats = get_local_storage(local_timing).get_request_stats()
+        with self.request_stats_lock:
+            req_time = datetime.datetime.utcnow().replace(second=0,
+                                                          microsecond=0)
+            if req_time not in self.request_stats:
+                self.request_stats[req_time] = {'main': 0, 'sql': 0,
+                                                'nosql': 0, 'remote': 0,
+                                                'tmpl': 0, 'unknown': 0,
+                                                'requests': 0}
+            self.request_stats[req_time]['requests'] += 1
+            for k, v in stats.iteritems():
+                self.request_stats[req_time][k] += v
 
     def process_environ(self, environ, traceback=None, include_params=False):
         # form friendly to json encode

@@ -18,7 +18,8 @@ class ErrormatorLocalStorage(object):
 
     def __init__(self):
         self.slow_calls = []
-        self.request_stats = {}
+        self.request_stats = {'main': 0, 'sql': 0, 'nosql': 0,
+                              'remote': 0, 'tmpl': 0, 'unknown': 0}
 
     def add_slow_call(self, call):
         self.slow_calls.append(call)
@@ -27,6 +28,12 @@ class ErrormatorLocalStorage(object):
         calls = self.slow_calls
         self.slow_calls = []
         return calls
+
+    def get_request_stats(self):
+        stats = self.request_stats
+        self.request_stats = {'main': 0, 'sql': 0, 'nosql': 0,
+                              'remote': 0, 'tmpl': 0, 'unknown': 0}
+        return stats
 
 TIMING_REGISTERED = False
 
@@ -67,11 +74,14 @@ def _e_trace(info_gatherer, min_duration, callable, *args, **kw):
     result = callable(*args, **kw)
     end = default_timer()
     duration = round(end - start, 4)
-    if duration < min_duration:
-        return result
     info = {'timestamp':datetime.datetime.utcfromtimestamp(start),
             'duration':duration}
     info.update(info_gatherer(*args, **kw))
+    errormator_storage = get_local_storage(local_timing)
+    call_type = info.get('type', 'unknown')
+    errormator_storage.request_stats[call_type] += duration
+    if duration < min_duration:
+        return result
     try:
         path, traces = stack_inspector()
     except IndexError as e:
@@ -79,7 +89,7 @@ def _e_trace(info_gatherer, min_duration, callable, *args, **kw):
         log.info('stack inspector error: %s' % e)
     # traces >= 2 means that this call was in some other lib thats was timed
     if traces < 2:
-        get_local_storage(local_timing).add_slow_call(info)
+        errormator_storage.add_slow_call(info)
     return result
 
 def trace_factory(info_gatherer, min_duration, is_template=False):
@@ -91,11 +101,14 @@ def trace_factory(info_gatherer, min_duration, is_template=False):
         result = f(*args, **kw)
         end = default_timer()
         duration = round(end - start, 4)
-        if duration < min_duration:
-            return result
         info = {'timestamp':datetime.datetime.utcfromtimestamp(start),
                 'duration':duration}
         info.update(info_gatherer(*args, **kw))
+        errormator_storage = get_local_storage(local_timing)
+        call_type = info.get('type', 'unknown')
+        errormator_storage.request_stats[call_type] += duration
+        if duration < min_duration:
+            return result
         try:
             path, traces = stack_inspector()
         except IndexError as e:
@@ -103,7 +116,7 @@ def trace_factory(info_gatherer, min_duration, is_template=False):
             log.info('stack inspector error: %s' % e)
         # traces >= 2 means that this call was in some other lib thats was timed
         if traces < 2:
-            get_local_storage(local_timing).add_slow_call(info)
+            errormator_storage.add_slow_call(info)
         return result
     return _e_trace
 
