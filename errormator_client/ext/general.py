@@ -1,5 +1,5 @@
 from errormator_client.exceptions import get_current_traceback
-from errormator_client.timing import local_timing
+from errormator_client.timing import local_timing, get_local_storage
 import datetime
 import logging
 import uuid
@@ -22,9 +22,9 @@ def gather_data(client, environ, gather_slowness=True, gather_logs=True):
     if client.config['slow_requests'] and gather_slowness:
         # do we have slow calls ?
         records = []
-        if hasattr(local_timing, '_errormator'):
-            for record in local_timing._errormator.get_slow_calls():
-                records.append(record)
+        errormator_storage = get_local_storage(local_timing)
+        for record in errormator_storage.get_slow_calls():
+            records.append(record)
         if (records):
             client.py_slow_report(environ, now, now, records)
             # force log fetching

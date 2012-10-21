@@ -2,12 +2,13 @@ import datetime
 import logging
 import pkg_resources
 import socket
+import time
 import unittest
 from errormator_client import client, make_errormator_middleware
 from errormator_client.exceptions import get_current_traceback
 from errormator_client.logger import register_logging
 from errormator_client.wsgi import ErrormatorWSGIWrapper
-
+from webob import Request
 
 fname = pkg_resources.resource_filename('errormator_client',
                                         'templates/default_template.ini')
@@ -17,7 +18,7 @@ for k, v in timing_conf.iteritems():
         timing_conf[k] = 0.000001
 
 client.Client(config=timing_conf)
-from errormator_client.timing import local_timing
+from errormator_client.timing import local_timing, get_local_storage
 
 
 def example_filter_callable(structure, section=None):
@@ -507,39 +508,39 @@ class TestTimingHTTPLibs(unittest.TestCase):
         import urllib
         opener = urllib.URLopener()
         opener.open("http://www.ubuntu.com/")
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_urllib_urlretrieve(self):
         import urllib
         urllib.urlretrieve("http://www.ubuntu.com/")
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_urllib2(self):
         import urllib2
         urllib2.urlopen("http://www.ubuntu.com/")
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_urllib3(self):
         import urllib3
         http = urllib3.PoolManager()
         http.request('GET', "http://www.ubuntu.com/")
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_requests(self):
         import requests
         requests.get("http://www.ubuntu.com/")
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_httplib(self):
         import httplib
         h2 = httplib.HTTPConnection("www.ubuntu.com")
         h2.request("GET", "/")
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
 
@@ -563,7 +564,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()
         c.close()
         conn.close()
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_psycopg2(self):
@@ -578,7 +579,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()
         c.close()
         conn.close()
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_pg8000(self):
@@ -593,7 +594,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()
         c.close()
         conn.close()
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_postgresql(self):
@@ -607,7 +608,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()[0]
         c.close()
         conn.close()
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_mysqldb(self):
@@ -621,7 +622,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()
         c.close()
         conn.close()
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_oursql(self):
@@ -632,7 +633,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()
         c.close()
         conn.close()
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_odbc(self):
@@ -646,7 +647,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()
         c.close()
         conn.close()
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_pymysql(self):
@@ -660,7 +661,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()
         c.close()
         conn.close()
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
 
@@ -685,7 +686,7 @@ class TestMako(unittest.TestCase):
         xxxxx ${1+2} yyyyyy
         ''')
         template.render()
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_render_unicode(self):
@@ -701,7 +702,7 @@ class TestMako(unittest.TestCase):
         xxxxx ${1+2} yyyyyy
         ''')
         template.render_unicode()
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_template_lookup(self):
@@ -719,7 +720,7 @@ class TestMako(unittest.TestCase):
         ''')
         template = lookup.get_template("base.html")
         template.render_unicode()
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
 
@@ -739,7 +740,7 @@ class TestJinja2(unittest.TestCase):
         xxxxx {{1+2}} yyyyyy
         ''')
         template.render(sleep=time.sleep)
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
 
@@ -765,8 +766,55 @@ class TestDjangoTemplates(unittest.TestCase):
         xxxxx {{ time }} yyyyyy
         ''')
         template.render(ctx)
-        result = local_timing._errormator.get_slow_calls()
+        result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
+
+class WSGITests(unittest.TestCase):
+
+    def setUpClient(self, config={}):
+        self.client = client.Client(timing_conf)
+
+    def test_normal_request(self):
+        def app(environ, start_response):
+            start_response('200 OK', [('Content-Type', 'text/html')])
+            return ['Hello World!']
+        req = Request.blank('http://localhost/test')
+        app = make_errormator_middleware(app, global_config=timing_conf)
+        req.get_response(app)
+        self.assertEqual(len(app.errormator_client.slow_report_queue), 0)
+
+    def test_error_request(self):
+        def app(environ, start_response):
+            start_response('200 OK', [('Content-Type', 'text/html')])
+            raise Exception('WTF?')
+            return ['Hello World!']
+        req = Request.blank('http://localhost/test')
+        app = make_errormator_middleware(app, global_config=timing_conf)
+        app.errormator_client.config['reraise_exceptions'] = False
+        req.get_response(app)
+        self.assertEqual(len(app.errormator_client.report_queue), 1)
+
+    def test_slow_request(self):
+        def app(environ, start_response):
+            start_response('200 OK', [('Content-Type', 'text/html')])
+            time.sleep(1.1)
+            return ['Hello World!']
+        req = Request.blank('http://localhost/test')
+        app = make_errormator_middleware(app, global_config=timing_conf)
+        req.get_response(app)
+        print app.errormator_client.slow_report_queue[0]
+        self.assertEqual(len(app.errormator_client.slow_report_queue), 1)
+
+    def test_logging_request(self):
+        def app(environ, start_response):
+            start_response('200 OK', [('Content-Type', 'text/html')])
+            logging.warning('test logging')
+            logging.critical('test logging critical')
+            return ['Hello World!']
+        req = Request.blank('http://localhost/test')
+        app = make_errormator_middleware(app, global_config=timing_conf)
+        req.get_response(app)
+        self.assertEqual(len(app.errormator_client.log_queue), 2)
 
 if __name__ == '__main__':
     unittest.main()  # pragma: nocover

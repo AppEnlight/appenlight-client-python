@@ -1,7 +1,8 @@
 import uuid
 import datetime
 from errormator_client.exceptions import get_current_traceback
-from errormator_client.timing import local_timing
+from errormator_client.timing import local_timing, get_local_storage
+from errormator_client.timing import default_timer
 import logging
 import sys
 
@@ -25,7 +26,7 @@ class ErrormatorWSGIWrapper(object):
         app_iter = None
         detected_data = []
         traceback = None
-        start_time = datetime.datetime.utcnow()
+        start_time = default_timer()
 
         def detect_headers(status, headers, *k, **kw):
             detected_data[:] = status[:3], headers
@@ -51,7 +52,7 @@ class ErrormatorWSGIWrapper(object):
         except Exception as e:
             if hasattr(app_iter, 'close'):
                 app_iter.close()
-            #we need that here
+            # we need that here
 
             exc_type, exc_value, tb = sys.exc_info()
             traceback = get_current_traceback(skip=1, show_hidden_frames=True,
@@ -82,21 +83,23 @@ class ErrormatorWSGIWrapper(object):
                 self.errormator_client.py_report(environ, traceback,
                                                  message=None,
                                                  http_status=http_status,
-                                                 start_time=start_time)
+                    start_time=datetime.datetime.utcfromtimestamp(start_time))
 
             # report slowness
             if self.errormator_client.config['slow_requests']:
                 # do we have slow calls ?
-                end_time = datetime.datetime.utcnow()
-                delta = end_time - start_time
+                end_time = default_timer()
+                delta = datetime.timedelta(seconds=(end_time - start_time))
                 records = []
-                if hasattr(local_timing, '_errormator'):
-                    for record in local_timing._errormator.get_slow_calls():
-                        records.append(record)
+                errormator_storage = get_local_storage(local_timing)
+                for record in errormator_storage.get_slow_calls():
+                    records.append(record)
                 if (delta >= self.errormator_client.config['slow_request_time']
                     or records):
                     self.errormator_client.py_slow_report(environ,
-                                    start_time, end_time, records)
+                            datetime.datetime.utcfromtimestamp(start_time),
+                            datetime.datetime.utcfromtimestamp(end_time),
+                            records)
                     # force log fetching
                     traceback = True
             if self.errormator_client.config['logging']:

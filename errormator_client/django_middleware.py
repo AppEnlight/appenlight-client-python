@@ -3,7 +3,8 @@ import datetime
 from django.conf import settings
 from django.http import Http404
 from errormator_client.exceptions import get_current_traceback
-from errormator_client.timing import local_timing
+from errormator_client.timing import local_timing, get_local_storage
+from errormator_client.timing import default_timer
 from errormator_client.client import Client
 import logging
 import sys
@@ -29,7 +30,7 @@ class ErrormatorMiddleware(object):
         # inject client instance reference to environ
         if 'errormator.client' not in environ:
             environ['errormator.client'] = self.errormator_client
-        request.__start_time__ = datetime.datetime.utcnow()
+        request.__start_time__ = default_timer()
         return None
 
     def process_exception(self, request, exception):
@@ -51,7 +52,7 @@ class ErrormatorMiddleware(object):
         self.errormator_client.py_report(environ, request.__traceback__,
                                          message=None,
                                          http_status=http_status,
-                                         start_time=request.__start_time__)
+        start_time=datetime.datetime.utcfromtimestamp(request.__start_time__))
 
     def process_response(self, request, response):
         environ = request.environ
@@ -62,16 +63,18 @@ class ErrormatorMiddleware(object):
         # report slowness
         if self.errormator_client.config['slow_requests']:
             # do we have slow calls ?
-            end_time = datetime.datetime.utcnow()
-            delta = end_time - request.__start_time__
+            end_time = default_timer()
+            delta = datetime.timedelta(seconds=(end_time - request.__start_time__))
             records = []
-            if hasattr(local_timing, '_errormator'):
-                for record in local_timing._errormator.get_slow_calls():
-                    records.append(record)
+            errormator_storage = get_local_storage(local_timing)
+            for record in errormator_storage.get_slow_calls():
+                records.append(record)
             if (delta >= self.errormator_client.config['slow_request_time']
                 or records):
                 self.errormator_client.py_slow_report(environ,
-                                request.__start_time__, end_time, records)
+                    datetime.datetime.utcfromtimestamp(request.__start_time__),
+                    datetime.datetime.utcfromtimestamp(end_time),
+                    records)
                 # force log fetching
                 request.__traceback__ = True
 

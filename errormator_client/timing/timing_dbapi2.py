@@ -1,5 +1,4 @@
-from errormator_client.utils import import_module, import_from_module
-from errormator_client.timing import local_timing, ErrormatorLocalStorage
+from errormator_client.utils import import_module
 from errormator_client.timing import _e_trace
 
 import logging

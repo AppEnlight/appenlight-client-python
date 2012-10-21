@@ -15,29 +15,36 @@ else:
     default_timer = time.time
 
 class ErrormatorLocalStorage(object):
-        
+
+    def __init__(self):
+        self.slow_calls = []
+        self.request_stats = {}
+
     def add_slow_call(self, call):
-        if not hasattr(self, 'slow_calls'):
-            self.slow_calls = []
         self.slow_calls.append(call)
-    
-    def get_slow_calls(self):        
-        calls = getattr(self, 'slow_calls', [])
+
+    def get_slow_calls(self):
+        calls = self.slow_calls
         self.slow_calls = []
         return calls
-    
+
 TIMING_REGISTERED = False
 
 local_timing = threading.local()
 
 log = logging.getLogger(__name__)
 
+def get_local_storage(local_timing):
+    if not hasattr(local_timing, '_errormator_storage'):
+        local_timing._errormator_storage = ErrormatorLocalStorage()
+    return local_timing._errormator_storage
+
 def stack_inspector():
     stack = inspect.stack()
     path = []
     traces = 0
     for frame in stack:
-        if frame[3] == '_e_trace':             
+        if frame[3] == '_e_trace':
             traces += 1
             continue
         name = []
@@ -49,7 +56,7 @@ def stack_inspector():
             name.append(frame[3])
         elif frame[3] != '<module>':
             name.append(frame[3])
-        name = '.'.join(name)            
+        name = '.'.join(name)
         if not path or path[-1][0] != name:
             path.append((name, frame[0].f_lineno))
     return path, traces
@@ -65,18 +72,20 @@ def _e_trace(info_gatherer, min_duration, callable, *args, **kw):
     info = {'timestamp':datetime.datetime.utcfromtimestamp(start),
             'duration':duration}
     info.update(info_gatherer(*args, **kw))
-    path, traces = stack_inspector()
-    # traces >= 2 means that this call was in some other lib thats was timed 
+    try:
+        path, traces = stack_inspector()
+    except IndexError as e:
+        path, traces = [], 1
+        log.info('stack inspector error: %s' % e)
+    # traces >= 2 means that this call was in some other lib thats was timed
     if traces < 2:
-        if not hasattr(local_timing, '_errormator'):
-            local_timing._errormator = ErrormatorLocalStorage()
-        local_timing._errormator.add_slow_call(info)
+        get_local_storage(local_timing).add_slow_call(info)
     return result
 
 def trace_factory(info_gatherer, min_duration, is_template=False):
     """ Used to auto decorate callables in deco_func_or_method for other 
         non dbapi2 modules """
-    
+
     def _e_trace(f, *args, **kw):
         start = default_timer()
         result = f(*args, **kw)
@@ -87,13 +96,15 @@ def trace_factory(info_gatherer, min_duration, is_template=False):
         info = {'timestamp':datetime.datetime.utcfromtimestamp(start),
                 'duration':duration}
         info.update(info_gatherer(*args, **kw))
-        path, traces = stack_inspector()
+        try:
+            path, traces = stack_inspector()
+        except IndexError as e:
+            path, traces = [], 1
+            log.info('stack inspector error: %s' % e)
         # traces >= 2 means that this call was in some other lib thats was timed
         if traces < 2:
-            if not hasattr(local_timing, '_errormator'):
-                local_timing._errormator = ErrormatorLocalStorage()
-            local_timing._errormator.add_slow_call(info)
-        return result 
+            get_local_storage(local_timing).add_slow_call(info)
+        return result
     return _e_trace
 
 def time_trace(f, gatherer, min_duration, is_template=False):
@@ -109,9 +120,9 @@ def register_timing(config):
                       'timing_requests', 'timing_httplib', 'timing_pysolr',
                       'timing_mako', 'timing_jinja2', 'timing_pymongo',
                       'timing_django_templates']
-    
+
     for mod in timing_modules:
-        min_time = config['timing'].get(mod.replace("timing_", '').lower()) 
+        min_time = config['timing'].get(mod.replace("timing_", '').lower())
         if min_time is not False:
             log.debug('%s slow time:%s' % (mod, min_time or 'default'))
             callable = import_from_module('errormator_client.timing.%s:add_timing' % mod)
@@ -122,7 +133,7 @@ def register_timing(config):
                     callable()
         else:
             log.debug('not tracking slow time:%s' % mod)
-        
+
     db_modules = ['pg8000', 'psycopg2', 'MySQLdb', 'sqlite3', 'oursql', 'pyodbc',
                   'cx_Oracle', 'kinterbasdb', 'postgresql', 'pymysql']
     import errormator_client.timing.timing_dbapi2 as dbapi2
