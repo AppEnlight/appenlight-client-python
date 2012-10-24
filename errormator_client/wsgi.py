@@ -3,6 +3,7 @@ import datetime
 from errormator_client.exceptions import get_current_traceback
 from errormator_client.timing import local_timing, get_local_storage
 from errormator_client.timing import default_timer
+from errormator_client.client import PY3
 import logging
 import sys
 
@@ -59,7 +60,10 @@ class ErrormatorWSGIWrapper(object):
                                               ignore_system_exceptions=True)
             # by default reraise exceptions for app/FW to handle
             if self.errormator_client.config['reraise_exceptions']:
-                raise exc_type, exc_value, tb
+                if PY3:
+                    raise exc_type(exc_value).with_traceback(tb)
+                else:
+                    raise exc_type, exc_value, tb
             try:
                 start_response('500 INTERNAL SERVER ERROR',
                         [('Content-Type', 'text/html; charset=utf-8')])

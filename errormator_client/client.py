@@ -26,17 +26,17 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 from __future__ import with_statement
+import sys
+
+# are we running python 3.x ?
+PY3 = sys.version_info[0] == 3
+
 import datetime
 import logging
-import sys
 import threading
 import time
 import socket
-# import requests
-import urllib
-import urllib2
 import uuid
-import ConfigParser
 import os
 import decorator
 
@@ -45,8 +45,13 @@ from errormator_client.utils import asbool, aslist
 from errormator_client.timing import local_timing, get_local_storage
 from webob import Request
 
-# are we running python 3.x ?
-PY3 = sys.version_info[0] == 3
+if PY3:
+    import urllib
+    import configparser
+else:
+    import urllib
+    import urllib2
+    import ConfigParser
 
 DATE_FRMT = '%Y-%m-%dT%H:%M:%S'
 LEVELS = {'debug': logging.DEBUG,
@@ -154,7 +159,7 @@ class Client(object):
                 if k.startswith('errormator.timing'):
                     try:
                         self.config['timing'][k[18:]] = float(v)
-                    except (TypeError, ValueError), e:
+                    except (TypeError, ValueError) as e:
                         self.config['timing'][k[18:]] = False
             import errormator_client.timing
             errormator_client.timing.register_timing(self.config)
@@ -323,7 +328,7 @@ class Client(object):
                         'date': time_string,
                         'request_id': r_uuid
                         })
-            except (TypeError, UnicodeDecodeError, UnicodeEncodeError), e:
+            except (TypeError, UnicodeDecodeError, UnicodeEncodeError) as e:
                 # handle some weird case where record.getMessage() fails
                 log.warning(e)
         with self.log_queue_lock:
@@ -408,7 +413,7 @@ class Client(object):
         parsed_environ['REMOTE_ADDR'] = remote_addr
         try:
             errormator_info['URL'] = req.url
-        except (UnicodeEncodeError, UnicodeDecodeError), e:
+        except (UnicodeEncodeError, UnicodeDecodeError) as e:
             errormator_info['URL'] = '/invalid-encoded-url'
         return parsed_environ, errormator_info
 

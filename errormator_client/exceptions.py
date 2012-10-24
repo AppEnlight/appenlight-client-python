@@ -276,16 +276,6 @@ class Frame(object):
                 info = str(info).decode('utf-8', 'replace')
         self.info = info
 
-    def eval(self, code, mode='single'):
-        """Evaluate code in the context of the frame."""
-        if isinstance(code, basestring):
-            if isinstance(code, unicode):
-                code = UTF8_COOKIE + code.encode('utf-8')
-            code = compile(code, '<interactive>', mode)
-        if mode != 'exec':
-            return eval(code, self.globals, self.locals)
-        exec code in self.globals, self.locals
-
     @cached_property
     def sourcelines(self):
         """The sourcecode of the file as list of unicode strings."""

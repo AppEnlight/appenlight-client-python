@@ -802,7 +802,6 @@ class WSGITests(unittest.TestCase):
         req = Request.blank('http://localhost/test')
         app = make_errormator_middleware(app, global_config=timing_conf)
         req.get_response(app)
-        print app.errormator_client.slow_report_queue[0]
         self.assertEqual(len(app.errormator_client.slow_report_queue), 1)
 
     def test_logging_request(self):
