@@ -174,7 +174,9 @@ class TestClientConfig(unittest.TestCase):
 
     def test_default_client_name(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['client'], 'python')
+        
+        self.assertEqual(self.client.config['client'], 'python3' if client.PY3 \
+                         else 'python')
 
     def test_default_timeout(self):
         self.setUpClient()
@@ -417,6 +419,7 @@ class TestClientSending(unittest.TestCase):
 class TestErrorParsing(unittest.TestCase):
     def setUpClient(self, config={}):
         self.client = client.Client(config)
+        self.maxDiff = None
 
     def test_py_report_404(self):
         self.setUpClient()
@@ -448,6 +451,7 @@ class TestErrorParsing(unittest.TestCase):
 class TestLogs(unittest.TestCase):
     def setUpClient(self, config={}):
         self.client = client.Client(config)
+        self.maxDiff = None
 
     def test_py_log(self):
         self.setUpClient()
@@ -524,14 +528,20 @@ class TestTimingHTTPLibs(unittest.TestCase):
         self.assertEqual(len(result), 1)
 
     def test_urllib3(self):
-        import urllib3
+        try:
+            import urllib3
+        except ImportError:
+            return
         http = urllib3.PoolManager()
         http.request('GET', "http://www.ubuntu.com/")
         result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
 
     def test_requests(self):
-        import requests
+        try:
+            import requests
+        except ImportError:
+            return
         requests.get("http://www.ubuntu.com/")
         result = get_local_storage(local_timing).get_slow_calls()
         self.assertEqual(len(result), 1)
@@ -626,7 +636,10 @@ class TestDBApi2Drivers(unittest.TestCase):
         self.assertEqual(len(result), 1)
 
     def test_oursql(self):
-        import oursql
+        try:
+            import oursql
+        except ImportError:
+            return
         conn = oursql.connect(passwd="test", user="test")
         c = conn.cursor(oursql.DictCursor)
         c.execute(self.stmt)

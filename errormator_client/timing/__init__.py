@@ -68,10 +68,10 @@ def stack_inspector():
             path.append((name, frame[0].f_lineno))
     return path, traces
 
-def _e_trace(info_gatherer, min_duration, callable, *args, **kw):
+def _e_trace(info_gatherer, min_duration, e_callable, *args, **kw):
     """ Used to wrap dbapi2 driver methods """
     start = default_timer()
-    result = callable(*args, **kw)
+    result = e_callable(*args, **kw)
     end = default_timer()
     duration = round(end - start, 4)
     info = {'timestamp':datetime.datetime.utcfromtimestamp(start),
@@ -138,12 +138,12 @@ def register_timing(config):
         min_time = config['timing'].get(mod.replace("timing_", '').lower())
         if min_time is not False:
             log.debug('%s slow time:%s' % (mod, min_time or 'default'))
-            callable = import_from_module('errormator_client.timing.%s:add_timing' % mod)
-            if callable:
+            e_callable = import_from_module('errormator_client.timing.%s:add_timing' % mod)
+            if e_callable:
                 if min_time:
-                    callable(min_time)
+                    e_callable(min_time)
                 else:
-                    callable()
+                    e_callable()
         else:
             log.debug('not tracking slow time:%s' % mod)
 

@@ -81,7 +81,11 @@ class Client(object):
         self.config['enabled'] = asbool(config.get('errormator', True))
         self.config['server_name'] = config.get('errormator.server_name') \
                                                             or socket.getfqdn()
-        self.config['client'] = config.get('errormator.client', 'python')
+        if PY3:
+            default_client = 'python3'
+        else:
+            default_client = 'python'
+        self.config['client'] = config.get('errormator.client', default_client)
         self.config['api_key'] = config.get('errormator.api_key')
         self.config['server_url'] = config.get('errormator.server_url',
                                                'https://api.errormator.com')
@@ -131,7 +135,7 @@ class Client(object):
             try:
                 parts = self.filter_callable.split(':')
                 _tmp = __import__(parts[0], globals(), locals(),
-                                  [parts[1], ], -1)
+                                  [parts[1], ], 0)
                 self.filter_callable = getattr(_tmp, parts[1])
             except ImportError as e:
                 self.filter_callable = self.data_filter
@@ -251,7 +255,7 @@ class Client(object):
         log.info('sending out %s entries to %s' % (len(data), endpoint,))
         try:
             req = urllib2.Request(server_url,
-                                  json.dumps(data),
+                                  json.dumps(data).encode('utf8'),
                                   headers=headers)
         except IOError as e:
             message = 'ERRORMATOR: problem: %s' % e
@@ -290,13 +294,15 @@ class Client(object):
                         http_status=http_status, include_params=True)
         report_data = self.filter_callable(report_data, 'error_report')
         url = report_data['report_details'][0]['url']
+        if not PY3:
+            url = url.decode('utf8', 'ignore')
         if start_time:
             report_data['report_details'][0]['start_time'] = start_time
         with self.report_queue_lock:
             self.report_queue.append(report_data)
         log.warning(u'%s code: %s @%s' % (http_status,
                             report_data.get('error_type'),
-                            url.decode('utf8', 'ignore'),))
+                            url,))
         return True
 
     def py_log(self, environ, records=None, r_uuid=None, traceback=None):
@@ -318,16 +324,19 @@ class Client(object):
                         time.gmtime(record.created)) + ('.%f' % record.msecs)
             try:
                 message = record.getMessage()
-                log_entries.append(
-                        {'log_level': record.levelname,
-                         "namespace": record.name,
-                        'message': '%s' % (message.encode('utf8') \
-                                          if isinstance(message, unicode) \
-                                          else message,),
-                        'server': self.config['server_name'],
-                        'date': time_string,
-                        'request_id': r_uuid
-                        })
+                log_dict = {'log_level': record.levelname,
+                            "namespace": record.name,
+                            'server': self.config['server_name'],
+                            'date': time_string,
+                            'request_id': r_uuid
+                            }
+                if PY3:
+                    log_dict['message'] = '%s' % (message)
+                else:
+                    log_dict['message'] = '%s' % (message.encode('utf8') \
+                                                  if isinstance(message, unicode) \
+                                                  else message,)
+                log_entries.append(log_dict)
             except (TypeError, UnicodeDecodeError, UnicodeEncodeError) as e:
                 # handle some weird case where record.getMessage() fails
                 log.warning(e)
@@ -381,7 +390,10 @@ class Client(object):
                                 key in self.config['environ_keys_whitelist']):
                     try:
                         if isinstance(value, str):
-                            parsed_environ[key] = value.decode('utf8')
+                            if PY3:
+                                parsed_environ[key] = value
+                            else:
+                                parsed_environ[key] = value.decode('utf8')
                         else:
                             parsed_environ[key] = unicode(value)
                     except Exception as e:

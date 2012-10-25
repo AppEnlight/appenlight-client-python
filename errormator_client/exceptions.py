@@ -48,7 +48,7 @@ import os
 import inspect
 import traceback
 import codecs
-
+from errormator_client.client import PY3
 
 _coding_re = re.compile(r'coding[:=]\s*([-\w.]+)')
 _line_re = re.compile(r'^(.*?)$(?m)')
@@ -224,7 +224,10 @@ class Traceback(object):
     def exception(self):
         """String representation of the exception."""
         buf = traceback.format_exception_only(self.exc_type, self.exc_value)
-        return ''.join(buf).strip().decode('utf-8', 'replace')
+        if PY3:
+            return ''.join(buf).strip()
+        else:
+            return ''.join(buf).strip().decode('utf-8', 'replace')
 
     def log(self, logfile=None):
         """Log the ASCII traceback into a file object."""

@@ -40,7 +40,6 @@ class ErrormatorMiddleware(object):
             http_status = 404
         else:
             http_status = 500
-            exc_type, exc_value, tb = sys.exc_info()
             request.__traceback__ = get_current_traceback(skip=1,
                                             show_hidden_frames=True,
                                             ignore_system_exceptions=True)

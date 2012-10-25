@@ -32,7 +32,7 @@ def aslist(obj, sep=None, strip=True):
 
 def import_module(name):
     try:
-        return __import__(name, globals(), locals(), [], -1)
+        return __import__(name, globals(), locals(), [], 0)
     except ImportError as e:
         log.debug('Could not import module: %s' % e)
 
@@ -40,7 +40,7 @@ def import_module(name):
 def import_from_module(name):
     try:
         parts = name.split(':')
-        _tmp = __import__(parts[0], globals(), locals(), [parts[1], ], -1)
+        _tmp = __import__(parts[0], globals(), locals(), [parts[1], ], 0)
         return getattr(_tmp, parts[1])
     except ImportError as e:
         log.debug('Could not import from module: %s' % e)

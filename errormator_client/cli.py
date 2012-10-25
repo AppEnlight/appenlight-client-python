@@ -33,7 +33,10 @@ class CommandRouter(object):
                 ini_str = pkg_resources.resource_string('errormator_client',
                                         'templates/default_template.ini')
                 with open(ini_path, 'w') as f:
-                    f.write(ini_str)
+                    if client.PY3:
+                        f.write(ini_str.decode('utf8'))
+                    else:
+                        f.write(ini_str)
                 print '\nCreated new errormator client config: %s' % ini_path
                 print 'REMEMBER TO UPDATE YOUR API KEY IN INI FILE'
 

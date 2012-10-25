@@ -12,6 +12,8 @@ setup(name='errormator_client',
           'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 2.6',
           'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3.2',
+          'Programming Language :: Python :: 3.3',
           'Topic :: Software Development :: Libraries :: Python Modules',
           ],
       author='Marcin Lulek',
@@ -35,4 +37,7 @@ setup(name='errormator_client',
       [console_scripts]
       errormator_client = errormator_client.cli:cli_start
       """,
+      test_suite='errormator_client.tests',
+      use_2to3=True,
+      se_2to3_exclude_fixers = ['lib2to3.fixes.next','lib2to3.fixes.fix_import']
       )
