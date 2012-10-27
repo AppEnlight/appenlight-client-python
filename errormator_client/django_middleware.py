@@ -58,24 +58,21 @@ class ErrormatorMiddleware(object):
 
         if response.status_code == 404 and not request.__processed_exception__:
             self.process_exception(request, Http404())
-
+        end_time = default_timer()
+        delta = datetime.timedelta(seconds=(end_time - request.__start_time__))
+        errormator_storage = get_local_storage(local_timing)
+        errormator_storage.thread_stats['main'] = end_time - request.__start_time__
+        stats, slow_calls = get_local_storage(local_timing).get_thread_stats()
         # report slowness
         if self.errormator_client.config['slow_requests']:
             # do we have slow calls ?
-            end_time = default_timer()
-            delta = datetime.timedelta(seconds=(end_time - request.__start_time__))
-            records = []
-            errormator_storage = get_local_storage(local_timing)
-            errormator_storage.request_stats['main'] = end_time - request.__start_time__
-            self.errormator_client.save_request_stats()
-            for record in errormator_storage.get_slow_calls():
-                records.append(record)
+            self.errormator_client.save_request_stats(stats)
             if (delta >= self.errormator_client.config['slow_request_time']
-                or records):
+                or slow_calls):
                 self.errormator_client.py_slow_report(environ,
                     datetime.datetime.utcfromtimestamp(request.__start_time__),
                     datetime.datetime.utcfromtimestamp(end_time),
-                    records)
+                    slow_calls)
                 # force log fetching
                 request.__traceback__ = True
 

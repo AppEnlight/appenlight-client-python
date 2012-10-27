@@ -361,8 +361,7 @@ class Client(object):
         log.info('slow request/queries detected: %s' % url)
         return True
 
-    def save_request_stats(self):
-        stats = get_local_storage(local_timing).get_request_stats()
+    def save_request_stats(self, stats):
         with self.request_stats_lock:
             req_time = datetime.datetime.utcnow().replace(second=0,
                                                           microsecond=0)

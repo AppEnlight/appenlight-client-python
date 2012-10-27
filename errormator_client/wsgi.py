@@ -86,22 +86,20 @@ class ErrormatorWSGIWrapper(object):
                     start_time=datetime.datetime.utcfromtimestamp(start_time))
 
             # report slowness
+            end_time = default_timer()
+            delta = datetime.timedelta(seconds=(end_time - start_time))
+            errormator_storage = get_local_storage(local_timing)
+            errormator_storage.thread_stats['main'] = end_time - start_time
+            stats, slow_calls = get_local_storage(local_timing).get_thread_stats()
             if self.errormator_client.config['slow_requests']:
                 # do we have slow calls ?
-                end_time = default_timer()
-                delta = datetime.timedelta(seconds=(end_time - start_time))
-                records = []
-                errormator_storage = get_local_storage(local_timing)
-                errormator_storage.request_stats['main'] = end_time - start_time
-                self.errormator_client.save_request_stats()
-                for record in errormator_storage.get_slow_calls():
-                    records.append(record)
+                self.errormator_client.save_request_stats(stats)
                 if (delta >= self.errormator_client.config['slow_request_time']
-                    or records):
+                    or slow_calls):
                     self.errormator_client.py_slow_report(environ,
                             datetime.datetime.utcfromtimestamp(start_time),
                             datetime.datetime.utcfromtimestamp(end_time),
-                            records)
+                            slow_calls)
                     # force log fetching
                     traceback = True
             if self.errormator_client.config['logging']:

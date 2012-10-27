@@ -14,10 +14,20 @@ fname = pkg_resources.resource_filename('errormator_client',
 timing_conf = client.get_config(path_to_config=fname)
 for k, v in timing_conf.iteritems():
     if 'errormator.timing' in k:
-        timing_conf[k] = 0.000001
+        timing_conf[k] = 0.00000001
 
 client.Client(config=timing_conf)
 from errormator_client.timing import local_timing, get_local_storage
 
-result = get_local_storage(local_timing).get_slow_calls()
-print len(result)
+import timeit
+import jinja2
+print 'traced', hasattr(jinja2.Template.render, '_e_attached_tracer')
+
+s = """
+template = jinja2.Template('''xxxxx {{1+2}} yyyyyy''')
+template.render()
+"""
+print 'time', timeit.timeit(stmt=s, number=1500, setup="import jinja2")
+stats, slow_calls = get_local_storage(local_timing).get_thread_stats()
+print 'calls', len(slow_calls)
+print 'stats', stats

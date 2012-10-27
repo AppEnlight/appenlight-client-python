@@ -7,18 +7,21 @@ log = logging.getLogger(__name__)
 
 # http://www.python.org/dev/peps/pep-0249/
 
+ignore_set = frozenset()
 
 def general_factory(slow_call_name, subtype):
     def gather_args(*args, **kwargs):
         return {'type': 'sql', 'subtype': subtype,
-                'statement': slow_call_name}
+                'statement': slow_call_name,
+                'ignore_in': ignore_set}
     return gather_args
 
 
 def gather_query_factory(subtype):
     def gather_query(query, *args, **kwargs):
         return {'type': 'sql', 'subtype': subtype, 'statement': query,
-                'parameters': args}
+                'parameters': args,
+                'ignore_in': ignore_set}
     return gather_query
 
 

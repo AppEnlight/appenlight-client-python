@@ -19,14 +19,11 @@ def gather_data(client, environ, gather_slowness=True, gather_logs=True):
     client.py_report(environ, traceback, http_status=500)
     # report slowness
     now = datetime.datetime.utcnow()
+    stats, slow_calls = get_local_storage(local_timing).get_thread_stats()
     if client.config['slow_requests'] and gather_slowness:
         # do we have slow calls ?
-        records = []
-        errormator_storage = get_local_storage(local_timing)
-        for record in errormator_storage.get_slow_calls():
-            records.append(record)
-        if (records):
-            client.py_slow_report(environ, now, now, records)
+        if (slow_calls):
+            client.py_slow_report(environ, now, now, slow_calls)
             # force log fetching
             traceback = True
 

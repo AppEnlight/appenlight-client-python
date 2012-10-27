@@ -3,6 +3,8 @@ from errormator_client.timing import time_trace
 
 import logging
 
+ignore_set = frozenset()
+
 to_decorate = ['count', 'create_index', 'distinct', 'drop', 'drop_index',
                'drop_indexes', 'ensure_index', 'find', 'find_one',
                'find_and_modify' 'group', 'index_information',
@@ -21,7 +23,8 @@ def add_timing(min_duration=0.3):
     def general_factory(slow_call_name):
         def gather_args(self, *args, **kwargs):
             return {'type': 'nosql', 'subtype': 'mongo',
-                    'statement': slow_call_name}
+                    'statement': slow_call_name,
+                    'ignore_in': ignore_set}
         return gather_args
 
     for m in to_decorate:

@@ -3,6 +3,8 @@ from errormator_client.timing import time_trace
 
 import pysolr
 
+ignore_set = frozenset()
+
 def add_timing(min_duration=0.3):
     module = import_module('pysolr')
     if not module:
@@ -15,10 +17,12 @@ def add_timing(min_duration=0.3):
         return gather_args
 
     def gather_args_search(solr, q, *args, **kwargs):
-        return {'type': 'nosql', 'subtype': 'solr', 'statement': q}
+        return {'type': 'nosql', 'subtype': 'solr', 'statement': q,
+                'ignore_in': ignore_set}
 
     def gather_args_more_like_this(solr, q, *args, **kwargs):
-        return {'type': 'nosql', 'subtype': 'solr', 'statement': q}
+        return {'type': 'nosql', 'subtype': 'solr', 'statement': q,
+                'ignore_in': ignore_set}
 
     deco_func_or_method(module, 'Solr.search', time_trace,
                           gather_args_search, min_duration)

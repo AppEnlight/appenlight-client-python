@@ -1,6 +1,8 @@
 from errormator_client.utils import import_module, deco_func_or_method
 from errormator_client.timing import time_trace
 
+ignore_set = frozenset()
+
 def add_timing(min_duration=0.15):
     module = import_module('django')
     if not module:
@@ -12,7 +14,8 @@ def add_timing(min_duration=0.15):
         return {'type': 'tmpl',
                 'subtype': 'django',
                 'statement': 'render',
-                'parameters': ''}
+                'parameters': '',
+                'ignore_in': ignore_set}
 
     if hasattr(template.Template, 'render'):
         deco_func_or_method(template, 'Template.render', time_trace,

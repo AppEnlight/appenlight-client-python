@@ -1,6 +1,7 @@
 from errormator_client.utils import import_module, deco_func_or_method
 from errormator_client.timing import time_trace
 
+ignore_set = frozenset(['remote', 'nosql'])
 
 def add_timing(min_duration=3):
     module = import_module('urllib2')
@@ -14,7 +15,8 @@ def add_timing(min_duration=3):
             g_url = url
 
         return {'type': 'remote', 'statement': 'urllib2.OpenerDirector.open',
-                'parameters': g_url}
+                'parameters': g_url,
+                'ignore_in': ignore_set}
 
     deco_func_or_method(module, 'OpenerDirector.open', time_trace,
                           gather_args_open, min_duration)

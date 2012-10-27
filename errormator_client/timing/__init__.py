@@ -6,6 +6,7 @@ import datetime
 import sys
 import time
 import threading
+from operator import itemgetter
 
 if sys.platform == "win32":
     # On Windows, the best timer is time.clock()
@@ -17,23 +18,46 @@ else:
 class ErrormatorLocalStorage(object):
 
     def __init__(self):
+        self.clear()
+
+    def contains(self, parent, child):
+                return (child['start'] >= parent['start'] and
+                        child['end'] <= parent['end'])
+
+    def get_stack(self):
+        data = sorted(self.slow_calls, key=itemgetter('start'))
+        stack = []
+
+        for node in data:
+            node['parents'] = [n['type'] for n in stack]
+            while stack and not self.contains(stack[-1], node):
+                stack.pop()
+            stack.append(node)
+        return data
+
+    def clear(self):
+        self.thread_stats = {'main': 0, 'sql': 0, 'nosql': 0,
+                                  'remote': 0, 'tmpl': 0, 'unknown': 0}
         self.slow_calls = []
-        self.request_stats = {'main': 0, 'sql': 0, 'nosql': 0,
-                              'remote': 0, 'tmpl': 0, 'unknown': 0}
 
-    def add_slow_call(self, call):
-        self.slow_calls.append(call)
-
-    def get_slow_calls(self):
-        calls = self.slow_calls
-        self.slow_calls = []
-        return calls
-
-    def get_request_stats(self):
-        stats = self.request_stats
-        self.request_stats = {'main': 0, 'sql': 0, 'nosql': 0,
-                              'remote': 0, 'tmpl': 0, 'unknown': 0}
-        return stats
+    def get_thread_stats(self):
+        """ resets thread stats at same time """
+        stats = self.thread_stats.copy()
+        slow_calls = []
+        for row in self.get_stack():
+            duration = row['end'] - row['start']
+            if row['ignore_in'].intersection(row['parents']):
+                # this means that it is used internall in other lib
+                continue
+            stats[row['type']] += duration
+            # if this call was being made inside template - substract duration
+            # from template timing
+            if 'tmpl' in row['parents'] and row['parents'][-1] != 'tmpl':
+                self.request_stats[row['tmpl']] -= duration
+            if duration >= row['min_duration']:
+                slow_calls.append(row)
+        self.clear()
+        return stats, slow_calls
 
 TIMING_REGISTERED = False
 
@@ -46,50 +70,17 @@ def get_local_storage(local_timing):
         local_timing._errormator_storage = ErrormatorLocalStorage()
     return local_timing._errormator_storage
 
-def stack_inspector():
-    stack = inspect.stack()
-    path = []
-    traces = 0
-    for frame in stack:
-        if frame[3] == '_e_trace':
-            traces += 1
-            continue
-        name = []
-        module = inspect.getmodule(frame[0])
-        if module:
-            name.append(module.__name__)
-        elif 'self' in frame[0].f_locals:
-            name.append(frame[0].f_locals['self'].__class__.__name__)
-            name.append(frame[3])
-        elif frame[3] != '<module>':
-            name.append(frame[3])
-        name = '.'.join(name)
-        if not path or path[-1][0] != name:
-            path.append((name, frame[0].f_lineno))
-    return path, traces
-
 def _e_trace(info_gatherer, min_duration, e_callable, *args, **kw):
     """ Used to wrap dbapi2 driver methods """
     start = default_timer()
     result = e_callable(*args, **kw)
     end = default_timer()
-    duration = round(end - start, 4)
-    info = {'timestamp':datetime.datetime.utcfromtimestamp(start),
-            'duration':duration}
+    info = {'start':start,
+            'end':end,
+            'min_duration':min_duration}
     info.update(info_gatherer(*args, **kw))
     errormator_storage = get_local_storage(local_timing)
-    call_type = info.get('type', 'unknown')
-    errormator_storage.request_stats[call_type] += duration
-    if duration < min_duration:
-        return result
-    try:
-        path, traces = stack_inspector()
-    except IndexError as e:
-        path, traces = [], 1
-        log.info('stack inspector error: %s' % e)
-    # traces >= 2 means that this call was in some other lib thats was timed
-    if traces < 2:
-        errormator_storage.add_slow_call(info)
+    errormator_storage.slow_calls.append(info)
     return result
 
 def trace_factory(info_gatherer, min_duration, is_template=False):
@@ -100,23 +91,12 @@ def trace_factory(info_gatherer, min_duration, is_template=False):
         start = default_timer()
         result = f(*args, **kw)
         end = default_timer()
-        duration = round(end - start, 4)
-        info = {'timestamp':datetime.datetime.utcfromtimestamp(start),
-                'duration':duration}
+        info = {'start':start,
+            'end':end,
+            'min_duration':min_duration}
         info.update(info_gatherer(*args, **kw))
         errormator_storage = get_local_storage(local_timing)
-        call_type = info.get('type', 'unknown')
-        errormator_storage.request_stats[call_type] += duration
-        if duration < min_duration:
-            return result
-        try:
-            path, traces = stack_inspector()
-        except IndexError as e:
-            path, traces = [], 1
-            log.info('stack inspector error: %s' % e)
-        # traces >= 2 means that this call was in some other lib thats was timed
-        if traces < 2:
-            errormator_storage.add_slow_call(info)
+        errormator_storage.slow_calls.append(info)
         return result
     return _e_trace
 

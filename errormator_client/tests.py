@@ -401,18 +401,21 @@ class TestClientSending(unittest.TestCase):
         self.setUpClient()
         self.client.py_report(TEST_ENVIRON, http_status=404)
         self.client.submit_data()
+        get_local_storage(local_timing).clear()
         self.assertEqual(self.client.report_queue, [])
 
     def test_send_error_failure(self):
         self.setUpClient()
         self.client.py_report(TEST_ENVIRON, http_status=404)
         result = self.client.submit_data()
+        get_local_storage(local_timing).clear()
         self.assertEqual(result['reports'], False)
 
     def test_send_error_io(self):
         self.setUpClient()
         self.client.py_report(TEST_ENVIRON, http_status=404)
         result = self.client.submit_data()
+        get_local_storage(local_timing).clear()
         self.assertEqual(result['reports'], False)
 
 
@@ -512,19 +515,19 @@ class TestTimingHTTPLibs(unittest.TestCase):
         import urllib
         opener = urllib.URLopener()
         opener.open("http://www.ubuntu.com/")
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_urllib_urlretrieve(self):
         import urllib
         urllib.urlretrieve("http://www.ubuntu.com/")
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_urllib2(self):
         import urllib2
         urllib2.urlopen("http://www.ubuntu.com/")
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_urllib3(self):
@@ -534,7 +537,7 @@ class TestTimingHTTPLibs(unittest.TestCase):
             return
         http = urllib3.PoolManager()
         http.request('GET', "http://www.ubuntu.com/")
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_requests(self):
@@ -543,14 +546,14 @@ class TestTimingHTTPLibs(unittest.TestCase):
         except ImportError:
             return
         requests.get("http://www.ubuntu.com/")
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_httplib(self):
         import httplib
         h2 = httplib.HTTPConnection("www.ubuntu.com")
         h2.request("GET", "/")
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
 
@@ -574,7 +577,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()
         c.close()
         conn.close()
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_psycopg2(self):
@@ -589,7 +592,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()
         c.close()
         conn.close()
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_pg8000(self):
@@ -604,7 +607,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()
         c.close()
         conn.close()
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_postgresql(self):
@@ -618,7 +621,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()[0]
         c.close()
         conn.close()
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_mysqldb(self):
@@ -632,7 +635,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()
         c.close()
         conn.close()
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_oursql(self):
@@ -646,7 +649,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()
         c.close()
         conn.close()
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_odbc(self):
@@ -660,7 +663,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()
         c.close()
         conn.close()
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_pymysql(self):
@@ -674,7 +677,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.fetchone()
         c.close()
         conn.close()
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
 
@@ -699,7 +702,7 @@ class TestMako(unittest.TestCase):
         xxxxx ${1+2} yyyyyy
         ''')
         template.render()
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_render_unicode(self):
@@ -715,7 +718,7 @@ class TestMako(unittest.TestCase):
         xxxxx ${1+2} yyyyyy
         ''')
         template.render_unicode()
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_template_lookup(self):
@@ -733,7 +736,7 @@ class TestMako(unittest.TestCase):
         ''')
         template = lookup.get_template("base.html")
         template.render_unicode()
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
 
@@ -753,7 +756,7 @@ class TestJinja2(unittest.TestCase):
         xxxxx {{1+2}} yyyyyy
         ''')
         template.render(sleep=time.sleep)
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
 
@@ -779,7 +782,7 @@ class TestDjangoTemplates(unittest.TestCase):
         xxxxx {{ time }} yyyyyy
         ''')
         template.render(ctx)
-        result = get_local_storage(local_timing).get_slow_calls()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
 class WSGITests(unittest.TestCase):
