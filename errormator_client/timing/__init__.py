@@ -53,10 +53,12 @@ class ErrormatorLocalStorage(object):
             # if this call was being made inside template - substract duration
             # from template timing
             if 'tmpl' in row['parents'] and row['parents'][-1] != 'tmpl':
-                self.request_stats[row['tmpl']] -= duration
+                self.thread_stats['tmpl'] -= duration
             if duration >= row['min_duration']:
                 slow_calls.append(row)
-        self.clear()
+        # round stats to 5 digits
+        for k, v in stats.iteritems():
+            stats[k] = round(v, 5)
         return stats, slow_calls
 
 TIMING_REGISTERED = False

@@ -23,7 +23,7 @@ class ErrormatorMiddleware(object):
             ErrormatorMiddleware.errormator_client = Client(config=base_config)
 
     def process_request(self, request):
-        request.__processed_exception__ = False
+        request.__e_processed_exception__ = False
         request.__traceback__ = None
         environ = request.environ
         environ['errormator.request_id'] = str(uuid.uuid4())
@@ -34,7 +34,7 @@ class ErrormatorMiddleware(object):
         return None
 
     def process_exception(self, request, exception):
-        request.__processed_exception__ = True
+        request.__e_processed_exception__ = True
         environ = request.environ
         if isinstance(exception, Http404):
             http_status = 404
@@ -48,21 +48,25 @@ class ErrormatorMiddleware(object):
         if not self.errormator_client.config['report_errors']:
             return None
 
+        errormator_storage = get_local_storage(local_timing)
+        stats, slow_calls = errormator_storage.get_thread_stats()
         self.errormator_client.py_report(environ, request.__traceback__,
                                          message=None,
                                          http_status=http_status,
-        start_time=datetime.datetime.utcfromtimestamp(request.__start_time__))
+        start_time=datetime.datetime.utcfromtimestamp(request.__start_time__),
+        request_stats=stats)
 
     def process_response(self, request, response):
         environ = request.environ
 
-        if response.status_code == 404 and not request.__processed_exception__:
+        if response.status_code == 404 and not request.__e_processed_exception__:
             self.process_exception(request, Http404())
         end_time = default_timer()
         delta = datetime.timedelta(seconds=(end_time - request.__start_time__))
         errormator_storage = get_local_storage(local_timing)
         errormator_storage.thread_stats['main'] = end_time - request.__start_time__
-        stats, slow_calls = get_local_storage(local_timing).get_thread_stats()
+        stats, slow_calls = errormator_storage.get_thread_stats()
+        errormator_storage.clear()
         # report slowness
         if self.errormator_client.config['slow_requests']:
             # do we have slow calls ?
@@ -72,7 +76,7 @@ class ErrormatorMiddleware(object):
                 self.errormator_client.py_slow_report(environ,
                     datetime.datetime.utcfromtimestamp(request.__start_time__),
                     datetime.datetime.utcfromtimestamp(end_time),
-                    slow_calls)
+                    slow_calls, request_stats=stats)
                 # force log fetching
                 request.__traceback__ = True
 

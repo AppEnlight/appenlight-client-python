@@ -126,6 +126,9 @@ class TestClientConfig(unittest.TestCase):
     def setUpClient(self, config={}):
         self.client = client.Client(config)
 
+    def tearDown(self):
+        get_local_storage(local_timing).clear()
+
     def test_empty_init(self):
         self.setUpClient()
         self.assertIsInstance(self.client, client.Client)
@@ -174,7 +177,7 @@ class TestClientConfig(unittest.TestCase):
 
     def test_default_client_name(self):
         self.setUpClient()
-        
+
         self.assertEqual(self.client.config['client'], 'python3' if client.PY3 \
                          else 'python')
 
@@ -389,6 +392,9 @@ class TestClientSending(unittest.TestCase):
     def setUpClient(self, config={'errormator.api_key': 'blargh!'}):
         self.client = client.Client(config)
 
+    def tearDown(self):
+        get_local_storage(local_timing).clear()
+
     def test_check_if_deliver_false(self):
         self.setUpClient()
         self.assertEqual(self.client.check_if_deliver(), False)
@@ -511,6 +517,9 @@ class TestTimingHTTPLibs(unittest.TestCase):
     def setUp(self):
         self.setUpClient(timing_conf)
 
+    def tearDown(self):
+        get_local_storage(local_timing).clear()
+
     def test_urllib_URLOpener_open(self):
         import urllib
         opener = urllib.URLopener()
@@ -565,6 +574,9 @@ class TestDBApi2Drivers(unittest.TestCase):
     def setUp(self):
         self.setUpClient(timing_conf)
         self.stmt = '''SELECT 1+2+3 as result'''
+
+    def tearDown(self):
+        get_local_storage(local_timing).clear()
 
     def test_sqlite(self):
         try:
@@ -689,6 +701,9 @@ class TestMako(unittest.TestCase):
     def setUp(self):
         self.setUpClient(timing_conf)
 
+    def tearDown(self):
+        get_local_storage(local_timing).clear()
+
     def test_render(self):
         try:
             import mako
@@ -745,6 +760,9 @@ class TestJinja2(unittest.TestCase):
     def setUpClient(self, config={}):
         self.client = client.Client(timing_conf)
 
+    def tearDown(self):
+        get_local_storage(local_timing).clear()
+
     def test_render(self):
         try:
             import jinja2
@@ -768,6 +786,9 @@ class TestDjangoTemplates(unittest.TestCase):
     def setUp(self):
         self.setUpClient(timing_conf)
 
+    def tearDown(self):
+        get_local_storage(local_timing).clear()
+
     def test_render(self):
         try:
             from django import template
@@ -789,6 +810,9 @@ class WSGITests(unittest.TestCase):
 
     def setUpClient(self, config={}):
         self.client = client.Client(timing_conf)
+
+    def tearDown(self):
+        get_local_storage(local_timing).clear()
 
     def test_normal_request(self):
         def app(environ, start_response):

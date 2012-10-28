@@ -72,6 +72,9 @@ class ErrormatorWSGIWrapper(object):
                 return 'Server Error'
         finally:
             # report 500's and 404's
+            errormator_storage = get_local_storage(local_timing)
+            stats, slow_calls = errormator_storage.get_thread_stats()
+            errormator_storage.clear()
             if traceback and self.errormator_client.config['report_errors']:
                 http_status = 500
             elif (self.errormator_client.config['report_404'] and
@@ -83,14 +86,13 @@ class ErrormatorWSGIWrapper(object):
                 self.errormator_client.py_report(environ, traceback,
                                                  message=None,
                                                  http_status=http_status,
-                    start_time=datetime.datetime.utcfromtimestamp(start_time))
+                    start_time=datetime.datetime.utcfromtimestamp(start_time),
+                    request_stats=stats)
 
             # report slowness
             end_time = default_timer()
             delta = datetime.timedelta(seconds=(end_time - start_time))
-            errormator_storage = get_local_storage(local_timing)
             errormator_storage.thread_stats['main'] = end_time - start_time
-            stats, slow_calls = get_local_storage(local_timing).get_thread_stats()
             if self.errormator_client.config['slow_requests']:
                 # do we have slow calls ?
                 self.errormator_client.save_request_stats(stats)
@@ -99,7 +101,7 @@ class ErrormatorWSGIWrapper(object):
                     self.errormator_client.py_slow_report(environ,
                             datetime.datetime.utcfromtimestamp(start_time),
                             datetime.datetime.utcfromtimestamp(end_time),
-                            slow_calls)
+                            slow_calls, request_stats=stats)
                     # force log fetching
                     traceback = True
             if self.errormator_client.config['logging']:

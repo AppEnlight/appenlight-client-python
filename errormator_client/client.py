@@ -116,7 +116,9 @@ class Client(object):
                                                  'session']
         user_blacklist = aslist(config.get('errormator.request_keys_blacklist',
                             config.get('errormator.bad_request_keys')), ',')
-        self.config['request_keys_blacklist'].extend(user_blacklist)
+        self.config['request_keys_blacklist'].extend(
+                                            filter(lambda x: x, user_blacklist)
+                                            )
         if config.get('errormator.bad_request_keys'):
             log.warning('errormator.bad_request_keys is deprecated use request_keys_blacklist')  # pragma: nocover
 
@@ -125,10 +127,14 @@ class Client(object):
                 'HTTP_REFERER']
         environ_whitelist = aslist(
                         config.get('errormator.environ_keys_whitelist'), ',')
-        self.config['environ_keys_whitelist'].extend(environ_whitelist)
+        self.config['environ_keys_whitelist'].extend(
+                                        filter(lambda x: x, environ_whitelist)
+                                        )
         self.config['log_namespace_blacklist'] = aslist(
                             config.get('errormator.log_namespace_blacklist',
                                        'errormator_client.client'), ',')
+        self.config['log_namespace_blacklist'] = filter(lambda x: x,
+                                        self.config['log_namespace_blacklist'])
 
         self.filter_callable = config.get('errormator.filter_callable')
         if self.filter_callable:
@@ -288,7 +294,7 @@ class Client(object):
         return structure
 
     def py_report(self, environ, traceback=None, message=None, http_status=200,
-                  start_time=None):
+                  start_time=None, request_stats={}):
         report_data, errormator_info = self.create_report_structure(environ,
                         traceback, server=self.config['server_name'],
                         http_status=http_status, include_params=True)
@@ -298,6 +304,7 @@ class Client(object):
             url = url.decode('utf8', 'ignore')
         if start_time:
             report_data['report_details'][0]['start_time'] = start_time
+        report_data['report_details'][0]['request_stats'] = request_stats
         with self.report_queue_lock:
             self.report_queue.append(report_data)
         log.warning(u'%s code: %s @%s' % (http_status,
@@ -345,15 +352,20 @@ class Client(object):
         log.debug('add %s log entries to queue' % len(records))
         return True
 
-    def py_slow_report(self, environ, start_time, end_time, records=()):
+    def py_slow_report(self, environ, start_time, end_time, records=(),
+                       request_stats={}):
         report_data, errormator_info = self.create_report_structure(environ,
                     server=self.config['server_name'], include_params=True)
         report_data = self.filter_callable(report_data, 'slow_report')
         url = report_data['report_details'][0]['url']
         report_data['report_details'][0]['start_time'] = start_time
         report_data['report_details'][0]['end_time'] = end_time
+        report_data['report_details'][0]['request_stats'] = request_stats
         report_data['report_details'][0]['slow_calls'] = []
         for record in records:
+            # we don't need that and json will barf anyways
+            del record['ignore_in']
+            del record['parents']
             r = getattr(record, 'errormator_data', record)
             report_data['report_details'][0]['slow_calls'].append(r)
         with self.slow_report_queue_lock:
