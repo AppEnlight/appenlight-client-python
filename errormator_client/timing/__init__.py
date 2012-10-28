@@ -47,7 +47,7 @@ class ErrormatorLocalStorage(object):
         for row in self.get_stack():
             duration = row['end'] - row['start']
             if row['ignore_in'].intersection(row['parents']):
-                # this means that it is used internall in other lib
+                # this means that it is used internally in other lib
                 continue
             stats[row['type']] += duration
             # if this call was being made inside template - substract duration
@@ -77,9 +77,9 @@ def _e_trace(info_gatherer, min_duration, e_callable, *args, **kw):
     start = default_timer()
     result = e_callable(*args, **kw)
     end = default_timer()
-    info = {'start':start,
-            'end':end,
-            'min_duration':min_duration}
+    info = {'start': start,
+            'end': end,
+            'min_duration': min_duration}
     info.update(info_gatherer(*args, **kw))
     errormator_storage = get_local_storage(local_timing)
     errormator_storage.slow_calls.append(info)
@@ -93,9 +93,9 @@ def trace_factory(info_gatherer, min_duration, is_template=False):
         start = default_timer()
         result = f(*args, **kw)
         end = default_timer()
-        info = {'start':start,
-            'end':end,
-            'min_duration':min_duration}
+        info = {'start': start,
+            'end': end,
+            'min_duration': min_duration}
         info.update(info_gatherer(*args, **kw))
         errormator_storage = get_local_storage(local_timing)
         errormator_storage.slow_calls.append(info)
