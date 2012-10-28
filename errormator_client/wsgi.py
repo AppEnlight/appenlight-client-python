@@ -72,6 +72,8 @@ class ErrormatorWSGIWrapper(object):
                 return 'Server Error'
         finally:
             # report 500's and 404's
+            # report slowness
+            end_time = default_timer()
             errormator_storage = get_local_storage(local_timing)
             stats, slow_calls = errormator_storage.get_thread_stats()
             errormator_storage.clear()
@@ -88,9 +90,6 @@ class ErrormatorWSGIWrapper(object):
                                                  http_status=http_status,
                     start_time=datetime.datetime.utcfromtimestamp(start_time),
                     request_stats=stats)
-
-            # report slowness
-            end_time = default_timer()
             delta = datetime.timedelta(seconds=(end_time - start_time))
             errormator_storage.thread_stats['main'] = end_time - start_time
             if self.errormator_client.config['slow_requests']:

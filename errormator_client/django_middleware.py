@@ -57,11 +57,10 @@ class ErrormatorMiddleware(object):
         request_stats=stats)
 
     def process_response(self, request, response):
+        end_time = default_timer()
         environ = request.environ
-
         if response.status_code == 404 and not request.__e_processed_exception__:
             self.process_exception(request, Http404())
-        end_time = default_timer()
         delta = datetime.timedelta(seconds=(end_time - request.__start_time__))
         errormator_storage = get_local_storage(local_timing)
         errormator_storage.thread_stats['main'] = end_time - request.__start_time__

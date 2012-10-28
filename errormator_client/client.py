@@ -304,7 +304,8 @@ class Client(object):
             url = url.decode('utf8', 'ignore')
         if start_time:
             report_data['report_details'][0]['start_time'] = start_time
-        report_data['report_details'][0]['request_stats'] = request_stats
+        if traceback:
+            report_data['report_details'][0]['request_stats'] = request_stats
         with self.report_queue_lock:
             self.report_queue.append(report_data)
         log.warning(u'%s code: %s @%s' % (http_status,
