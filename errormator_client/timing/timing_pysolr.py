@@ -13,7 +13,8 @@ def add_timing(min_duration=0.3):
     def general_factory(slow_call_name):
         def gather_args(solr, *args, **kwargs):
             return {'type': 'nosql', 'subtype': 'solr',
-                    'statement': slow_call_name}
+                    'statement': slow_call_name,
+                    'ignore_in': ignore_set}
         return gather_args
 
     def gather_args_search(solr, q, *args, **kwargs):
