@@ -1,5 +1,10 @@
 CHANGELOG:
 ==========
+2012-10-31
+    0.5.5  Global timing and RPS metrics
+           Speed improvements 
+           PYTHON 3.x COMPATIBILITY
+           Minor fixes
 
 2012-10-15
     0.5.1 Introduced subtype to timing metrics
