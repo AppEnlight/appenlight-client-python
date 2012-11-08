@@ -36,6 +36,9 @@ class ErrormatorMiddleware(object):
     def process_exception(self, request, exception):
         request.__e_processed_exception__ = True
         environ = request.environ
+        user = getattr(request, 'user', None)
+        if user:
+            environ['errormator.username'] = user.id
         if isinstance(exception, Http404):
             http_status = 404
         else:
@@ -59,6 +62,9 @@ class ErrormatorMiddleware(object):
     def process_response(self, request, response):
         end_time = default_timer()
         environ = request.environ
+        user = getattr(request, 'user', None)
+        if user:
+            environ['errormator.username'] = user.id
         if response.status_code == 404 and not request.__e_processed_exception__:
             self.process_exception(request, Http404())
         delta = datetime.timedelta(seconds=(end_time - request.__start_time__))

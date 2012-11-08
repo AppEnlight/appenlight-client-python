@@ -434,7 +434,10 @@ class Client(object):
         else:
             remote_addr = (environ.get("HTTP_X_REAL_IP")
                            or environ.get('REMOTE_ADDR'))
+        parsed_environ['HTTP_USER_AGENT'] = environ.get("HTTP_USER_AGENT", '')
         parsed_environ['REMOTE_ADDR'] = remote_addr
+        parsed_environ['REMOTE_USER'] = u'%s' % environ.get('REMOTE_USER',
+                                            errormator_info.get('username', ''))
         try:
             errormator_info['URL'] = req.url
         except (UnicodeEncodeError, UnicodeDecodeError) as e:
@@ -464,10 +467,8 @@ class Client(object):
         detail_entry['request'] = parsed_environ
         # fill in all other required info
         detail_entry['ip'] = parsed_environ.get('REMOTE_ADDR', u'')
-        detail_entry['user_agent'] = parsed_environ.get('HTTP_USER_AGENT', u'')
-        detail_entry['username'] = parsed_environ.get('REMOTE_USER',
-                                                parsed_environ.get('username',
-                                                                   ''))
+        detail_entry['user_agent'] = parsed_environ['HTTP_USER_AGENT']
+        detail_entry['username'] = parsed_environ['REMOTE_USER']
         detail_entry['url'] = errormator_info.pop('URL', 'unknown')
         if 'request_id' in errormator_info:
             detail_entry['request_id'] = errormator_info.pop('request_id',
