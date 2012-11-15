@@ -57,7 +57,7 @@ REQ_END_TIME = datetime.datetime(2012, 9, 26, 18, 18, 4, 461259)
 SERVER_NAME = socket.getfqdn()  # different on every machine
 
 PARSED_REPORT_404 = {
-                     'report_details': [{'username': '',
+                     'report_details': [{'username': u'foo',
                         'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
                         'ip': '127.0.0.1',
                         'request': {'COOKIES': {u'country': u'US',
@@ -66,7 +66,8 @@ PARSED_REPORT_404 = {
                                                 u'http_referer': u'http://localhost:5000/'},
                                     'POST': {},
                                     'GET': {u'aaa': [u'1'], u'bbb': [u'2']}},
-                        'user_agent': u'', 'message': u''}],
+                        'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
+                        'message': u''}],
                      'error_type': '404 Not Found',
                      'server': SERVER_NAME,
                      'priority': 5,
@@ -91,7 +92,7 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',  # this
                                                      'POST': {},
                                                      'HTTP_CACHE_CONTROL': u'max-age=0',
                                                      'HTTP_ACCEPT_ENCODING': u'gzip, deflate'},
-                                         'user_agent': u'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
+                                         'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
                                          'message': u'',
                                          'request_stats': {}}],
                      'error_type': u'Exception: Test Exception',
@@ -101,7 +102,7 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',  # this
                      'http_status': 500}
 
 PARSED_SLOW_REPORT = {
-                      'report_details': [{'username': '',
+                      'report_details': [{'username': u'foo',
                                           'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
                                           'ip': '127.0.0.1',
                                           'start_time': REQ_START_TIME,
@@ -112,7 +113,7 @@ PARSED_SLOW_REPORT = {
                                                                   u'http_referer': u'http://localhost:5000/'},
                                                       'POST': {},
                                                       'GET': {u'aaa': [u'1'], u'bbb': [u'2']}},
-                                          'user_agent': u'',
+                                          'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
                                           'message': u'',
                                           'end_time': REQ_END_TIME,
                                           'request_stats': {}}],
