@@ -63,7 +63,6 @@ def _obj_dump(obj):
     else:
         raise NotImplementedError
 
-_sj = None
 
 # Import simplejson
 try:
@@ -122,9 +121,9 @@ except ImportError:
 stdlibjson = _json
 
 # set all available json modules
-if _sj:
+if simplejson:
     json = _sj
-elif json:
+elif _json:
     json = _json
 else:
     raise ImportError('Could not find any json modules')
