@@ -63,6 +63,7 @@ def _obj_dump(obj):
     else:
         raise NotImplementedError
 
+_sj = None
 
 # Import simplejson
 try:
