@@ -294,7 +294,9 @@ class Client(object):
         return structure
 
     def py_report(self, environ, traceback=None, message=None, http_status=200,
-                  start_time=None, request_stats={}):
+                  start_time=None, request_stats=None):
+        if not request_stats:
+            request_stats = {}
         report_data, errormator_info = self.create_report_structure(environ,
                         traceback, server=self.config['server_name'],
                         http_status=http_status, include_params=True)
@@ -354,7 +356,9 @@ class Client(object):
         return True
 
     def py_slow_report(self, environ, start_time, end_time, records=(),
-                       request_stats={}):
+                       request_stats=None):
+        if not request_stats:
+            request_stats = {}
         report_data, errormator_info = self.create_report_structure(environ,
                     server=self.config['server_name'], include_params=True)
         report_data = self.filter_callable(report_data, 'slow_report')
@@ -508,7 +512,9 @@ def get_config(config=None, path_to_config=None, section_name='errormator'):
 
 
 def decorate(ini_file=None, register_timing=True):
-    def make_errormator_middleware(app, global_config={}, **kw):
+    def make_errormator_middleware(app, global_config=None, **kw):
+        if not global_config:
+            global_config = {}
         config = global_config.copy()
         config.update(kw)
         # this shuts down all errormator functionalities
@@ -530,7 +536,7 @@ def decorate(ini_file=None, register_timing=True):
 
 
 # TODO: refactor this to share the code
-def make_errormator_middleware(app, global_config={}, **kw):
+def make_errormator_middleware(app, global_config=None, **kw):
     if global_config:
         config = global_config.copy()
     else:
