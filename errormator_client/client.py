@@ -156,14 +156,14 @@ class Client(object):
                             seconds=self.config['buffer_flush_interval'])
         # register logging
         import errormator_client.logger
-        if self.config['logging']:
+        if self.config['logging'] and self.config['enabled']:
             self.log_handler = errormator_client.logger.register_logging()
             level = LEVELS.get(config.get('errormator.logging.level',
                                       'WARNING').lower(), logging.WARNING)
             self.log_handler.setLevel(level)
 
         # register slow call metrics
-        if self.config['slow_requests']:
+        if self.config['slow_requests'] and self.config['enabled']:
             self.config['timing'] = config.get('errormator.timing', {})
             for k, v in config.items():
                 if k.startswith('errormator.timing'):
