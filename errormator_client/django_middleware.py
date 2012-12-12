@@ -34,6 +34,10 @@ class ErrormatorMiddleware(object):
         return None
 
     def process_exception(self, request, exception):
+        if (not getattr(self, 'errormator_client') or
+            not self.errormator_client.config.get('enabled')):
+            return None
+
         request.__e_processed_exception__ = True
         environ = request.environ
         user = getattr(request, 'user', None)
@@ -60,6 +64,8 @@ class ErrormatorMiddleware(object):
         request_stats=stats)
 
     def process_response(self, request, response):
+        if not self.errormator_client.config.get('enabled'):
+            return response
         end_time = default_timer()
         environ = request.environ
         user = getattr(request, 'user', None)
