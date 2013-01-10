@@ -14,15 +14,18 @@ def add_timing(min_duration=0.3):
         def gather_args(solr, *args, **kwargs):
             return {'type': 'nosql', 'subtype': 'solr',
                     'statement': slow_call_name,
+                    'count':True,
                     'ignore_in': ignore_set}
         return gather_args
 
     def gather_args_search(solr, q, *args, **kwargs):
         return {'type': 'nosql', 'subtype': 'solr', 'statement': q,
+                'count':True,
                 'ignore_in': ignore_set}
 
     def gather_args_more_like_this(solr, q, *args, **kwargs):
         return {'type': 'nosql', 'subtype': 'solr', 'statement': q,
+                'count':True,
                 'ignore_in': ignore_set}
 
     deco_func_or_method(module, 'Solr.search', time_trace,

@@ -11,6 +11,7 @@ def add_timing(min_duration=3):
     def gather_args_url(method, url, *args, **kwargs):
         return {'type': 'remote', 'statement': 'requests.request',
                 'parameters': url,
+                'count':True,
                 'ignore_in':ignore_set}
 
     deco_func_or_method(module, 'api.request', time_trace,

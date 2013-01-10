@@ -14,6 +14,7 @@ def add_timing(min_duration=0.15):
         return {'type': 'tmpl',
                 'subtype': 'django',
                 'statement': 'render',
+                'count':True,
                 'parameters': '',
                 'ignore_in': ignore_set}
 

@@ -15,6 +15,7 @@ def add_timing(min_duration=0.15):
                 'subtype': 'mako',
                 'statement': 'render',
                 'parameters': '',
+                'count':True,
                 'ignore_in': ignore_set}
 
     deco_func_or_method(template, 'Template.render', time_trace,

@@ -23,6 +23,7 @@ def add_timing(min_duration=0.3):
     def general_factory(slow_call_name):
         def gather_args(self, *args, **kwargs):
             return {'type': 'nosql', 'subtype': 'mongo',
+                    'count':True,
                     'statement': slow_call_name,
                     'ignore_in': ignore_set}
         return gather_args

@@ -12,6 +12,7 @@ def add_timing(min_duration=3):
         return {'type':'remote',
                 'statement':'urllib3.request.RequestMethods.request_encode_url',
                 'parameters':url,
+                'count':True,
                 'ignore_in': ignore_set}
 
     deco_func_or_method(module.request, 'RequestMethods.request_encode_url',
@@ -22,6 +23,7 @@ def add_timing(min_duration=3):
         return {'type':'remote',
                 'statement':'urllib3.request.RequestMethods.request_encode_body',
                 'parameters':url,
+                'count':True,
                 'ignore_in': ignore_set}
 
     deco_func_or_method(module.request, 'RequestMethods.request_encode_body',

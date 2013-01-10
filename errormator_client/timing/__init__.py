@@ -36,8 +36,9 @@ class ErrormatorLocalStorage(object):
         return data
 
     def clear(self):
-        self.thread_stats = {'main': 0, 'sql': 0, 'nosql': 0,
-                                  'remote': 0, 'tmpl': 0, 'unknown': 0}
+        self.thread_stats = {'main': 0, 'sql': 0, 'nosql': 0, 'remote': 0,
+                             'tmpl': 0, 'unknown': 0, 'sql_calls':0,
+                             'nosql_calls':0, 'remote_calls':0, 'tmpl_calls':0}
         self.slow_calls = []
 
     def get_thread_stats(self):
@@ -50,6 +51,10 @@ class ErrormatorLocalStorage(object):
                 # this means that it is used internally in other lib
                 continue
             stats[row['type']] += duration
+            if row['count']:
+                stats['%s_calls' %row['type']] += 1
+            #count is not needed anymore - we don't want to send this
+            del row['count']
             # if this call was being made inside template - substract duration
             # from template timing
             if 'tmpl' in row['parents'] and row['parents'][-1] != 'tmpl':

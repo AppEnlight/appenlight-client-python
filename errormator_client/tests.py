@@ -595,6 +595,26 @@ class TestDBApi2Drivers(unittest.TestCase):
         stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
+    def test_sqlite_call_number(self):
+        try:
+            import sqlite3
+        except ImportError:
+            return
+        conn = sqlite3.connect(':memory:')
+        c = conn.cursor()
+        c.execute(self.stmt)
+        c.fetchone()
+        c.execute(self.stmt)
+        c.fetchone()
+        c.execute(self.stmt)
+        c.fetchone()
+        c.execute(self.stmt)
+        c.fetchone()
+        c.close()
+        conn.close()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
+        self.assertEqual(int(stats['sql_calls']), 4)
+
     def test_psycopg2(self):
         try:
             import psycopg2
@@ -722,6 +742,24 @@ class TestMako(unittest.TestCase):
         template.render()
         stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
+
+    def test_render_call_number(self):
+        try:
+            import mako
+        except ImportError:
+            return
+        template = mako.template.Template('''
+        <%
+        import time
+        time.sleep(0.01)
+        %>
+        xxxxx ${1+2} yyyyyy
+        ''')
+        template.render()
+        template.render()
+        template.render()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
+        self.assertEqual(stats['tmpl_calls'], 3)
 
     def test_render_unicode(self):
         try:

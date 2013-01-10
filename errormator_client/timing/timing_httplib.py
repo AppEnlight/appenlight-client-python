@@ -12,12 +12,14 @@ def add_timing(min_duration=3):
         return {'type': 'remote',
                 'statement': 'httplib.HTTPConnection.connect',
                 'parameters': c.host,
+                'count':True,
                 'ignore_in': ignore_set}
 
     def gather_args_sslhost(c):
         return {'type': 'remote',
                 'statement': 'httplib.HTTPSConnection.connect',
                 'parameters': c.host,
+                'count':True,
                 'ignore_in': ignore_set}
 
     deco_func_or_method(module, 'HTTPConnection.connect', time_trace,

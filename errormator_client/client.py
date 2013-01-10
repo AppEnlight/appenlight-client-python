@@ -386,7 +386,10 @@ class Client(object):
                 self.request_stats[req_time] = {'main': 0, 'sql': 0,
                                                 'nosql': 0, 'remote': 0,
                                                 'tmpl': 0, 'unknown': 0,
-                                                'requests': 0}
+                                                'requests': 0, 'sql_calls':0,
+                                                'nosql_calls':0,
+                                                'remote_calls':0,
+                                                'tmpl_calls':0}
             self.request_stats[req_time]['requests'] += 1
             for k, v in stats.iteritems():
                 self.request_stats[req_time][k] += v

@@ -16,6 +16,7 @@ def add_timing(min_duration=3):
 
         return {'type': 'remote', 'statement': 'urllib2.OpenerDirector.open',
                 'parameters': g_url,
+                'count':True,
                 'ignore_in': ignore_set}
 
     deco_func_or_method(module, 'OpenerDirector.open', time_trace,

@@ -13,6 +13,7 @@ def general_factory(slow_call_name, subtype):
     def gather_args(*args, **kwargs):
         return {'type': 'sql', 'subtype': subtype,
                 'statement': slow_call_name,
+                'count':False,
                 'ignore_in': ignore_set}
     return gather_args
 
@@ -21,6 +22,7 @@ def gather_query_factory(subtype):
     def gather_query(query, *args, **kwargs):
         return {'type': 'sql', 'subtype': subtype, 'statement': query,
                 'parameters': args,
+                'count':True,
                 'ignore_in': ignore_set}
     return gather_query
 
@@ -30,15 +32,9 @@ def add_timing(module_name, min_duration=0.3):
     if not module:
         return
 
-    class TimerWrapper(object):
-
+    class CursorWrapper(object):
         def __init__(self, instance, module_name):
-            # assign to superclass or face the infinite recursion consequences
             object.__setattr__(self, '_e_db_module_name', module_name)
-            object.__setattr__(self, '_e_db_commit',
-                               general_factory('COMMIT', module_name))
-            object.__setattr__(self, '_e_db_rollback',
-                               general_factory('ROLLBACK', module_name))
             object.__setattr__(self, '_e_db_fetch',
                                general_factory('fetch', module_name))
             object.__setattr__(self, '_e_db_fetchmany',
@@ -53,14 +49,9 @@ def add_timing(module_name, min_duration=0.3):
                                gather_query_factory(module_name))
             object.__setattr__(self, '_e_object', instance)
 
-        def cursor(self, *args, **kwargs):
-            result = TimerWrapper(self._e_object.cursor(*args, **kwargs),
-                                  self._e_db_module_name)
-            return result
-
-        def commit(self, *args, **kwargs):
-            return _e_trace(self._e_db_commit, min_duration,
-                            self._e_object.commit, *args, **kwargs)
+#        def callproc(self, *args, **kwargs):
+#            return _e_trace(self._e_db_query, min_duration,
+#                            self._e_object.callproc, *args, **kwargs)
 
         def execute(self, *args, **kwargs):
             return _e_trace(self._e_db_query, min_duration,
@@ -89,6 +80,38 @@ def add_timing(module_name, min_duration=0.3):
         def next(self, *args, **kwargs):
             return _e_trace(self._e_db_next, min_duration,
                             self._e_object.next, *args, **kwargs)
+
+        def __setattr__(self, name, value):
+            return setattr(self._e_object, name, value)
+
+        def __getattr__(self, name):
+            return getattr(self._e_object, name)
+
+        def __iter__(self):
+            return iter(self._e_object)
+
+        def __call__(self, *args, **kwargs):
+            return self._e_object(*args, **kwargs)
+
+    class TimerWrapper(object):
+
+        def __init__(self, instance, module_name):
+            # assign to superclass or face the infinite recursion consequences
+            object.__setattr__(self, '_e_db_module_name', module_name)
+            object.__setattr__(self, '_e_db_commit',
+                               general_factory('COMMIT', module_name))
+            object.__setattr__(self, '_e_db_rollback',
+                               general_factory('ROLLBACK', module_name))
+            object.__setattr__(self, '_e_object', instance)
+
+        def cursor(self, *args, **kwargs):
+            result = CursorWrapper(self._e_object.cursor(*args, **kwargs),
+                                  self._e_db_module_name)
+            return result
+
+        def commit(self, *args, **kwargs):
+            return _e_trace(self._e_db_commit, min_duration,
+                            self._e_object.commit, *args, **kwargs)
 
         def rollback(self, *args, **kwargs):
             return _e_trace(self._e_db_rollback, min_duration,
