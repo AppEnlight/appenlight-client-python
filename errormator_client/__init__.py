@@ -1,3 +1,6 @@
+__version__ = '0.5.6'
+__protocol_version__ = '0.3.5'
+
 class ErrormatorException(Exception):
 
     @property

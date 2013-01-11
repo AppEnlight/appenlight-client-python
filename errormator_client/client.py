@@ -40,6 +40,7 @@ import uuid
 import os
 import decorator
 
+from errormator_client import __version__, __protocol_version__ 
 from errormator_client.ext_json import json
 from errormator_client.utils import asbool, aslist
 from errormator_client.timing import local_timing, get_local_storage
@@ -64,8 +65,8 @@ log = logging.getLogger(__name__)
 
 
 class Client(object):
-    __version__ = '0.5.6'
-    __protocol_version__ = '0.3.5'
+    __version__ = __version__
+    __protocol_version__ = __protocol_version__ 
 
     def __init__(self, config=None, register_timing=True):
         """
