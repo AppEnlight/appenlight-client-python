@@ -51,10 +51,10 @@ class ErrormatorLocalStorage(object):
                 # this means that it is used internally in other lib
                 continue
             stats[row['type']] += duration
-            if row['count']:
+            if row.get('count'):
                 stats['%s_calls' %row['type']] += 1
             #count is not needed anymore - we don't want to send this
-            del row['count']
+            row.pop('count', None)
             # if this call was being made inside template - substract duration
             # from template timing
             if 'tmpl' in row['parents'] and row['parents'][-1] != 'tmpl':
