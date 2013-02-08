@@ -64,41 +64,42 @@ class ErrormatorMiddleware(object):
         request_stats=stats)
 
     def process_response(self, request, response):
-        if not self.errormator_client.config.get('enabled'):
+        try:
             return response
-        end_time = default_timer()
-        environ = request.environ
-        user = getattr(request, 'user', None)
-        if user:
-            environ['errormator.username'] = unicode(user.id)
-        if response.status_code == 404 and not request.__e_processed_exception__:
-            self.process_exception(request, Http404())
-        delta = datetime.timedelta(seconds=(end_time - request.__start_time__))
-        errormator_storage = get_local_storage(local_timing)
-        errormator_storage.thread_stats['main'] = end_time - request.__start_time__
-        stats, slow_calls = errormator_storage.get_thread_stats()
-        errormator_storage.clear()
-        # report slowness
-        if self.errormator_client.config['slow_requests']:
-            # do we have slow calls ?
-            self.errormator_client.save_request_stats(stats)
-            if (delta >= self.errormator_client.config['slow_request_time']
-                or slow_calls):
-                self.errormator_client.py_slow_report(environ,
-                    datetime.datetime.utcfromtimestamp(request.__start_time__),
-                    datetime.datetime.utcfromtimestamp(end_time),
-                    slow_calls, request_stats=stats)
-                # force log fetching
-                request.__traceback__ = True
+        finally:
+            if self.errormator_client.config.get('enabled'):
+                end_time = default_timer()
+                environ = request.environ
+                user = getattr(request, 'user', None)
+                if user:
+                    environ['errormator.username'] = unicode(user.id)
+                if response.status_code == 404 and not request.__e_processed_exception__:
+                    self.process_exception(request, Http404())
+                delta = datetime.timedelta(seconds=(end_time - request.__start_time__))
+                errormator_storage = get_local_storage(local_timing)
+                errormator_storage.thread_stats['main'] = end_time - request.__start_time__
+                stats, slow_calls = errormator_storage.get_thread_stats()
+                errormator_storage.clear()
+                # report slowness
+                if self.errormator_client.config['slow_requests']:
+                    # do we have slow calls ?
+                    self.errormator_client.save_request_stats(stats)
+                    if (delta >= self.errormator_client.config['slow_request_time']
+                        or slow_calls):
+                        self.errormator_client.py_slow_report(environ,
+                            datetime.datetime.utcfromtimestamp(request.__start_time__),
+                            datetime.datetime.utcfromtimestamp(end_time),
+                            slow_calls, request_stats=stats)
+                        # force log fetching
+                        request.__traceback__ = True
 
-        if self.errormator_client.config['logging']:
-            records = self.errormator_client.log_handler.get_records()
-            self.errormator_client.log_handler.clear_records()
-            self.errormator_client.py_log(environ, records=records,
-                                r_uuid=environ['errormator.request_id'],
-                                traceback=request.__traceback__)
-        # send all data we gathered immediately at the end of request
-        self.errormator_client.check_if_deliver(
-                self.errormator_client.config['force_send'] or
-                environ.get('errormator.force_send'))
-        return response
+                if self.errormator_client.config['logging']:
+                    records = self.errormator_client.log_handler.get_records()
+                    self.errormator_client.log_handler.clear_records()
+                    self.errormator_client.py_log(environ, records=records,
+                                        r_uuid=environ['errormator.request_id'],
+                                        traceback=request.__traceback__)
+                # send all data we gathered immediately at the end of request
+                self.errormator_client.check_if_deliver(
+                        self.errormator_client.config['force_send'] or
+                        environ.get('errormator.force_send'))
