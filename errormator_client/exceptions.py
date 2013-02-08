@@ -286,6 +286,7 @@ class Traceback(object):
     def frameinfo(self):
         """Dict representing frame and variables"""
         result = []
+        id_list = []
         for frame in self.frames:
             entry = {'file':shorten_filename(frame),
                      'line':frame.lineno,
@@ -298,6 +299,11 @@ class Traceback(object):
                 entry['vars'].append({'unknown', 'uninspectable'})
                 continue
             for k, v in frame.locals.iteritems():
+                if id(v) not in id_list:
+                    id_list.append(id(v))
+                else:
+                    print 'EXISTS'
+                    continue
                 try:
                     if k == 'self':
                         entry['vars'].append(('self.' + v.__class__.__name__,
