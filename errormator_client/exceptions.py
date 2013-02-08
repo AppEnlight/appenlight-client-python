@@ -46,6 +46,7 @@ import sys
 import re
 import os
 import inspect
+import itertools
 import traceback
 import codecs
 from errormator_client.client import PY3
@@ -72,6 +73,40 @@ class _Missing(object):
 
 _missing = _Missing()
 
+def truncate_str(input):
+    return input if len(input) < 255 else input[:255] + '...'
+
+def serialize_to_unicode(input, treat_as_class=False):
+    if hasattr(input, 'iterkeys'):
+        dict_method = input.iterkeys
+    elif hasattr(input, 'keys'):
+        dict_method = input.keys
+    else:
+        dict_method = None
+    if dict_method is not None:
+        dict_keys = itertools.takewhile(lambda x:x[0] < 128, enumerate(dict_method()))
+        return dict([(k, truncate_str(repr(input[k]))) for i, k in dict_keys])
+    elif isinstance(input, (tuple, list, set, frozenset)):
+        return [truncate_str(repr(v)) for i, v in
+                itertools.takewhile(lambda x:x[0] < 128, enumerate(input))]
+    elif isinstance(input, basestring):
+        return truncate_str(input)
+    else:
+        to_return = repr(input)
+        return truncate_str(to_return)
+
+def shorten_filename(frame):
+    filename = frame.filename
+    if frame.module:
+        try:
+            # shorten filenames
+            package = frame.module.split('.', 1)[0]
+            base_filename = sys.modules[package].__file__
+            to_trunc = base_filename.rsplit(os.sep, 2)[0]
+            filename = filename.split(to_trunc, 1)[-1][1:]
+        except Exception as e:
+            pass
+    return filename
 
 class cached_property(object):
     """A decorator that converts a function into a lazy property.  The
@@ -240,13 +275,45 @@ class Traceback(object):
     def plaintext(self):
         result = ['Traceback (most recent call last):']
         for frame in self.frames:
-            result.append('File "%s", line %s, in %s' % 
-                    (frame.filename, frame.lineno, frame.function_name,))
+            result.append('File "%s", line %s, in %s' %
+                    (shorten_filename(frame), frame.lineno, frame.function_name,))
             result.append('    %s' % frame.current_line.strip())
         result.append('%s' % self.exception)
         return '\n'.join(result)
 
     id = property(lambda x: id(x))
+
+    def frameinfo(self):
+        """Dict representing frame and variables"""
+        result = []
+        for frame in self.frames:
+            entry = {'file':shorten_filename(frame),
+                     'line':frame.lineno,
+                     'fn':frame.function_name,
+                     'cline':frame.current_line.strip(),
+                     'vars':[]}
+
+            # in some situations frame.locals might be not something we expect
+            if not isinstance(frame.locals, dict):
+                entry['vars'].append({'unknown', 'uninspectable'})
+                continue
+            for k, v in frame.locals.iteritems():
+                try:
+                    if k == 'self':
+                        entry['vars'].append(('self.' + v.__class__.__name__,
+                                              serialize_to_unicode(v)))
+                    else:
+                        entry['vars'].append((k, serialize_to_unicode(v)))
+                except Exception as e:
+                    entry['vars'].append((k, '<unserializable>'))
+            result.append(entry)
+        result.append({'file':'',
+                     'line':'',
+                     'fn':'',
+                     'cline':'%s' % self.exception,
+                     'vars':{}}
+                      )
+        return result
 
 
 class Frame(object):

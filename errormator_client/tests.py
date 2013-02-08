@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import datetime
 import logging
 import pkg_resources
@@ -458,6 +459,26 @@ class TestErrorParsing(unittest.TestCase):
         self.client.report_queue[0]['traceback'] = \
                                     'Traceback (most recent call last):'
         self.assertEqual(self.client.report_queue[0], PARSED_REPORT_500)
+
+    def test_frameinfo(self):
+        self.setUpClient(config={'errormator.report_local_vars': 'true'})
+        test = 1
+        b = {1:'a', '2':2, 'ccc':'ddd'}
+        obj = object()
+        e_obj = client.Client({})
+        unic = 'grzegżółka'
+        a_list = [1, 2, 4, 5, 6, client.Client({}), 'dupa' ]
+        long_val = 'imlong' * 100
+        datetest = datetime.datetime.utcnow()
+        try:
+            raise Exception('Test Exception')
+        except:
+            traceback = get_current_traceback(skip=1, show_hidden_frames=True,
+                                              ignore_system_exceptions=True)
+        self.client.py_report(TEST_ENVIRON, traceback=traceback,
+                              http_status=500)
+        assert len(self.client.report_queue[0]['report_details'][0]['frameinfo'][0]['vars']) == 9
+
 
 
 class TestLogs(unittest.TestCase):

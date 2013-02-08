@@ -40,7 +40,7 @@ import uuid
 import os
 import decorator
 
-from errormator_client import __version__, __protocol_version__ 
+from errormator_client import __version__, __protocol_version__
 from errormator_client.ext_json import json
 from errormator_client.utils import asbool, aslist
 from errormator_client.timing import local_timing, get_local_storage
@@ -66,7 +66,7 @@ log = logging.getLogger(__name__)
 
 class Client(object):
     __version__ = __version__
-    __protocol_version__ = __protocol_version__ 
+    __protocol_version__ = __protocol_version__
 
     def __init__(self, config=None, register_timing=True):
         """
@@ -106,6 +106,8 @@ class Client(object):
                             config.get('errormator.logging_on_error', False))
         self.config['report_404'] = asbool(config.get('errormator.report_404',
                                                       False))
+        self.config['report_local_vars'] = asbool(
+                            config.get('errormator.report_local_vars', False))
         self.config['report_errors'] = asbool(
                                 config.get('errormator.report_errors', True))
         self.config['buffer_flush_interval'] = int(
@@ -463,18 +465,22 @@ class Client(object):
                                                             include_params)
         report_data = {'client': 'Python', 'report_details': []}
         report_data['error_type'] = 'Unknown'
+        detail_entry = {}
         if traceback:
             exception_text = traceback.exception
             traceback_text = traceback.plaintext
             report_data['error_type'] = exception_text
-            report_data['traceback'] = traceback_text
+            if self.config['report_local_vars']:
+                detail_entry['frameinfo'] = traceback.frameinfo()
+            else:
+                report_data['traceback'] = traceback_text
+
         report_data['http_status'] = 500 if traceback else http_status
         if http_status == 404:
             report_data['error_type'] = '404 Not Found'
         report_data['priority'] = 5
         report_data['server'] = (server or
                     environ.get('SERVER_NAME', 'unknown server'))
-        detail_entry = {}
         detail_entry['request'] = parsed_environ
         # fill in all other required info
         detail_entry['ip'] = parsed_environ.get('REMOTE_ADDR', u'')
