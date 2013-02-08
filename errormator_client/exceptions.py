@@ -302,7 +302,6 @@ class Traceback(object):
                 if id(v) not in id_list:
                     id_list.append(id(v))
                 else:
-                    print 'EXISTS'
                     continue
                 try:
                     if k == 'self':
