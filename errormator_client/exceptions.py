@@ -329,8 +329,9 @@ class Frame(object):
         if fn[-4:] in ('.pyo', '.pyc'):
             fn = fn[:-1]
         # if it's a file on the file system resolve the real filename.
-        if os.path.isfile(fn):
-            fn = os.path.realpath(fn)
+# we actually dont want that or it will break filename shortening
+#        if os.path.isfile(fn):
+#            fn = os.path.realpath(fn)
         self.filename = fn
         self.module = self.globals.get('__name__')
         self.loader = self.globals.get('__loader__')
