@@ -76,7 +76,17 @@ PARSED_REPORT_404 = {
                      'http_status': 404}
 
 PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',  # this will be different everywhere
-                     'report_details': [{'username': u'foo',
+                     'report_details': [{'frameinfo': [{'cline': u"raise Exception('Test Exception')",
+                                     'file': 'errormator_client/tests.py',
+                                     'fn': 'test_py_report_500_traceback',
+                                     'line': 454,
+                                     'vars': []},
+                                    {'cline': u'Exception: Test Exception',
+                                     'file': '',
+                                     'fn': '',
+                                     'line': '',
+                                     'vars': {}}],
+                                         'username': u'foo',
                                          'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
                                          'ip': '127.0.0.1',
                                          'request': {
@@ -295,14 +305,15 @@ class TestClientConfig(unittest.TestCase):
         self.setUpClient()
         self.assertEqual(self.client.config['request_keys_blacklist'],
                 ['password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf',
-                 'session'])
+                 'session', 'pass', 'config', 'settings'])
 
     def test_custom_request_keys_blacklist(self):
         config = {'errormator.request_keys_blacklist': "aa,bb,cc"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['request_keys_blacklist'],
                          ['password', 'passwd', 'pwd', 'auth_tkt', 'secret',
-                          'csrf', 'session', 'aa', 'bb', 'cc'])
+                          'csrf', 'session', 'pass', 'config', 'settings',
+                          'aa', 'bb', 'cc'])
 
     def test_default_environ_keys_whitelist(self):
         self.setUpClient()
@@ -458,6 +469,10 @@ class TestErrorParsing(unittest.TestCase):
                               http_status=500)
         self.client.report_queue[0]['traceback'] = \
                                     'Traceback (most recent call last):'
+        line_no = self.client.report_queue[0]['report_details'][0]['frameinfo'][0]['line']
+        assert int(line_no) > 0
+        # set line number to match as this will change over time
+        PARSED_REPORT_500['report_details'][0]['frameinfo'][0]['line'] = line_no
         self.assertEqual(self.client.report_queue[0], PARSED_REPORT_500)
 
     def test_frameinfo(self):

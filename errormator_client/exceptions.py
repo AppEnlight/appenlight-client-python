@@ -84,8 +84,11 @@ def serialize_to_unicode(input, treat_as_class=False):
     else:
         dict_method = None
     if dict_method is not None:
+        # avoid sending environ
+        if input.get('wsgi.version'):
+            return dict([['environ', '<environ-skipped>']])
         dict_keys = itertools.takewhile(lambda x:x[0] < 128, enumerate(dict_method()))
-        return dict([(k, truncate_str(repr(input[k]))) for i, k in dict_keys])
+        return dict([[repr(k), truncate_str(repr(input[k]))] for i, k in dict_keys])
     elif isinstance(input, (tuple, list, set, frozenset)):
         return [truncate_str(repr(v)) for i, v in
                 itertools.takewhile(lambda x:x[0] < 128, enumerate(input))]
@@ -283,11 +286,13 @@ class Traceback(object):
 
     id = property(lambda x: id(x))
 
-    def frameinfo(self):
+    def frameinfo(self, include_vars=False):
         """Dict representing frame and variables"""
         result = []
         id_list = []
         for frame in self.frames:
+            if frame.hide:
+                continue
             entry = {'file':shorten_filename(frame),
                      'line':frame.lineno,
                      'fn':frame.function_name,
@@ -295,22 +300,26 @@ class Traceback(object):
                      'vars':[]}
 
             # in some situations frame.locals might be not something we expect
-            if not isinstance(frame.locals, dict):
-                entry['vars'].append({'unknown', 'uninspectable'})
-                continue
-            for k, v in frame.locals.iteritems():
-                if id(v) not in id_list:
-                    id_list.append(id(v))
-                else:
+            if include_vars:
+                if not isinstance(frame.locals, dict):
+                    entry['vars'].append({'unknown', '<uninspectable>'})
                     continue
-                try:
-                    if k == 'self':
-                        entry['vars'].append(('self.' + v.__class__.__name__,
-                                              serialize_to_unicode(v)))
+                for k, v in frame.locals.iteritems():
+                    if id(v) not in id_list:
+                        id_list.append(id(v))
                     else:
-                        entry['vars'].append((k, serialize_to_unicode(v)))
-                except Exception as e:
-                    entry['vars'].append((k, '<unserializable>'))
+                        continue
+                    try:
+                        if k == 'self':
+                            entry['vars'].append(['self.' + v.__class__.__name__,
+                                                  serialize_to_unicode(v)])
+                        else:
+                            if k == 'environ':
+                                entry['vars'].append([k, '<environ-skipped>'])
+                                continue
+                            entry['vars'].append([k, serialize_to_unicode(v)])
+                    except Exception as e:
+                        entry['vars'].append([k, '<unserializable>'])
             result.append(entry)
         result.append({'file':'',
                      'line':'',

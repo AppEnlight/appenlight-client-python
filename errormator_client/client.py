@@ -116,7 +116,8 @@ class Client(object):
                                                       False))
         self.config['request_keys_blacklist'] = ['password', 'passwd', 'pwd',
                                                  'auth_tkt', 'secret', 'csrf',
-                                                 'session']
+                                                 'session', 'pass', 'config',
+                                                 'settings']
         user_blacklist = aslist(config.get('errormator.request_keys_blacklist',
                             config.get('errormator.bad_request_keys')), ',')
         self.config['request_keys_blacklist'].extend(
@@ -283,17 +284,38 @@ class Client(object):
             log.error(message)
 
     def data_filter(self, structure, section=None):
+        def filter_dict(input, dict_method):
+            for k in dict_method():
+                for bad_key in self.config['request_keys_blacklist']:
+                    if (bad_key in k.lower()):
+                        input[k] = u'***'
+
         if section in ['error_report', 'slow_report']:
             keys_to_check = (
                     structure['report_details'][0]['request'].get('COOKIES'),
-                    structure['report_details'][0]['request'].get('POST')
+                    structure['report_details'][0]['request'].get('POST'),
                     )
-
         for source in filter(None, keys_to_check):
-            for k in source.iterkeys():
-                for bad_key in self.config['request_keys_blacklist']:
-                    if (bad_key in k.lower()):
-                        source[k] = u'***'
+            if hasattr(source, 'iterkeys'):
+                filter_dict(source, source.iterkeys)
+            elif hasattr(source, 'keys'):
+                filter_dict(source, source.keys)
+        # try to filter local frame vars, to prevent people leaking as much
+        # data as possible when enabling frameinfo
+        frameinfo = structure['report_details'][0].get('frameinfo')
+        if frameinfo:
+            for f in frameinfo:
+                for source in f.get('vars', []):
+                    # filter dict likes
+                    if hasattr(source[1], 'iterkeys'):
+                        filter_dict(source[1], source[1].iterkeys)
+                    elif hasattr(source, 'keys'):
+                        filter_dict(source[1], source[1].keys)
+                    # filter flat values
+                    else:
+                        for bad_key in self.config['request_keys_blacklist']:
+                            if (bad_key in source[0].lower()):
+                                source[1] = u'***'
         return structure
 
     def py_report(self, environ, traceback=None, message=None, http_status=200,
@@ -470,10 +492,7 @@ class Client(object):
             exception_text = traceback.exception
             traceback_text = traceback.plaintext
             report_data['error_type'] = exception_text
-            if self.config['report_local_vars']:
-                detail_entry['frameinfo'] = traceback.frameinfo()
-            else:
-                report_data['traceback'] = traceback_text
+            detail_entry['frameinfo'] = traceback.frameinfo(include_vars=self.config['report_local_vars'])
 
         report_data['http_status'] = 500 if traceback else http_status
         if http_status == 404:
