@@ -117,7 +117,7 @@ class Client(object):
         self.config['request_keys_blacklist'] = ['password', 'passwd', 'pwd',
                                                  'auth_tkt', 'secret', 'csrf',
                                                  'session', 'pass', 'config',
-                                                 'settings']
+                                                 'settings', 'environ']
         user_blacklist = aslist(config.get('errormator.request_keys_blacklist',
                             config.get('errormator.bad_request_keys')), ',')
         self.config['request_keys_blacklist'].extend(
