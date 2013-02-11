@@ -302,7 +302,7 @@ class Traceback(object):
             # in some situations frame.locals might be not something we expect
             if include_vars:
                 if not isinstance(frame.locals, dict):
-                    entry['vars'].append({'unknown', '<uninspectable>'})
+                    entry['vars'].append({'unknown': '<uninspectable>'})
                     continue
                 for k, v in frame.locals.iteritems():
                     if id(v) not in id_list:
