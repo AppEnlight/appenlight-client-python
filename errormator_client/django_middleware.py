@@ -81,9 +81,9 @@ class ErrormatorMiddleware(object):
                 stats, slow_calls = errormator_storage.get_thread_stats()
                 errormator_storage.clear()
                 # report slowness
+                self.errormator_client.save_request_stats(stats)
                 if self.errormator_client.config['slow_requests']:
                     # do we have slow calls ?
-                    self.errormator_client.save_request_stats(stats)
                     if (delta >= self.errormator_client.config['slow_request_time']
                         or slow_calls):
                         self.errormator_client.py_slow_report(environ,

@@ -92,9 +92,9 @@ class ErrormatorWSGIWrapper(object):
                     start_time=datetime.datetime.utcfromtimestamp(start_time),
                     request_stats=stats)
             delta = datetime.timedelta(seconds=(end_time - start_time))
+            self.errormator_client.save_request_stats(stats)
             if self.errormator_client.config['slow_requests']:
                 # do we have slow calls ?
-                self.errormator_client.save_request_stats(stats)
                 if (delta >= self.errormator_client.config['slow_request_time']
                     or slow_calls):
                     self.errormator_client.py_slow_report(environ,
