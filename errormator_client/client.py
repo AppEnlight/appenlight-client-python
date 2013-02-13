@@ -346,7 +346,8 @@ class Client(object):
             records = self.log_handler.get_records()
             self.log_handler.clear_records()
 
-        if self.config['logging_on_error'] and traceback is None:
+        if not environ.get('errormator.force_logs') and \
+            (self.config['logging_on_error'] and traceback is None):
             return False
 
         for record in records:

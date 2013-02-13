@@ -305,7 +305,7 @@ class TestClientConfig(unittest.TestCase):
         self.setUpClient()
         self.assertEqual(self.client.config['request_keys_blacklist'],
                 ['password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf',
-                 'session', 'pass', 'config', 'settings'])
+                 'session', 'pass', 'config', 'settings', 'environ'])
 
     def test_custom_request_keys_blacklist(self):
         config = {'errormator.request_keys_blacklist': "aa,bb,cc"}
@@ -313,7 +313,7 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['request_keys_blacklist'],
                          ['password', 'passwd', 'pwd', 'auth_tkt', 'secret',
                           'csrf', 'session', 'pass', 'config', 'settings',
-                          'aa', 'bb', 'cc'])
+                           'environ', 'aa', 'bb', 'cc'])
 
     def test_default_environ_keys_whitelist(self):
         self.setUpClient()
