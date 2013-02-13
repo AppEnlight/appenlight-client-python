@@ -494,7 +494,9 @@ class Client(object):
             exception_text = traceback.exception
             traceback_text = traceback.plaintext
             report_data['error_type'] = exception_text
-            detail_entry['frameinfo'] = traceback.frameinfo(include_vars=self.config['report_local_vars'])
+            local_vars = (self.config['report_local_vars'] or
+                          environ.get('errormator.report_local_vars'))
+            detail_entry['frameinfo'] = traceback.frameinfo(include_vars=local_vars)
 
         report_data['http_status'] = 500 if traceback else http_status
         if http_status == 404:
