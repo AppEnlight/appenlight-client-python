@@ -428,7 +428,8 @@ class Client(object):
         for key, value in req.environ.items():
             if key.startswith('errormator.') \
             and key not in ('errormator.client', 'errormator.force_send',
-                            'errormator.log', 'errormator.report'):
+                            'errormator.log', 'errormator.report',
+                            'errormator.force_logs'):
                 errormator_info[key[11:]] = unicode(value)
             else:
                 if traceback and (key.startswith('HTTP') or \
