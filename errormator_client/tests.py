@@ -832,6 +832,29 @@ class TestMako(unittest.TestCase):
         self.assertEqual(len(result), 1)
 
 
+class TestChameleon(unittest.TestCase):
+
+    def setUpClient(self, config={}):
+        self.client = client.Client(timing_conf)
+
+    def tearDown(self):
+        get_local_storage(local_timing).clear()
+
+    def test_render(self):
+        try:
+            import chameleon.zpt
+        except ImportError:
+            return
+        import time
+        template = chameleon.zpt.PageTemplate('''
+        ${sleep(0.06)}
+        xxxxx ${1+2} yyyyyy
+        ''')
+        template.render(sleep=time.sleep)
+        stats, result = get_local_storage(local_timing).get_thread_stats()
+        self.assertEqual(len(result), 1)
+
+
 class TestJinja2(unittest.TestCase):
 
     def setUpClient(self, config={}):
