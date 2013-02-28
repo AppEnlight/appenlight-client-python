@@ -8,8 +8,6 @@ def add_timing(min_duration=0.15):
     if not module:
         return
 
-    from mako import template
-
     def gather_template(template, *args, **kwargs):
         return {'type': 'tmpl',
                 'subtype': 'chameleon',
@@ -18,5 +16,5 @@ def add_timing(min_duration=0.15):
                 'count':True,
                 'ignore_in': ignore_set}
 
-    deco_func_or_method(template, 'Template.render', time_trace,
+    deco_func_or_method(module.template, 'Template.render', time_trace,
                           gather_template, min_duration, is_template=True)
