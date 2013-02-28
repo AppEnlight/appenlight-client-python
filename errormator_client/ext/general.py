@@ -20,6 +20,10 @@ def gather_data(client, environ, gather_slowness=True, gather_logs=True):
     stats, slow_calls = errormator_storage.get_thread_stats()
     client.py_report(environ, traceback, http_status=500,
                      request_stats=stats)
+    if traceback:
+        # dereference
+        del traceback
+        traceback = True
     # report slowness
     now = datetime.datetime.utcnow()
     errormator_storage.clear()

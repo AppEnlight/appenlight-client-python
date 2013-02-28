@@ -338,6 +338,7 @@ class Client(object):
         log.warning(u'%s code: %s @%s' % (http_status,
                             report_data.get('error_type'),
                             url,))
+        del traceback
         return True
 
     def py_log(self, environ, records=None, r_uuid=None, traceback=None):
@@ -492,7 +493,6 @@ class Client(object):
         detail_entry = {}
         if traceback:
             exception_text = traceback.exception
-            traceback_text = traceback.plaintext
             report_data['error_type'] = exception_text
             local_vars = (self.config['report_local_vars'] or
                           environ.get('errormator.report_local_vars'))
@@ -522,6 +522,7 @@ class Client(object):
             detail_entry['request'].pop(k, None)
         report_data['report_details'].append(detail_entry)
         report_data.update(errormator_info)
+        del traceback
         return report_data, errormator_info
 
 

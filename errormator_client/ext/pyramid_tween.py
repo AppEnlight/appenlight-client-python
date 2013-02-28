@@ -19,11 +19,10 @@ def errormator_tween_factory(handler, registry):
             if 'errormator.client' in request.environ:
                 errormator_storage = get_local_storage(local_timing)
                 stats, slow_calls = errormator_storage.get_thread_stats()
-                traceback = get_current_traceback(skip=1,
+                # pass the traceback object to middleware
+                request.environ['errormator.__traceback'] = get_current_traceback(skip=1,
                                                   show_hidden_frames=True,
                                                   ignore_system_exceptions=True)
-                # pass the traceback object to middleware
-                request.environ['errormator.__traceback'] = traceback
             raise
         return response
     return error_tween

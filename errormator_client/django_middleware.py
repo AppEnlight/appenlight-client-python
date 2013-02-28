@@ -62,6 +62,10 @@ class ErrormatorMiddleware(object):
                                          http_status=http_status,
         start_time=datetime.datetime.utcfromtimestamp(request.__start_time__),
         request_stats=stats)
+        if request.__traceback__:
+            # dereference tb object but set it to true afterwards for other stuff
+            del request.__traceback__
+            request.__traceback__ = True
 
     def process_response(self, request, response):
         try:
