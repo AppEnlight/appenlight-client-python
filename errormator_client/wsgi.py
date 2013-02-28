@@ -78,6 +78,9 @@ class ErrormatorWSGIWrapper(object):
             errormator_storage.thread_stats['main'] = end_time - start_time
             stats, slow_calls = errormator_storage.get_thread_stats()
             errormator_storage.clear()
+            if 'errormator.__traceback' in environ:
+                # get traceback gathered by tween
+                traceback = environ['errormator.__traceback']
             if traceback and self.errormator_client.config['report_errors']:
                 http_status = 500
             elif (self.errormator_client.config['report_404'] and
