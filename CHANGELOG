@@ -1,5 +1,9 @@
 CHANGELOG:
 ==========
+2013-03-01
+    0.5.9  Minor bugfixes
+           Introduced pyramid tween
+
 2013-02-12
     0.5.8  Minor bugfixes
            Allow optionally sending local stack variables with error reports
