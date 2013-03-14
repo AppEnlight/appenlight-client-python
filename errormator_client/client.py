@@ -457,11 +457,12 @@ class Client(object):
             except Exception as e:
                 parsed_environ['GET'] = {}
             try:
-                # handle werkzeug
+                # handle werkzeug/django
                 wz_post_vars = req.environ.get('errormator.post_vars', None)
                 if wz_post_vars is not None:
                     parsed_environ['POST'] = dict(wz_post_vars)
                 else:
+                    # webob uses _parsed_post_vars - so this will not fail
                     parsed_environ['POST'] = dict([(k, req.POST.getall(k))
                                            for k in req.POST])
             except Exception as e:

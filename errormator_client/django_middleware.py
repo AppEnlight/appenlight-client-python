@@ -30,6 +30,7 @@ class ErrormatorMiddleware(object):
         # inject client instance reference to environ
         if 'errormator.client' not in environ:
             environ['errormator.client'] = self.errormator_client
+        environ['errormator.post_vars'] = request.POST
         request.__start_time__ = default_timer()
         return None
 
