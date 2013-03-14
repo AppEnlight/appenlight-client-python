@@ -430,7 +430,7 @@ class Client(object):
             if key.startswith('errormator.') \
             and key not in ('errormator.client', 'errormator.force_send',
                             'errormator.log', 'errormator.report',
-                            'errormator.force_logs'):
+                            'errormator.force_logs', 'errormator.post_vars'):
                 errormator_info[key[11:]] = unicode(value)
             else:
                 if traceback and (key.startswith('HTTP') or \
@@ -457,7 +457,12 @@ class Client(object):
             except Exception as e:
                 parsed_environ['GET'] = {}
             try:
-                parsed_environ['POST'] = dict([(k, req.POST.getall(k))
+                # handle werkzeug
+                wz_post_vars = req.environ.get('errormator.post_vars', None)
+                if wz_post_vars is not None:
+                    parsed_environ['POST'] = dict(wz_post_vars)
+                else:
+                    parsed_environ['POST'] = dict([(k, req.POST.getall(k))
                                            for k in req.POST])
             except Exception as e:
                 parsed_environ['POST'] = {}
