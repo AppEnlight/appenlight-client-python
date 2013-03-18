@@ -7,20 +7,24 @@ import uuid
 log = logging.getLogger(__name__)
 
 
-def gather_data(client, environ, gather_slowness=True, gather_logs=True):
+def gather_data(client, environ, gather_exception=True,
+                gather_slowness=True, gather_logs=True):
     if not environ.get('wsgi.url_scheme'):
         environ['wsgi.url_scheme'] = ''
     if not environ.get('HTTP_HOST'):
         environ['HTTP_HOST'] = 'localhost'
     if not environ.get('errormator.request_id'):
         environ['errormator.request_id'] = str(uuid.uuid4())
-    traceback = get_current_traceback(skip=1, show_hidden_frames=True,
+    if gather_exception:
+        traceback = get_current_traceback(skip=1, show_hidden_frames=True,
                                               ignore_system_exceptions=True)
+    else:
+        traceback = None
     errormator_storage = get_local_storage(local_timing)
     stats, slow_calls = errormator_storage.get_thread_stats()
-    client.py_report(environ, traceback, http_status=500,
-                     request_stats=stats)
     if traceback:
+        client.py_report(environ, traceback, http_status=500,
+                     request_stats=stats)
         # dereference
         del traceback
         traceback = True
