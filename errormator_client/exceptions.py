@@ -173,6 +173,8 @@ def get_current_traceback(ignore_system_exceptions=False,
     to the function as first parameter.
     """
     exc_type, exc_value, tb = sys.exc_info()
+    if not tb:
+        return None
     if ignore_system_exceptions and exc_type in system_exceptions:
         raise
     for x in xrange(skip):
