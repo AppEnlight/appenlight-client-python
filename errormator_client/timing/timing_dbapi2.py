@@ -133,10 +133,12 @@ def add_timing(module_name, min_duration=0.3):
 
         _e_attached_wrapper = True
 
-        def __init__(self, class_obj, module_name):
+        def __init__(self, conn_callable, module_name):
             # assign to superclass or face the infinite recursion consequences
             object.__setattr__(self, '_e_module_name', module_name)
-            object.__setattr__(self, '_e_object', class_obj)
+            object.__setattr__(self, '_e_object', conn_callable)
+            object.__setattr__(self, '_e_db_connect',
+                               general_factory('CONNECT', module_name))
 
         def __setattr__(self, name, value):
             return setattr(self._e_object, name, value)
@@ -145,7 +147,8 @@ def add_timing(module_name, min_duration=0.3):
             return getattr(self._e_object, name)
 
         def __call__(self, *args, **kwargs):
-            return TimerWrapper(self._e_object(*args, **kwargs),
+            return TimerWrapper(_e_trace(self._e_db_connect, min_duration,
+                                         self._e_object, *args, **kwargs),
                                 self._e_module_name)
 
     if module_name == 'psycopg2':

@@ -5,6 +5,7 @@ import pkg_resources
 import socket
 import time
 import unittest
+import pprint
 from errormator_client import client, make_errormator_middleware
 from errormator_client.exceptions import get_current_traceback
 from errormator_client.logger import register_logging
@@ -629,7 +630,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        self.assertEqual(len(result), 2)
 
     def test_sqlite_call_number(self):
         try:
@@ -656,7 +657,7 @@ class TestDBApi2Drivers(unittest.TestCase):
             import psycopg2
         except ImportError:
             return
-        conn = psycopg2.connect("user=postgres host=127.0.0.1")
+        conn = psycopg2.connect("user=test host=127.0.0.1 dbname=test password=test")
         c = conn.cursor()
         psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, c)
         c.execute(self.stmt)
@@ -664,14 +665,14 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        self.assertEqual(len(result), 2)
 
     def test_pg8000(self):
         try:
             import pg8000
         except ImportError:
             return
-        conn = pg8000.DBAPI.connect(host="localhost", user="test",
+        conn = pg8000.DBAPI.connect(host="127.0.0.1", user="test",
                                     password="test")
         c = conn.cursor()
         c.execute(self.stmt)
@@ -679,7 +680,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        self.assertEqual(len(result), 2)
 
     def test_postgresql(self):
         try:
@@ -693,21 +694,21 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        self.assertEqual(len(result), 2)
 
     def test_mysqldb(self):
         try:
             import MySQLdb
         except ImportError:
             return
-        conn = MySQLdb.connect(passwd="test", user="test")
+        conn = MySQLdb.connect(passwd="test", user="test", host="127.0.0.1", port=3306)
         c = conn.cursor()
         c.execute(self.stmt)
         c.fetchone()
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        self.assertEqual(len(result), 2)
 
     def test_oursql(self):
         try:
@@ -721,7 +722,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        self.assertEqual(len(result), 2)
 
     def test_odbc(self):
         try:
@@ -735,7 +736,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        self.assertEqual(len(result), 2)
 
     def test_pymysql(self):
         try:
@@ -749,7 +750,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        self.assertEqual(len(result), 2)
 
 
 class TestMako(unittest.TestCase):
