@@ -8,7 +8,8 @@ log = logging.getLogger(__name__)
 
 
 def gather_data(client, environ, gather_exception=True,
-                gather_slowness=True, gather_logs=True):
+                gather_slowness=True, gather_logs=True,
+                clear_storage=True):
     if not environ.get('wsgi.url_scheme'):
         environ['wsgi.url_scheme'] = ''
     if not environ.get('HTTP_HOST'):
@@ -30,7 +31,8 @@ def gather_data(client, environ, gather_exception=True,
         traceback = True
     # report slowness
     now = datetime.datetime.utcnow()
-    errormator_storage.clear()
+    if clear_storage:
+        errormator_storage.clear()
     if client.config['slow_requests'] and gather_slowness:
         # do we have slow calls ?
         if (slow_calls):

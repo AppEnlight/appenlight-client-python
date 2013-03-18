@@ -1,5 +1,10 @@
 CHANGELOG:
 ==========
+
+2013-03-18
+    0.5.11 Add dbapi2.connect() timing
+           Handle situations where gather_data is used but no errors are present
+
 2013-03-14
     0.5.10 Minor bugfixes
 
