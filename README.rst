@@ -71,17 +71,17 @@ and add in your ini::
 Errormator client provides slow call and datastore timing capabilities, 
 currently out of the box folliwing libraries are supported:
 
-* urllib
-* urllib2
-* urllib3
-* requests
-* pysolr
-* httplib
 * most used dbapi2 drivers
+* django templates
+* httplib
+* jinja2 templates
 * mongodb
 * mako templates
-* jinja2 templates
-* django templates
+* pysolr
+* requests
+* urllib
+* urllib2
+* urllib3 
 
 If for some reason you want to disable timing of specific library - just set the 
 time value to false.

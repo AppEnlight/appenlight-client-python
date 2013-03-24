@@ -158,7 +158,7 @@ def add_timing(module_name, min_duration=0.3):
         import psycopg2.extensions
         org_register_type = psycopg2.extensions.register_type
 
-        def new_register_type(obj, scope):
+        def new_register_type(obj, scope=None):
             return org_register_type(obj, getattr(scope, '_e_object', scope))
 
         psycopg2.extensions.register_type = new_register_type
