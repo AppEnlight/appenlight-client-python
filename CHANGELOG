@@ -1,6 +1,9 @@
 CHANGELOG:
 ==========
 
+2013-03-24
+    0.5.12 Fix issue with psycopg2 register_type handling
+
 2013-03-18
     0.5.11 Add dbapi2.connect() timing
            Handle situations where gather_data is used but no errors are present

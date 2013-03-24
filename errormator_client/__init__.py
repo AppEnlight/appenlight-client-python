@@ -1,4 +1,4 @@
-__version__ = '0.5.11'
+__version__ = '0.5.12'
 __protocol_version__ = '0.3.7'
 
 class ErrormatorException(Exception):

@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='errormator_client',
-      version='0.5.11',
+      version='0.5.12',
       description='Client for Errormator reporting - supporting WSGI and django (http://errormator.com)',
       classifiers=[
           'Intended Audience :: Developers',
