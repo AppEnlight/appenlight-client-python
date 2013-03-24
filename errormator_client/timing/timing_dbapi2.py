@@ -159,7 +159,10 @@ def add_timing(module_name, min_duration=0.3):
         org_register_type = psycopg2.extensions.register_type
 
         def new_register_type(obj, scope=None):
-            return org_register_type(obj, getattr(scope, '_e_object', scope))
+            attached_scope = getattr(scope, '_e_object', scope)
+            if attached_scope:
+                return org_register_type(obj, attached_scope)
+            return org_register_type(obj)
 
         psycopg2.extensions.register_type = new_register_type
     if module_name == 'sqlite3':
