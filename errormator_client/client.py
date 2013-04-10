@@ -244,11 +244,14 @@ class Client(object):
                 return False
         return True
 
-    def check_if_deliver(self, force_send=False):
+    def check_if_deliver(self, force_send=False, spawn_thread=True):
         delta = datetime.datetime.utcnow() - self.last_submit
         if delta > self.config['buffer_flush_interval'] or force_send:
-            submit_data_t = threading.Thread(target=self.submit_data)
-            submit_data_t.start()
+            if spawn_thread:
+                submit_data_t = threading.Thread(target=self.submit_data)
+                submit_data_t.start()
+            else:
+                self.submit_data()
             return True
         return False
 
@@ -586,11 +589,11 @@ def make_errormator_middleware(app, global_config=None, **kw):
                               config.get('errormator.config_path'))
     config = get_config(config=config, path_to_config=ini_path)
     # this shuts down all errormator functionalities
-    if not asbool(config.get('errormator', False)):
-        log.warning('''ERRORMATOR_INI config variable is missing from
-                    environment or errormator.config_path
-                    not passed in app global config,
-                    or errormator disabled in config''')
+    if not asbool(config.get('errormator', True)):
+        log.warning("ERRORMATOR_INI config variable is missing from"
+                    "environment or errormator.config_path "
+                    "not passed in app global config, "
+                    "or errormator disabled in config")
         return app
     client = Client(config)
     from errormator_client.wsgi import ErrormatorWSGIWrapper
