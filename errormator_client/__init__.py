@@ -1,8 +1,8 @@
 __version__ = '0.5.12'
 __protocol_version__ = '0.3.7'
 
-class ErrormatorException(Exception):
 
+class ErrormatorException(Exception):
     @property
     def message(self):
         return self._message
@@ -13,5 +13,6 @@ class ErrormatorException(Exception):
 
     def __str__(self):
         return repr(self.args)
+
 
 from errormator_client.client import make_errormator_middleware

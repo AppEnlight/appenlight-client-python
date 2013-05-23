@@ -9,12 +9,14 @@ log = logging.getLogger(__name__)
 
 ignore_set = frozenset()
 
+
 def general_factory(slow_call_name, subtype):
     def gather_args(*args, **kwargs):
         return {'type': 'sql', 'subtype': subtype,
                 'statement': slow_call_name,
-                'count':False,
+                'count': False,
                 'ignore_in': ignore_set}
+
     return gather_args
 
 
@@ -22,8 +24,9 @@ def gather_query_factory(subtype):
     def gather_query(query, *args, **kwargs):
         return {'type': 'sql', 'subtype': subtype, 'statement': query,
                 'parameters': args,
-                'count':True,
+                'count': True,
                 'ignore_in': ignore_set}
+
     return gather_query
 
 
@@ -49,9 +52,9 @@ def add_timing(module_name, min_duration=0.3):
                                gather_query_factory(module_name))
             object.__setattr__(self, '_e_object', instance)
 
-#        def callproc(self, *args, **kwargs):
-#            return _e_trace(self._e_db_query, min_duration,
-#                            self._e_object.callproc, *args, **kwargs)
+        #        def callproc(self, *args, **kwargs):
+        #            return _e_trace(self._e_db_query, min_duration,
+        #                            self._e_object.callproc, *args, **kwargs)
 
         def execute(self, *args, **kwargs):
             return _e_trace(self._e_db_query, min_duration,
@@ -106,7 +109,7 @@ def add_timing(module_name, min_duration=0.3):
 
         def cursor(self, *args, **kwargs):
             result = CursorWrapper(self._e_object.cursor(*args, **kwargs),
-                                  self._e_db_module_name)
+                                   self._e_db_module_name)
             return result
 
         def commit(self, *args, **kwargs):
@@ -152,10 +155,11 @@ def add_timing(module_name, min_duration=0.3):
                                 self._e_module_name)
 
     if module_name == 'psycopg2':
-        """ psycopg2 does a weird type check when someone does 
-            psycopg2.extensions.register_type
-            we need to go around this issue by monkey patching it """
+        # psycopg2 does a weird type check when someone does
+        # psycopg2.extensions.register_type
+        # we need to go around this issue by monkey patching it
         import psycopg2.extensions
+
         org_register_type = psycopg2.extensions.register_type
 
         def new_register_type(obj, scope=None):

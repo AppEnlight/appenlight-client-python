@@ -23,11 +23,12 @@ def add_timing(min_duration=0.3):
     def general_factory(slow_call_name):
         def gather_args(self, *args, **kwargs):
             return {'type': 'nosql', 'subtype': 'mongo',
-                    'count':True,
+                    'count': True,
                     'statement': slow_call_name,
                     'ignore_in': ignore_set}
+
         return gather_args
 
     for m in to_decorate:
         deco_func_or_method(module.collection, 'Collection.%s' % m, time_trace,
-                    general_factory('%s' % m), min_duration)
+                            general_factory('%s' % m), min_duration)

@@ -21,6 +21,7 @@ from errormator_client.timing import local_timing, get_local_storage
 
 import timeit
 import jinja2
+
 print 'traced', hasattr(jinja2.Template.render, '_e_attached_tracer')
 
 s = """

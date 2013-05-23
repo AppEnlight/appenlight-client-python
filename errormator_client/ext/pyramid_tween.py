@@ -6,8 +6,8 @@ import logging
 
 log = logging.getLogger(__name__)
 
-def errormator_tween_factory(handler, registry):
 
+def errormator_tween_factory(handler, registry):
     blacklist = (pyramid.httpexceptions.WSGIHTTPException,)
 
     def error_tween(request):
@@ -18,14 +18,18 @@ def errormator_tween_factory(handler, registry):
         except:
             if 'errormator.client' in request.environ:
                 # pass the traceback object to middleware
-                request.environ['errormator.__traceback'] = get_current_traceback(skip=1,
-                                                  show_hidden_frames=True,
-                                                  ignore_system_exceptions=True)
+                request.environ[
+                    'errormator.__traceback'] = get_current_traceback(
+                    skip=1,
+                    show_hidden_frames=True,
+                    ignore_system_exceptions=True)
             raise
         return response
+
     return error_tween
 
 
 def includeme(config):
-    config.add_tween('errormator_client.ext.pyramid_tween.errormator_tween_factory',
-                     under=EXCVIEW)
+    config.add_tween(
+        'errormator_client.ext.pyramid_tween.errormator_tween_factory',
+        under=EXCVIEW)

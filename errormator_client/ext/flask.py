@@ -14,6 +14,7 @@ def log_exception(sender, exception, **extra):
     gather_data(errormator_client, request.environ, gather_slowness=False,
                 gather_logs=False)
 
+
 def populate_post_vars(sender, **extra):
     """
     This is to handle iterated wsgi.input by werkzeug when we create webob obj 
@@ -23,6 +24,7 @@ def populate_post_vars(sender, **extra):
         request.environ['errormator.post_vars'] = request.form
     else:
         request.environ['errormator.post_vars'] = {}
+
 
 def add_errormator(app, config=None):
     """

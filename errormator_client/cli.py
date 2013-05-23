@@ -4,13 +4,13 @@ import pkg_resources
 import sys
 from errormator_client import client
 import logging
+
 logging.basicConfig()
 
 cwd = os.getcwd()
 
 
 class CommandRouter(object):
-
     @classmethod
     def makeini(cls, ini_name):
         while True:
@@ -30,8 +30,9 @@ class CommandRouter(object):
             if exists:
                 print '\nFile %s already exists' % ini_path
             else:
-                ini_str = pkg_resources.resource_string('errormator_client',
-                                        'templates/default_template.ini')
+                ini_str = pkg_resources.resource_string(
+                    'errormator_client',
+                    'templates/default_template.ini')
                 with open(ini_path, 'w') as f:
                     if client.PY3:
                         f.write(ini_str.decode('utf8'))
@@ -51,7 +52,7 @@ class CommandRouter(object):
         errormator_client = client.Client(config)
         print 'Client created, sending test entry'
         record = logging.makeLogRecord({'name': 'errormator.client.test',
-                                'message': 'Test entry'})
+                                        'message': 'Test entry'})
 
         errormator_client.py_log({}, [record])
         result = errormator_client.submit_data()
@@ -77,6 +78,7 @@ class CommandRouter(object):
         else:
             client.Client(config)
         from pyramid.scripts import pserve
+
         command = pserve.PServeCommand(argv[1:], quiet=quiet)
         return command.run()
 

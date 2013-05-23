@@ -15,7 +15,7 @@ setup(name='errormator_client',
           'Programming Language :: Python :: 3.2',
           'Programming Language :: Python :: 3.3',
           'Topic :: Software Development :: Libraries :: Python Modules',
-          ],
+      ],
       author='Marcin Lulek',
       author_email='info@webreactor.eu',
       license='BSD',
@@ -23,9 +23,9 @@ setup(name='errormator_client',
       packages=find_packages(),
       include_package_data=True,
       package_data={
-        '': ['*.txt', '*.rst', '*.ini'],
-        'errormator_client': ['templates/*.ini'],
-        },
+          '': ['*.txt', '*.rst', '*.ini'],
+          'errormator_client': ['templates/*.ini'],
+      },
       install_requires=[
           "webob",
           "decorator"
@@ -39,5 +39,5 @@ setup(name='errormator_client',
       """,
       test_suite='errormator_client.tests',
       use_2to3=True,
-      se_2to3_exclude_fixers = ['lib2to3.fixes.next','lib2to3.fixes.fix_import']
-      )
+      se_2to3_exclude_fixers=['lib2to3.fixes.next', 'lib2to3.fixes.fix_import']
+)

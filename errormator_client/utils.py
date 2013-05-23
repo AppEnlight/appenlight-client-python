@@ -68,7 +68,6 @@ def deco_func_or_method(module, name, deco_f, gatherer, min_duration,
                 return
             setattr(cls_to_update, _tmp[1],
                     deco_f(getattr(e_callable, 'im_func', e_callable), gatherer,
-                           min_duration, is_template)
-                    )
+                           min_duration, is_template))
     else:
         log.debug("can't decorate %s " % name)

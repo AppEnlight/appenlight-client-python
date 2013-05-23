@@ -18,18 +18,18 @@ def gather_data(client, environ, gather_exception=True,
         environ['errormator.request_id'] = str(uuid.uuid4())
     if gather_exception:
         traceback = get_current_traceback(skip=1, show_hidden_frames=True,
-                                              ignore_system_exceptions=True)
+                                          ignore_system_exceptions=True)
     else:
         traceback = None
     errormator_storage = get_local_storage(local_timing)
     stats, slow_calls = errormator_storage.get_thread_stats()
     if traceback:
         client.py_report(environ, traceback, http_status=500,
-                     request_stats=stats)
+                         request_stats=stats)
         # dereference
         del traceback
         traceback = True
-    # report slowness
+        # report slowness
     now = datetime.datetime.utcnow()
     if clear_storage:
         errormator_storage.clear()
@@ -46,6 +46,6 @@ def gather_data(client, environ, gather_exception=True,
         client.log_handler.clear_records()
         client.py_log(environ, records=records, traceback=traceback,
                       r_uuid=environ['errormator.request_id'])
-    # send all data we gathered immediately at the end of request
+        # send all data we gathered immediately at the end of request
     client.check_if_deliver(client.config['force_send'] or
-                             environ.get('errormator.force_send'))
+                            environ.get('errormator.force_send'))

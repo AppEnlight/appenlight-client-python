@@ -3,6 +3,7 @@ from errormator_client.timing import time_trace, import_from_module, _e_trace
 
 ignore_set = frozenset()
 
+
 def add_timing(min_duration=0.15):
     module = import_module('mako')
     if not module:
@@ -15,12 +16,12 @@ def add_timing(min_duration=0.15):
                 'subtype': 'mako',
                 'statement': 'render',
                 'parameters': '',
-                'count':True,
+                'count': True,
                 'ignore_in': ignore_set}
 
     deco_func_or_method(template, 'Template.render', time_trace,
-                          gather_template, min_duration, is_template=True)
+                        gather_template, min_duration, is_template=True)
     deco_func_or_method(template, 'Template.render_unicode', time_trace,
-                          gather_template, min_duration, is_template=True)
+                        gather_template, min_duration, is_template=True)
     deco_func_or_method(template, 'Template.render_context', time_trace,
-                          gather_template, min_duration, is_template=True)
+                        gather_template, min_duration, is_template=True)

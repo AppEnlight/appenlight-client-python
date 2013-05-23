@@ -26,32 +26,33 @@ from errormator_client.timing import local_timing, get_local_storage
 def example_filter_callable(structure, section=None):
     return 'filtered-data'
 
+
 TEST_ENVIRON = {
-                'bfg.routes.matchdict': {'action': u'error'},
-'HTTP_COOKIE': 'country=US; http_referer="http://localhost:5000/"; test_group_id=5; sessionId=ec3ae5;',
-'SERVER_SOFTWARE': 'waitress',
-'SCRIPT_NAME': '',
-'REQUEST_METHOD': 'GET',
-'PATH_INFO': '/test/error',
-'SERVER_PROTOCOL': 'HTTP/1.1',
-'QUERY_STRING': 'aaa=1&bbb=2',
-'paste.throw_errors': True,
-'CONNECTION_TYPE': 'keep-alive',
-'HTTP_USER_AGENT': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
-'SERVER_NAME': 'localhost',
-'REMOTE_ADDR': '127.0.0.1',
-'wsgi.url_scheme': 'http',
-'SERVER_PORT': '6543',
-'HTTP_HOST': 'localhost:6543',
-'wsgi.multithread': True,
-'HTTP_CACHE_CONTROL': 'max-age=0',
-'HTTP_ACCEPT': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-'wsgi.version': (1, 0),
-'wsgi.run_once': False,
-'wsgi.multiprocess': False,
-'HTTP_ACCEPT_LANGUAGE': 'en-us,en;q=0.5',
-'HTTP_ACCEPT_ENCODING': 'gzip, deflate',
-'REMOTE_USER': 'foo'
+    'bfg.routes.matchdict': {'action': u'error'},
+    'HTTP_COOKIE': 'country=US; http_referer="http://localhost:5000/"; test_group_id=5; sessionId=ec3ae5;',
+    'SERVER_SOFTWARE': 'waitress',
+    'SCRIPT_NAME': '',
+    'REQUEST_METHOD': 'GET',
+    'PATH_INFO': '/test/error',
+    'SERVER_PROTOCOL': 'HTTP/1.1',
+    'QUERY_STRING': 'aaa=1&bbb=2',
+    'paste.throw_errors': True,
+    'CONNECTION_TYPE': 'keep-alive',
+    'HTTP_USER_AGENT': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
+    'SERVER_NAME': 'localhost',
+    'REMOTE_ADDR': '127.0.0.1',
+    'wsgi.url_scheme': 'http',
+    'SERVER_PORT': '6543',
+    'HTTP_HOST': 'localhost:6543',
+    'wsgi.multithread': True,
+    'HTTP_CACHE_CONTROL': 'max-age=0',
+    'HTTP_ACCEPT': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'wsgi.version': (1, 0),
+    'wsgi.run_once': False,
+    'wsgi.multiprocess': False,
+    'HTTP_ACCEPT_LANGUAGE': 'en-us,en;q=0.5',
+    'HTTP_ACCEPT_ENCODING': 'gzip, deflate',
+    'REMOTE_USER': 'foo'
 }
 
 REQ_START_TIME = datetime.datetime(2012, 9, 26, 18, 17, 54, 461254)
@@ -59,7 +60,7 @@ REQ_END_TIME = datetime.datetime(2012, 9, 26, 18, 18, 4, 461259)
 SERVER_NAME = socket.getfqdn()  # different on every machine
 
 PARSED_REPORT_404 = {
-                     'report_details': [{'username': u'foo',
+    'report_details': [{'username': u'foo',
                         'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
                         'ip': '127.0.0.1',
                         'request': {'COOKIES': {u'country': u'US',
@@ -70,40 +71,43 @@ PARSED_REPORT_404 = {
                                     'GET': {u'aaa': [u'1'], u'bbb': [u'2']}},
                         'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
                         'message': u''}],
-                     'error_type': '404 Not Found',
-                     'server': SERVER_NAME,
-                     'priority': 5,
-                     'client': 'Python',
-                     'http_status': 404}
+    'error_type': '404 Not Found',
+    'server': SERVER_NAME,
+    'priority': 5,
+    'client': 'Python',
+    'http_status': 404}
 
-PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',  # this will be different everywhere
-                     'report_details': [{'frameinfo': [{'cline': u"raise Exception('Test Exception')",
-                                     'file': 'errormator_client/tests.py',
-                                     'fn': 'test_py_report_500_traceback',
-                                     'line': 454,
-                                     'vars': []},
-                                    {'cline': u'Exception: Test Exception',
-                                     'file': '',
-                                     'fn': '',
-                                     'line': '',
-                                     'vars': {}}],
+PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
+                     # this will be different everywhere
+                     'report_details': [{'frameinfo': [
+                         {'cline': u"raise Exception('Test Exception')",
+                          'file': 'errormator_client/tests.py',
+                          'fn': 'test_py_report_500_traceback',
+                          'line': 454,
+                          'vars': []},
+                         {'cline': u'Exception: Test Exception',
+                          'file': '',
+                          'fn': '',
+                          'line': '',
+                          'vars': {}}],
                                          'username': u'foo',
                                          'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
                                          'ip': '127.0.0.1',
                                          'request': {
-                                                     'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                                                     'COOKIES': {u'country': u'US',
-                                                                 u'sessionId': u'***',
-                                                                 u'test_group_id': u'5',
-                                                                  u'http_referer': u'http://localhost:5000/'},
-                                                     'SERVER_NAME': u'localhost',
-                                                     'GET': {u'aaa': [u'1'], u'bbb': [u'2']},
-                                                     'HTTP_ACCEPT_LANGUAGE': u'en-us,en;q=0.5',
-                                                     'REMOTE_USER': u'foo',
-                                                     'HTTP_HOST': u'localhost:6543',
-                                                     'POST': {},
-                                                     'HTTP_CACHE_CONTROL': u'max-age=0',
-                                                     'HTTP_ACCEPT_ENCODING': u'gzip, deflate'},
+                                             'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                             'COOKIES': {u'country': u'US',
+                                                         u'sessionId': u'***',
+                                                         u'test_group_id': u'5',
+                                                         u'http_referer': u'http://localhost:5000/'},
+                                             'SERVER_NAME': u'localhost',
+                                             'GET': {u'aaa': [u'1'],
+                                                     u'bbb': [u'2']},
+                                             'HTTP_ACCEPT_LANGUAGE': u'en-us,en;q=0.5',
+                                             'REMOTE_USER': u'foo',
+                                             'HTTP_HOST': u'localhost:6543',
+                                             'POST': {},
+                                             'HTTP_CACHE_CONTROL': u'max-age=0',
+                                             'HTTP_ACCEPT_ENCODING': u'gzip, deflate'},
                                          'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
                                          'message': u'',
                                          'request_stats': {}}],
@@ -114,30 +118,29 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',  # this
                      'http_status': 500}
 
 PARSED_SLOW_REPORT = {
-                      'report_details': [{'username': u'foo',
-                                          'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
-                                          'ip': '127.0.0.1',
-                                          'start_time': REQ_START_TIME,
-                                          'slow_calls': [],
-                                          'request': {'COOKIES': {u'country': u'US',
-                                                                  u'sessionId': u'***',
-                                                                  u'test_group_id': u'5',
-                                                                  u'http_referer': u'http://localhost:5000/'},
-                                                      'POST': {},
-                                                      'GET': {u'aaa': [u'1'], u'bbb': [u'2']}},
-                                          'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
-                                          'message': u'',
-                                          'end_time': REQ_END_TIME,
-                                          'request_stats': {}}],
-                      'error_type': 'Unknown',
-                      'server': SERVER_NAME,
-                      'priority': 5,
-                      'client': 'Python',
-                      'http_status': 200}
+    'report_details': [{'username': u'foo',
+                        'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
+                        'ip': '127.0.0.1',
+                        'start_time': REQ_START_TIME,
+                        'slow_calls': [],
+                        'request': {'COOKIES': {u'country': u'US',
+                                                u'sessionId': u'***',
+                                                u'test_group_id': u'5',
+                                                u'http_referer': u'http://localhost:5000/'},
+                                    'POST': {},
+                                    'GET': {u'aaa': [u'1'], u'bbb': [u'2']}},
+                        'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
+                        'message': u'',
+                        'end_time': REQ_END_TIME,
+                        'request_stats': {}}],
+    'error_type': 'Unknown',
+    'server': SERVER_NAME,
+    'priority': 5,
+    'client': 'Python',
+    'http_status': 200}
 
 
 class TestClientConfig(unittest.TestCase):
-
     def setUpClient(self, config={}):
         self.client = client.Client(config)
 
@@ -194,7 +197,7 @@ class TestClientConfig(unittest.TestCase):
         self.setUpClient()
 
         self.assertEqual(self.client.config['client'], 'python3' if client.PY3 \
-                         else 'python')
+            else 'python')
 
     def test_default_timeout(self):
         self.setUpClient()
@@ -305,8 +308,9 @@ class TestClientConfig(unittest.TestCase):
     def test_default_request_keys_blacklist(self):
         self.setUpClient()
         self.assertEqual(self.client.config['request_keys_blacklist'],
-                ['password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf',
-                 'session', 'pass', 'config', 'settings', 'environ'])
+                         ['password', 'passwd', 'pwd', 'auth_tkt', 'secret',
+                          'csrf',
+                          'session', 'pass', 'config', 'settings', 'environ'])
 
     def test_custom_request_keys_blacklist(self):
         config = {'errormator.request_keys_blacklist': "aa,bb,cc"}
@@ -314,31 +318,33 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['request_keys_blacklist'],
                          ['password', 'passwd', 'pwd', 'auth_tkt', 'secret',
                           'csrf', 'session', 'pass', 'config', 'settings',
-                           'environ', 'aa', 'bb', 'cc'])
+                          'environ', 'aa', 'bb', 'cc'])
 
     def test_default_environ_keys_whitelist(self):
         self.setUpClient()
         self.assertEqual(self.client.config['environ_keys_whitelist'],
-                ['REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE',
-                 'HTTP_REFERER'])
+                         ['REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME',
+                          'CONTENT_TYPE',
+                          'HTTP_REFERER'])
 
     def test_custom_environ_keys_whitelist(self):
         config = {'errormator.environ_keys_whitelist': "aa,bb,cc"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['environ_keys_whitelist'],
-                ['REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE',
-                 'HTTP_REFERER', 'aa', 'bb', 'cc'])
+                         ['REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME',
+                          'CONTENT_TYPE',
+                          'HTTP_REFERER', 'aa', 'bb', 'cc'])
 
     def test_default_log_namespace_blacklist(self):
         self.setUpClient()
         self.assertEqual(self.client.config['log_namespace_blacklist'],
-                ['errormator_client.client'])
+                         ['errormator_client.client'])
 
     def test_custom_log_namespace_blacklist(self):
         config = {'errormator.log_namespace_blacklist': "aa,bb,cc.dd"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['log_namespace_blacklist'],
-                ['aa', 'bb', 'cc.dd'])
+                         ['errormator_client.client','aa', 'bb', 'cc.dd'])
 
     def test_default_filter_callable(self):
         self.setUpClient()
@@ -351,7 +357,7 @@ class TestClientConfig(unittest.TestCase):
 
     def test_custom_filter_callable(self):
         config = {'errormator.filter_callable':
-                  "errormator_client.tests:example_filter_callable"}
+                      "errormator_client.tests:example_filter_callable"}
         self.setUpClient(config)
         self.assertEqual(self.client.filter_callable.__name__,
                          example_filter_callable.__name__)
@@ -392,7 +398,7 @@ class TestClientConfig(unittest.TestCase):
     def test_timing_config_mixed(self):
         config = {'errormator.timing.dbapi2_psycopg2': '5',
                   'errormator.timing': {'urllib': 11, 'dbapi2_oursql': 6}
-                  }
+        }
         self.setUpClient(config)
         self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'], 5)
         self.assertEqual(self.client.config['timing']['dbapi2_oursql'], 6)
@@ -404,7 +410,6 @@ def generate_error():
 
 
 class TestClientSending(unittest.TestCase):
-
     def setUpClient(self, config={'errormator.api_key': 'blargh!'}):
         self.client = client.Client(config)
 
@@ -469,7 +474,7 @@ class TestErrorParsing(unittest.TestCase):
         self.client.py_report(TEST_ENVIRON, traceback=traceback,
                               http_status=500)
         self.client.report_queue[0]['traceback'] = \
-                                    'Traceback (most recent call last):'
+            'Traceback (most recent call last):'
         line_no = self.client.report_queue[0]['report_details'][0]['frameinfo'][0]['line']
         assert int(line_no) > 0
         # set line number to match as this will change over time
@@ -479,11 +484,11 @@ class TestErrorParsing(unittest.TestCase):
     def test_frameinfo(self):
         self.setUpClient(config={'errormator.report_local_vars': 'true'})
         test = 1
-        b = {1:'a', '2':2, 'ccc':'ddd'}
+        b = {1: 'a', '2': 2, 'ccc': 'ddd'}
         obj = object()
         e_obj = client.Client({})
         unic = 'grzegżółka'
-        a_list = [1, 2, 4, 5, 6, client.Client({}), 'dupa' ]
+        a_list = [1, 2, 4, 5, 6, client.Client({}), 'dupa']
         long_val = 'imlong' * 100
         datetest = datetime.datetime.utcnow()
         try:
@@ -493,8 +498,9 @@ class TestErrorParsing(unittest.TestCase):
                                               ignore_system_exceptions=True)
         self.client.py_report(TEST_ENVIRON, traceback=traceback,
                               http_status=500)
-        assert len(self.client.report_queue[0]['report_details'][0]['frameinfo'][0]['vars']) == 9
-
+        assert len(
+            self.client.report_queue[0]['report_details'][0]['frameinfo'][0][
+                'vars']) == 9
 
 
 class TestLogs(unittest.TestCase):
@@ -509,11 +515,11 @@ class TestLogs(unittest.TestCase):
         logger.critical('test entry')
         self.client.py_log(TEST_ENVIRON, records=handler.get_records())
         fake_log = {'log_level': 'CRITICAL',
-                     'namespace': 'testing',
-                     'server': 'test-foo',  # this will be different everywhere
-                     'request_id': None,
-                     'date': '2012-08-13T21:20:37.418.307066',
-                     'message': 'test entry'}
+                    'namespace': 'testing',
+                    'server': 'test-foo', # this will be different everywhere
+                    'request_id': None,
+                    'date': '2012-08-13T21:20:37.418.307066',
+                    'message': 'test entry'}
         # update fields depenand on machine
         self.client.log_queue[0]['date'] = fake_log['date']
         self.client.log_queue[0]['server'] = fake_log['server']
@@ -533,11 +539,11 @@ class TestSlowReportParsing(unittest.TestCase):
 
 
 class TestMakeMiddleware(unittest.TestCase):
-
     def test_make_middleware(self):
         def app(environ, start_response):
             start_response('200 OK', [('content-type', 'text/html')])
             return ['Hello world!']
+
         app = make_errormator_middleware(app, {'errormator': True})
         self.assertTrue(isinstance(app, ErrormatorWSGIWrapper))
 
@@ -545,12 +551,12 @@ class TestMakeMiddleware(unittest.TestCase):
         def app(environ, start_response):
             start_response('200 OK', [('content-type', 'text/html')])
             return ['Hello world!']
-        app = make_errormator_middleware(app, {})
+
+        app = make_errormator_middleware(app, {'errormator':'false'})
         self.assertFalse(isinstance(app, ErrormatorWSGIWrapper))
 
 
 class TestTimingHTTPLibs(unittest.TestCase):
-
     def setUpClient(self, config={}):
         self.client = client.Client(config)
 
@@ -562,6 +568,7 @@ class TestTimingHTTPLibs(unittest.TestCase):
 
     def test_urllib_URLOpener_open(self):
         import urllib
+
         opener = urllib.URLopener()
         opener.open("http://www.ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
@@ -569,12 +576,14 @@ class TestTimingHTTPLibs(unittest.TestCase):
 
     def test_urllib_urlretrieve(self):
         import urllib
+
         urllib.urlretrieve("http://www.ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
     def test_urllib2(self):
         import urllib2
+
         urllib2.urlopen("http://www.ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
@@ -600,6 +609,7 @@ class TestTimingHTTPLibs(unittest.TestCase):
 
     def test_httplib(self):
         import httplib
+
         h2 = httplib.HTTPConnection("www.ubuntu.com")
         h2.request("GET", "/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
@@ -607,7 +617,6 @@ class TestTimingHTTPLibs(unittest.TestCase):
 
 
 class TestDBApi2Drivers(unittest.TestCase):
-
     def setUpClient(self, config={}):
         self.client = client.Client(config)
 
@@ -657,7 +666,8 @@ class TestDBApi2Drivers(unittest.TestCase):
             import psycopg2
         except ImportError:
             return
-        conn = psycopg2.connect("user=test host=127.0.0.1 dbname=test password=test")
+        conn = psycopg2.connect(
+            "user=test host=127.0.0.1 dbname=test password=test")
         c = conn.cursor()
         psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, c)
         c.execute(self.stmt)
@@ -701,7 +711,8 @@ class TestDBApi2Drivers(unittest.TestCase):
             import MySQLdb
         except ImportError:
             return
-        conn = MySQLdb.connect(passwd="test", user="test", host="127.0.0.1", port=3306)
+        conn = MySQLdb.connect(passwd="test", user="test", host="127.0.0.1",
+                               port=3306)
         c = conn.cursor()
         c.execute(self.stmt)
         c.fetchone()
@@ -729,7 +740,8 @@ class TestDBApi2Drivers(unittest.TestCase):
             import pyodbc
         except ImportError:
             return
-        conn = pyodbc.connect('Driver={MySQL};Server=127.0.0.1;Port=3306;Database=information_schema;User=test; Password=test;Option=3;')
+        conn = pyodbc.connect(
+            'Driver={MySQL};Server=127.0.0.1;Port=3306;Database=information_schema;User=test; Password=test;Option=3;')
         c = conn.cursor()
         c.execute(self.stmt)
         c.fetchone()
@@ -754,7 +766,6 @@ class TestDBApi2Drivers(unittest.TestCase):
 
 
 class TestMako(unittest.TestCase):
-
     def setUpClient(self, config={}):
         self.client = client.Client(timing_conf)
 
@@ -834,7 +845,6 @@ class TestMako(unittest.TestCase):
 
 
 class TestChameleon(unittest.TestCase):
-
     def setUpClient(self, config={}):
         self.client = client.Client(timing_conf)
 
@@ -847,6 +857,7 @@ class TestChameleon(unittest.TestCase):
         except ImportError:
             return
         import time
+
         template = chameleon.zpt.PageTemplate('''
         ${sleep(0.06)}
         xxxxx ${1+2} yyyyyy
@@ -857,7 +868,6 @@ class TestChameleon(unittest.TestCase):
 
 
 class TestJinja2(unittest.TestCase):
-
     def setUpClient(self, config={}):
         self.client = client.Client(timing_conf)
 
@@ -870,6 +880,7 @@ class TestJinja2(unittest.TestCase):
         except ImportError:
             return
         import time
+
         template = jinja2.Template('''
         {{sleep(0.06)}}
         xxxxx {{1+2}} yyyyyy
@@ -880,7 +891,6 @@ class TestJinja2(unittest.TestCase):
 
 
 class TestDjangoTemplates(unittest.TestCase):
-
     def setUpClient(self, config={}):
         self.client = client.Client(config)
 
@@ -896,8 +906,10 @@ class TestDjangoTemplates(unittest.TestCase):
         except ImportError:
             return
         from django.conf import settings
+
         settings.configure(TEMPLATE_DIRS=("/whatever/templates",))
         import time
+
         ctx = template.Context()
         ctx.update({'time': lambda: time.sleep(0.06)})
         template = template.Template('''
@@ -907,8 +919,8 @@ class TestDjangoTemplates(unittest.TestCase):
         stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
-class WSGITests(unittest.TestCase):
 
+class WSGITests(unittest.TestCase):
     def setUpClient(self, config={}):
         self.client = client.Client(timing_conf)
 
@@ -919,6 +931,7 @@ class WSGITests(unittest.TestCase):
         def app(environ, start_response):
             start_response('200 OK', [('Content-Type', 'text/html')])
             return ['Hello World!']
+
         req = Request.blank('http://localhost/test')
         app = make_errormator_middleware(app, global_config=timing_conf)
         req.get_response(app)
@@ -929,6 +942,7 @@ class WSGITests(unittest.TestCase):
             start_response('200 OK', [('Content-Type', 'text/html')])
             raise Exception('WTF?')
             return ['Hello World!']
+
         req = Request.blank('http://localhost/test')
         app = make_errormator_middleware(app, global_config=timing_conf)
         app.errormator_client.config['reraise_exceptions'] = False
@@ -940,6 +954,7 @@ class WSGITests(unittest.TestCase):
             start_response('200 OK', [('Content-Type', 'text/html')])
             time.sleep(1.1)
             return ['Hello World!']
+
         req = Request.blank('http://localhost/test')
         app = make_errormator_middleware(app, global_config=timing_conf)
         req.get_response(app)
@@ -951,10 +966,12 @@ class WSGITests(unittest.TestCase):
             logging.warning('test logging')
             logging.critical('test logging critical')
             return ['Hello World!']
+
         req = Request.blank('http://localhost/test')
         app = make_errormator_middleware(app, global_config=timing_conf)
         req.get_response(app)
-        self.assertEqual(len(app.errormator_client.log_queue), 2)
+        self.assertGreaterEqual(len(app.errormator_client.log_queue), 2)
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: nocover

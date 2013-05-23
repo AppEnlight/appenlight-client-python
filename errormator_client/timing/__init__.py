@@ -15,14 +15,14 @@ else:
     # On most other platforms the best timer is time.time()
     default_timer = time.time
 
-class ErrormatorLocalStorage(object):
 
+class ErrormatorLocalStorage(object):
     def __init__(self):
         self.clear()
 
     def contains(self, parent, child):
-                return (child['start'] >= parent['start'] and
-                        child['end'] <= parent['end'])
+        return (child['start'] >= parent['start'] and
+                child['end'] <= parent['end'])
 
     def get_stack(self):
         data = sorted(self.slow_calls, key=itemgetter('start'))
@@ -37,8 +37,9 @@ class ErrormatorLocalStorage(object):
 
     def clear(self):
         self.thread_stats = {'main': 0, 'sql': 0, 'nosql': 0, 'remote': 0,
-                             'tmpl': 0, 'unknown': 0, 'sql_calls':0,
-                             'nosql_calls':0, 'remote_calls':0, 'tmpl_calls':0}
+                             'tmpl': 0, 'unknown': 0, 'sql_calls': 0,
+                             'nosql_calls': 0, 'remote_calls': 0,
+                             'tmpl_calls': 0}
         self.slow_calls = []
 
     def get_thread_stats(self):
@@ -52,8 +53,8 @@ class ErrormatorLocalStorage(object):
                 continue
             stats[row['type']] += duration
             if row.get('count'):
-                stats['%s_calls' %row['type']] += 1
-            #count is not needed anymore - we don't want to send this
+                stats['%s_calls' % row['type']] += 1
+                #count is not needed anymore - we don't want to send this
             row.pop('count', None)
             # if this call was being made inside template - substract duration
             # from template timing
@@ -61,10 +62,11 @@ class ErrormatorLocalStorage(object):
                 self.thread_stats['tmpl'] -= duration
             if duration >= row['min_duration']:
                 slow_calls.append(row)
-        # round stats to 5 digits
+                # round stats to 5 digits
         for k, v in stats.iteritems():
             stats[k] = round(v, 5)
         return stats, slow_calls
+
 
 TIMING_REGISTERED = False
 
@@ -72,10 +74,12 @@ local_timing = threading.local()
 
 log = logging.getLogger(__name__)
 
+
 def get_local_storage(local_timing):
     if not hasattr(local_timing, '_errormator_storage'):
         local_timing._errormator_storage = ErrormatorLocalStorage()
     return local_timing._errormator_storage
+
 
 def _e_trace(info_gatherer, min_duration, e_callable, *args, **kw):
     """ Used to wrap dbapi2 driver methods """
@@ -90,6 +94,7 @@ def _e_trace(info_gatherer, min_duration, e_callable, *args, **kw):
     errormator_storage.slow_calls.append(info)
     return result
 
+
 def trace_factory(info_gatherer, min_duration, is_template=False):
     """ Used to auto decorate callables in deco_func_or_method for other 
         non dbapi2 modules """
@@ -99,13 +104,15 @@ def trace_factory(info_gatherer, min_duration, is_template=False):
         result = f(*args, **kw)
         end = default_timer()
         info = {'start': start,
-            'end': end,
-            'min_duration': min_duration}
+                'end': end,
+                'min_duration': min_duration}
         info.update(info_gatherer(*args, **kw))
         errormator_storage = get_local_storage(local_timing)
         errormator_storage.slow_calls.append(info)
         return result
+
     return _e_trace
+
 
 def time_trace(f, gatherer, min_duration, is_template=False):
     deco = decorator(trace_factory(gatherer, min_duration), f)
@@ -125,7 +132,8 @@ def register_timing(config):
         min_time = config['timing'].get(mod.replace("timing_", '').lower())
         if min_time is not False:
             log.debug('%s slow time:%s' % (mod, min_time or 'default'))
-            e_callable = import_from_module('errormator_client.timing.%s:add_timing' % mod)
+            e_callable = import_from_module(
+                'errormator_client.timing.%s:add_timing' % mod)
             if e_callable:
                 if min_time:
                     e_callable(min_time)
@@ -134,9 +142,11 @@ def register_timing(config):
         else:
             log.debug('not tracking slow time:%s' % mod)
 
-    db_modules = ['pg8000', 'psycopg2', 'MySQLdb', 'sqlite3', 'oursql', 'pyodbc',
+    db_modules = ['pg8000', 'psycopg2', 'MySQLdb', 'sqlite3', 'oursql',
+                  'pyodbc',
                   'cx_Oracle', 'kinterbasdb', 'postgresql', 'pymysql']
     import errormator_client.timing.timing_dbapi2 as dbapi2
+
     for mod in db_modules:
         min_time = config['timing'].get('dbapi2_%s' % mod.lower())
         log.debug('%s dbapi query time:%s' % (mod, min_time or 'default'))
