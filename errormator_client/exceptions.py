@@ -327,7 +327,7 @@ class Traceback(object):
                      'line':'',
                      'fn':'',
                      'cline':'%s' % self.exception,
-                     'vars':{}}
+                     'vars':[]}
                       )
         return result
 
