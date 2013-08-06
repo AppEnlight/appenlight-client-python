@@ -89,7 +89,7 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
                           'file': '',
                           'fn': '',
                           'line': '',
-                          'vars': {}}],
+                          'vars': []}],
                                          'username': u'foo',
                                          'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
                                          'ip': '127.0.0.1',
@@ -524,6 +524,16 @@ class TestLogs(unittest.TestCase):
         self.client.log_queue[0]['date'] = fake_log['date']
         self.client.log_queue[0]['server'] = fake_log['server']
         self.assertEqual(self.client.log_queue[0], fake_log)
+
+    def test_ignore_self_logs(self):
+        self.setUpClient()
+        handler = register_logging()
+        self.client.py_report(TEST_ENVIRON, http_status=500)
+        self.client.py_slow_report(TEST_ENVIRON, start_time=REQ_START_TIME,
+                                   end_time=REQ_END_TIME)
+        self.client.py_log(TEST_ENVIRON, records=handler.get_records())
+        print self.client.log_queue
+        self.assertEqual(len(self.client.log_queue), 0)
 
 
 class TestSlowReportParsing(unittest.TestCase):

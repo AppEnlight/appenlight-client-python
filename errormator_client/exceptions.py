@@ -295,11 +295,11 @@ class Traceback(object):
         for frame in self.frames:
             if frame.hide:
                 continue
-            entry = {'file':shorten_filename(frame),
-                     'line':frame.lineno,
-                     'fn':frame.function_name,
-                     'cline':frame.current_line.strip(),
-                     'vars':[]}
+            entry = {'file':shorten_filename(frame), # file location
+                     'line':frame.lineno, # line number
+                     'fn':frame.function_name, # function name
+                     'cline':frame.current_line.strip(), # current frame line
+                     'vars':[]} # vars
 
             # in some situations frame.locals might be not something we expect
             if include_vars:
