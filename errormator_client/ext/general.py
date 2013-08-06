@@ -1,4 +1,4 @@
-from errormator_client.exceptions import get_current_traceback
+from errormator_client.exceptions import get_current_traceback, Traceback
 from errormator_client.timing import local_timing, get_local_storage
 import datetime
 import logging
@@ -9,16 +9,18 @@ log = logging.getLogger(__name__)
 
 def gather_data(client, environ, gather_exception=True,
                 gather_slowness=True, gather_logs=True,
-                clear_storage=True):
+                clear_storage=True, exc_info=None, spawn_thread=True):
     if not environ.get('wsgi.url_scheme'):
         environ['wsgi.url_scheme'] = ''
     if not environ.get('HTTP_HOST'):
         environ['HTTP_HOST'] = 'localhost'
     if not environ.get('errormator.request_id'):
         environ['errormator.request_id'] = str(uuid.uuid4())
-    if gather_exception:
+    if gather_exception and not exc_info:
         traceback = get_current_traceback(skip=1, show_hidden_frames=True,
                                           ignore_system_exceptions=True)
+    elif exc_info:
+        traceback = Traceback(*exc_info)
     else:
         traceback = None
     errormator_storage = get_local_storage(local_timing)
@@ -48,4 +50,5 @@ def gather_data(client, environ, gather_exception=True,
                       r_uuid=environ['errormator.request_id'])
         # send all data we gathered immediately at the end of request
     client.check_if_deliver(client.config['force_send'] or
-                            environ.get('errormator.force_send'))
+                            environ.get('errormator.force_send'),
+                            spawn_thread=spawn_thread)
