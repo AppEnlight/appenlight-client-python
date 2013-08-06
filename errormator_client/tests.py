@@ -17,7 +17,7 @@ fname = pkg_resources.resource_filename('errormator_client',
 timing_conf = client.get_config(path_to_config=fname)
 for k, v in timing_conf.iteritems():
     if 'errormator.timing' in k:
-        timing_conf[k] = 0.000001
+        timing_conf[k] = 0.0000001
 
 client.Client(config=timing_conf)
 from errormator_client.timing import local_timing, get_local_storage
@@ -532,7 +532,6 @@ class TestLogs(unittest.TestCase):
         self.client.py_slow_report(TEST_ENVIRON, start_time=REQ_START_TIME,
                                    end_time=REQ_END_TIME)
         self.client.py_log(TEST_ENVIRON, records=handler.get_records())
-        print self.client.log_queue
         self.assertEqual(len(self.client.log_queue), 0)
 
 
@@ -625,6 +624,72 @@ class TestTimingHTTPLibs(unittest.TestCase):
         stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
 
+
+class TestRedisPY(unittest.TestCase):
+    def setUpClient(self, config={}):
+        self.client = client.Client(config)
+
+    def setUp(self):
+        self.setUpClient(timing_conf)
+
+    def tearDown(self):
+        get_local_storage(local_timing).clear()
+
+    def test_redis_py_command(self):
+        try:
+            import redis
+        except ImportError:
+            return
+
+        client = redis.StrictRedis()
+        client.setex('testval', 10,'foo')
+        stats, result = get_local_storage(local_timing).get_thread_stats()
+        self.assertEqual(len(result), 1)
+
+class TestMemcache(unittest.TestCase):
+    def setUpClient(self, config={}):
+        self.client = client.Client(config)
+
+    def setUp(self):
+        self.setUpClient(timing_conf)
+
+    def tearDown(self):
+        get_local_storage(local_timing).clear()
+
+    def test_memcache_command(self):
+        try:
+            import memcache
+        except ImportError:
+            return
+        mc = memcache.Client(['127.0.0.1:11211'], debug=0)
+        mc.set("some_key", "Some value")
+        value = mc.get("some_key")
+        stats, result = get_local_storage(local_timing).get_thread_stats()
+        self.assertEqual(len(result), 2)
+
+
+class TestPylibMc(unittest.TestCase):
+    def setUpClient(self, config={}):
+        self.client = client.Client(config)
+
+    def setUp(self):
+        self.setUpClient(timing_conf)
+
+    def tearDown(self):
+        get_local_storage(local_timing).clear()
+
+    def test_memcache_command(self):
+        # TODO: not finished
+        return
+        try:
+            import pylibmc
+        except ImportError:
+            return
+        mc = pylibmc.Client(['127.0.0.1:11211'])
+        mc.set("some_key", "Some value")
+        value = mc.get("some_key")
+        stats, result = get_local_storage(local_timing).get_thread_stats()
+        self.assertEqual(len(result), 2)
 
 class TestDBApi2Drivers(unittest.TestCase):
     def setUpClient(self, config={}):

@@ -126,7 +126,8 @@ def register_timing(config):
     timing_modules = ['timing_urllib', 'timing_urllib2', 'timing_urllib3',
                       'timing_requests', 'timing_httplib', 'timing_pysolr',
                       'timing_chameleon', 'timing_mako', 'timing_jinja2',
-                      'timing_pymongo', 'timing_django_templates']
+                      'timing_pymongo', 'timing_redispy', 'timing_memcache',
+                      'timing_django_templates']
 
     for mod in timing_modules:
         min_time = config['timing'].get(mod.replace("timing_", '').lower())
@@ -143,7 +144,7 @@ def register_timing(config):
             log.debug('not tracking slow time:%s' % mod)
 
     db_modules = ['pg8000', 'psycopg2', 'MySQLdb', 'sqlite3', 'oursql',
-                  'pyodbc',
+                  'pyodbc', 'pypyodbc',
                   'cx_Oracle', 'kinterbasdb', 'postgresql', 'pymysql']
     import errormator_client.timing.timing_dbapi2 as dbapi2
 
