@@ -8,12 +8,13 @@ import time
 import threading
 from operator import itemgetter
 
-if sys.platform == "win32":
-    # On Windows, the best timer is time.clock()
-    default_timer = time.clock
-else:
-    # On most other platforms the best timer is time.time()
-    default_timer = time.time
+# if sys.platform == "win32":
+#     # On Windows, the best timer is time.clock()
+#     default_timer = time.clock
+# else:
+#     # On most other platforms the best timer is time.time()
+#     default_timer = time.time
+default_timer = time.time
 
 
 class ErrormatorLocalStorage(object):
