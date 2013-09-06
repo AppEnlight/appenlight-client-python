@@ -352,8 +352,9 @@ class Client(object):
         log.warning(u'%s code: %s @%s' % (http_status,
                                           report_data.get('error_type'),
                                           url,))
-        log.error(report_data.get('error_type'))
-        log.error(traceback.plaintext)
+        if traceback:
+            log.error(report_data.get('error_type'))
+            log.error(traceback.plaintext)
         del traceback
         return True
 
