@@ -22,7 +22,9 @@ class ErrormatorWSGIWrapper(object):
         also determine if we got 404
         """
         environ['errormator.request_id'] = str(uuid.uuid4())
-
+        errormator_storage = get_local_storage(local_timing)
+        # clear out thread stats on request start
+        errormator_storage.clear()
         app_iter = None
         detected_data = []
         traceback = None
@@ -74,10 +76,8 @@ class ErrormatorWSGIWrapper(object):
             # report 500's and 404's
             # report slowness
             end_time = default_timer()
-            errormator_storage = get_local_storage(local_timing)
             errormator_storage.thread_stats['main'] = end_time - start_time
             stats, slow_calls = errormator_storage.get_thread_stats()
-            errormator_storage.clear()
             if 'errormator.__traceback' in environ:
                 # get traceback gathered by tween
                 traceback = environ['errormator.__traceback']

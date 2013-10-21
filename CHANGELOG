@@ -1,6 +1,11 @@
 CHANGELOG:
 ==========
 
+2013-10-??
+    0.5.14 Small bugfixes
+           Fix small timing bugs for request stats
+           Fix possible arg conflict for timing - thanks @teserak
+
 2013-08-06
     0.5.13 Small bugfixes
            Support timing of redispy and python-memcached

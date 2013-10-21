@@ -30,6 +30,9 @@ class ErrormatorMiddleware(object):
         if 'errormator.client' not in environ:
             environ['errormator.client'] = self.errormator_client
         environ['errormator.post_vars'] = request.POST
+        errormator_storage = get_local_storage(local_timing)
+        # clear out thread stats on request start
+        errormator_storage.clear()
         request.__start_time__ = default_timer()
         return None
 
@@ -90,7 +93,6 @@ class ErrormatorMiddleware(object):
                 errormator_storage.thread_stats[
                     'main'] = end_time - request.__start_time__
                 stats, slow_calls = errormator_storage.get_thread_stats()
-                errormator_storage.clear()
                 # report slowness
                 self.errormator_client.save_request_stats(stats)
                 if self.errormator_client.config['slow_requests']:

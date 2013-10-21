@@ -1047,6 +1047,28 @@ class WSGITests(unittest.TestCase):
         req.get_response(app)
         self.assertGreaterEqual(len(app.errormator_client.log_queue), 2)
 
+    def test_timing_request(self):
+        def app(environ, start_response):
+            start_response('200 OK', [('Content-Type', 'text/html')])
+            time.sleep(0.1)
+            try:
+                import sqlite3
+            except ImportError:
+                return
+            conn = sqlite3.connect(':memory:')
+            c = conn.cursor()
+            c.execute('''SELECT 1+2+3 as result''')
+            c.fetchone()
+            c.close()
+            conn.close()
+            return ['Hello World!']
+
+        req = Request.blank('http://localhost/test')
+        app = make_errormator_middleware(app, global_config=timing_conf)
+        req.get_response(app)
+        stats, result = get_local_storage(local_timing).get_thread_stats()
+        self.assertGreater(stats['main'], 0)
+        self.assertGreater(stats['sql'], 0)
 
 if __name__ == '__main__':
     unittest.main()  # pragma: nocover

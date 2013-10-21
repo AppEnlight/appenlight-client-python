@@ -100,9 +100,9 @@ def trace_factory(info_gatherer, min_duration, is_template=False):
     """ Used to auto decorate callables in deco_func_or_method for other 
         non dbapi2 modules """
 
-    def _e_trace(f, *args, **kw):
+    def _e_trace(func_errormator, *args, **kw):
         start = default_timer()
-        result = f(*args, **kw)
+        result = func_errormator(*args, **kw)
         end = default_timer()
         info = {'start': start,
                 'end': end,
@@ -115,8 +115,8 @@ def trace_factory(info_gatherer, min_duration, is_template=False):
     return _e_trace
 
 
-def time_trace(f, gatherer, min_duration, is_template=False):
-    deco = decorator(trace_factory(gatherer, min_duration), f)
+def time_trace(func_errormator, gatherer, min_duration, is_template=False):
+    deco = decorator(trace_factory(gatherer, min_duration), func_errormator)
     deco._e_attached_tracer = True
     if is_template:
         deco._e_is_template = True

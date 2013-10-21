@@ -416,9 +416,10 @@ class Client(object):
         report_data['report_details'][0]['slow_calls'] = []
         for record in records:
             # we don't need that and json will barf anyways
-            del record['ignore_in']
-            del record['parents']
-            r = getattr(record, 'errormator_data', record)
+            # but operate on copy
+            r = dict(getattr(record, 'errormator_data', record))
+            del r['ignore_in']
+            del r['parents']
             report_data['report_details'][0]['slow_calls'].append(r)
         with self.slow_report_queue_lock:
             self.slow_report_queue.append(report_data)
