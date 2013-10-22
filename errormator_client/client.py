@@ -564,7 +564,7 @@ def get_config(config=None, path_to_config=None, section_name='errormator'):
     if path_to_config:
         config = {}
         if not os.path.exists(path_to_config):
-            log.warning("Couldn't locate %s " % path_to_config)
+            logging.warning("Couldn't locate %s " % path_to_config)
             return config
         with open(path_to_config) as f:
             parser = ConfigParser.SafeConfigParser()
@@ -572,7 +572,7 @@ def get_config(config=None, path_to_config=None, section_name='errormator'):
             try:
                 config = dict(parser.items(section_name))
             except ConfigParser.NoSectionError as exc:
-                log.warning('No section name called %s in file' % section_name)
+                logging.warning('No section name called %s in file' % section_name)
             return config
     return config or {}
 
@@ -586,7 +586,7 @@ def decorate(ini_file=None, register_timing=True):
         # this shuts down all errormator functionalities
         if not asbool(config.get('errormator', True)):
             return app
-        log.critical('ERRORMATOR MIDDLEWARE')
+        logging.critical('ERRORMATOR MIDDLEWARE')
         ini_path = os.environ.get('ERRORMATOR_INI',
                                   config.get('errormator.config_path',
                                              ini_file))
@@ -615,7 +615,7 @@ def make_errormator_middleware(app, global_config=None, **kw):
     config = get_config(config=config, path_to_config=ini_path)
     # this shuts down all errormator functionalities
     if not asbool(config.get('errormator', True)):
-        log.warning("ERRORMATOR_INI config variable is missing from"
+        logging.warning("ERRORMATOR_INI config variable is missing from"
                     "environment or errormator.config_path "
                     "not passed in app global config, "
                     "or errormator disabled in config")
