@@ -30,7 +30,7 @@ def gather_query_factory(subtype):
     return gather_query
 
 
-def add_timing(module_name, min_duration=0.3):
+def add_timing(module_name, min_duration=0.1):
     module = import_module(module_name)
     if not module:
         return
@@ -150,7 +150,7 @@ def add_timing(module_name, min_duration=0.3):
             return getattr(self._e_object, name)
 
         def __call__(self, *args, **kwargs):
-            return TimerWrapper(_e_trace(self._e_db_connect, min_duration,
+            return TimerWrapper(_e_trace(self._e_db_connect, min_duration/2.0,
                                          self._e_object, *args, **kwargs),
                                 self._e_module_name)
 

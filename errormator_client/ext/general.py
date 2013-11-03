@@ -10,6 +10,8 @@ log = logging.getLogger(__name__)
 def gather_data(client, environ, gather_exception=True,
                 gather_slowness=True, gather_logs=True,
                 clear_storage=True, exc_info=None, spawn_thread=True):
+    if client.config['enabled'] == False:
+        return None
     if not environ.get('wsgi.url_scheme'):
         environ['wsgi.url_scheme'] = ''
     if not environ.get('HTTP_HOST'):

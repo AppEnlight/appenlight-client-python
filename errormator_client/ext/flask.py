@@ -20,7 +20,7 @@ def populate_post_vars(sender, **extra):
     This is to handle iterated wsgi.input by werkzeug when we create webob obj 
     parsing environ
     """
-    if request.method == 'POST':
+    if request.method in ['POST', 'PUT']:
         request.environ['errormator.post_vars'] = request.form
     else:
         request.environ['errormator.post_vars'] = {}
@@ -32,10 +32,10 @@ def add_errormator(app, config=None):
 
         first looks at config var,then tries to read ERRORMATOR from app.config
     """
-    if not config:
+    if not config and app.config.get('ERRORMATOR'):
         config = app.config.get('ERRORMATOR')
-    if not config:
-        config = get_config()
+    else:
+        config = {}
     app.wsgi_app = make_errormator_middleware(app.wsgi_app, config)
     request_started.connect(populate_post_vars, app)
     got_request_exception.connect(log_exception, app)

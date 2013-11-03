@@ -12,7 +12,7 @@ to_decorate = ['count', 'create_index', 'distinct', 'drop', 'drop_index',
                'reindex', 'remove', 'rename', 'save', 'update']
 
 
-def add_timing(min_duration=0.3):
+def add_timing(min_duration=0.1):
     module = import_module('pymongo')
     if not module:
         return

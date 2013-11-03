@@ -88,6 +88,10 @@ class Client(object):
             default_client = 'python'
         self.config['client'] = config.get('errormator.client', default_client)
         self.config['api_key'] = config.get('errormator.api_key')
+        if not self.config['api_key']:
+            self.config['enabled'] = False
+            logging.warning("Disabling errormator client, no api key")
+
         self.config['server_url'] = config.get('errormator.server_url',
                                                'https://api.errormator.com')
         self.config['timeout'] = int(config.get('errormator.timeout', 10))
@@ -117,7 +121,8 @@ class Client(object):
         self.config['request_keys_blacklist'] = ['password', 'passwd', 'pwd',
                                                  'auth_tkt', 'secret', 'csrf',
                                                  'session', 'pass', 'config',
-                                                 'settings', 'environ']
+                                                 'settings', 'environ', 'xsrf',
+                                                 'auth']
         req_blacklist = aslist(config.get('errormator.request_keys_blacklist',
                                            config.get(
                                                'errormator.bad_request_keys')),
@@ -163,7 +168,6 @@ class Client(object):
             seconds=self.config['buffer_flush_interval'])
         # register logging
         import errormator_client.logger
-
         if self.config['logging'] and self.config['enabled']:
             self.log_handler = errormator_client.logger.register_logging()
             level = LEVELS.get(config.get('errormator.logging.level',
@@ -442,7 +446,7 @@ class Client(object):
             for k, v in stats.iteritems():
                 self.request_stats[req_time][k] += v
 
-    def process_environ(self, environ, traceback=None, include_params=False):
+    def process_environ(self, environ, traceback=None, include_params=False, http_status=200):
         # form friendly to json encode
         parsed_environ = {}
         errormator_info = {}
@@ -457,7 +461,7 @@ class Client(object):
             else:
                 whitelisted = key.startswith('HTTP') or key in self.config[
                     'environ_keys_whitelist']
-                if traceback and whitelisted:
+                if http_status not in [404, '404'] and whitelisted:
                     try:
                         if isinstance(value, str):
                             if PY3:
@@ -469,6 +473,10 @@ class Client(object):
                     except Exception as exc:
                         pass
                         # provide better details for 500's
+        try:
+            parsed_environ['HTTP_METHOD'] = req.method
+        except:
+            pass
         if include_params:
             try:
                 parsed_environ['COOKIES'] = dict(req.cookies)
@@ -480,7 +488,7 @@ class Client(object):
             except Exception as exc:
                 parsed_environ['GET'] = {}
             try:
-                # handle werkzeug/django
+                # handle werkzeug and django
                 wz_post_vars = req.environ.get('errormator.post_vars', None)
                 if wz_post_vars is not None:
                     parsed_environ['POST'] = dict(wz_post_vars)
@@ -518,7 +526,8 @@ class Client(object):
         (parsed_environ, errormator_info) = self.process_environ(
             environ,
             traceback,
-            include_params)
+            include_params,
+            http_status)
         report_data = {'client': 'Python', 'report_details': []}
         report_data['error_type'] = 'Unknown'
         detail_entry = {}
@@ -561,6 +570,9 @@ class Client(object):
 def get_config(config=None, path_to_config=None, section_name='errormator'):
     if not config and not path_to_config:
         path_to_config = os.environ.get('ERRORMATOR_INI')
+    if config is None:
+        config = {}
+    api_key = os.environ.get('ERRORMATOR_KEY')
     if path_to_config:
         config = {}
         if not os.path.exists(path_to_config):
@@ -573,7 +585,14 @@ def get_config(config=None, path_to_config=None, section_name='errormator'):
                 config = dict(parser.items(section_name))
             except ConfigParser.NoSectionError as exc:
                 logging.warning('No section name called %s in file' % section_name)
-            return config
+            if not config.get('api_key') and api_key:
+                config['errormator.api_key'] = api_key
+    if config is not None and not config.get('api_key') and api_key:
+        config['errormator.api_key'] = api_key
+    if not config.get('errormator.api_key'):
+        logging.warning("errormator.api_key is missing from the config, something went wrong."
+                        "hint: ERRORMATOR_INI/ERRORMATOR_API_KEY config variable is missing from environment "
+                        "or errormator.config_path not passed in app global config")
     return config or {}
 
 
@@ -590,10 +609,10 @@ def decorate(ini_file=None, register_timing=True):
         ini_path = os.environ.get('ERRORMATOR_INI',
                                   config.get('errormator.config_path',
                                              ini_file))
+
         config = get_config(config=config, path_to_config=ini_path)
         client = Client(config)
         from errormator_client.wsgi import ErrormatorWSGIWrapper
-
         app = ErrormatorWSGIWrapper(app, client)
         return app
 
@@ -610,18 +629,10 @@ def make_errormator_middleware(app, global_config=None, **kw):
     else:
         config = {}
     config.update(kw)
-    ini_path = os.environ.get('ERRORMATOR_INI',
-                              config.get('errormator.config_path'))
+    ini_path = os.environ.get('ERRORMATOR_INI', config.get('errormator.config_path'))
     config = get_config(config=config, path_to_config=ini_path)
-    # this shuts down all errormator functionalities
-    if not asbool(config.get('errormator', True)):
-        logging.warning("ERRORMATOR_INI config variable is missing from"
-                    "environment or errormator.config_path "
-                    "not passed in app global config, "
-                    "or errormator disabled in config")
-        return app
     client = Client(config)
     from errormator_client.wsgi import ErrormatorWSGIWrapper
-
-    app = ErrormatorWSGIWrapper(app, client)
+    if client.config['enabled']:
+        app = ErrormatorWSGIWrapper(app, client)
     return app

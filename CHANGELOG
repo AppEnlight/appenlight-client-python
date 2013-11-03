@@ -1,13 +1,20 @@
 CHANGELOG:
 ==========
 
-2013-10-??
-    0.5.14 Small bugfixes
+2013-11-??
+    0.5.15 Minor bugfixes
+           Allow for simple configuration using just API KEY
+           Less conservative default timings
+           Output better error messages when client is misconfigured
+
+
+2013-10-22
+    0.5.14 Minor bugfixes
            Fix small timing bugs for request stats
            Fix possible arg conflict for timing - thanks @teserak
 
 2013-08-06
-    0.5.13 Small bugfixes
+    0.5.13 Minor bugfixes
            Support timing of redispy and python-memcached
 
 2013-03-24

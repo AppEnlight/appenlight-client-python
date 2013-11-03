@@ -4,7 +4,7 @@ from errormator_client.timing import time_trace
 ignore_set = frozenset()
 
 
-def add_timing(min_duration=0.3):
+def add_timing(min_duration=0.1):
     module = import_module('pysolr')
     if not module:
         return

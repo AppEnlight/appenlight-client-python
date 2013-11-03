@@ -15,10 +15,13 @@ from webob import Request
 fname = pkg_resources.resource_filename('errormator_client',
                                         'templates/default_template.ini')
 timing_conf = client.get_config(path_to_config=fname)
+# set api key
+
 for k, v in timing_conf.iteritems():
     if 'errormator.timing' in k:
         timing_conf[k] = 0.0000001
 
+#this sets up timing decoration for us
 client.Client(config=timing_conf)
 from errormator_client.timing import local_timing, get_local_storage
 
@@ -68,7 +71,8 @@ PARSED_REPORT_404 = {
                                                 u'test_group_id': u'5',
                                                 u'http_referer': u'http://localhost:5000/'},
                                     'POST': {},
-                                    'GET': {u'aaa': [u'1'], u'bbb': [u'2']}},
+                                    'GET': {u'aaa': [u'1'], u'bbb': [u'2']},
+                                    'HTTP_METHOD': 'GET'},
                         'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
                         'message': u''}],
     'error_type': '404 Not Found',
@@ -107,7 +111,8 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
                                              'HTTP_HOST': u'localhost:6543',
                                              'POST': {},
                                              'HTTP_CACHE_CONTROL': u'max-age=0',
-                                             'HTTP_ACCEPT_ENCODING': u'gzip, deflate'},
+                                             'HTTP_ACCEPT_ENCODING': u'gzip, deflate',
+                                             'HTTP_METHOD': 'GET'},
                                          'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
                                          'message': u'',
                                          'request_stats': {}}],
@@ -128,7 +133,8 @@ PARSED_SLOW_REPORT = {
                                                 u'test_group_id': u'5',
                                                 u'http_referer': u'http://localhost:5000/'},
                                     'POST': {},
-                                    'GET': {u'aaa': [u'1'], u'bbb': [u'2']}},
+                                    'GET': {u'aaa': [u'1'], u'bbb': [u'2'],},
+                                    'HTTP_METHOD': 'GET'},
                         'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
                         'message': u'',
                         'end_time': REQ_END_TIME,
@@ -141,7 +147,9 @@ PARSED_SLOW_REPORT = {
 
 
 class TestClientConfig(unittest.TestCase):
-    def setUpClient(self, config={}):
+    def setUpClient(self, config=None):
+        if config is None:
+            config = {'errormator.api_key': '12345'}
         self.client = client.Client(config)
 
     def tearDown(self):
@@ -152,7 +160,7 @@ class TestClientConfig(unittest.TestCase):
         self.assertIsInstance(self.client, client.Client)
 
     def test_api_key(self):
-        config = {'errormator.api_key': "ABCD"}
+        config = {'errormator.api_key': '12345AAAAA'}
         self.setUpClient(config)
         self.assertEqual(self.client.config['api_key'],
                          config['errormator.api_key'])
@@ -175,6 +183,10 @@ class TestClientConfig(unittest.TestCase):
     def test_disabled_client(self):
         config = {'errormator': "false"}
         self.setUpClient(config)
+        self.assertEqual(self.client.config['enabled'], False)
+
+    def test_disabled_client_no_key(self):
+        self.setUpClient({})
         self.assertEqual(self.client.config['enabled'], False)
 
     def test_server_name(self):
@@ -307,18 +319,18 @@ class TestClientConfig(unittest.TestCase):
 
     def test_default_request_keys_blacklist(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['request_keys_blacklist'],
-                         ['password', 'passwd', 'pwd', 'auth_tkt', 'secret',
-                          'csrf',
-                          'session', 'pass', 'config', 'settings', 'environ'])
+        self.assertItemsEqual(self.client.config['request_keys_blacklist'],
+                              ['password', 'passwd', 'pwd', 'auth_tkt', 'secret',
+                               'csrf', 'xsrf', 'auth',
+                               'session', 'pass', 'config', 'settings', 'environ'])
 
     def test_custom_request_keys_blacklist(self):
         config = {'errormator.request_keys_blacklist': "aa,bb,cc"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['request_keys_blacklist'],
-                         ['password', 'passwd', 'pwd', 'auth_tkt', 'secret',
-                          'csrf', 'session', 'pass', 'config', 'settings',
-                          'environ', 'aa', 'bb', 'cc'])
+        self.assertItemsEqual(self.client.config['request_keys_blacklist'],
+                              ['password', 'passwd', 'pwd', 'auth_tkt', 'secret',
+                               'csrf', 'xsrf', 'auth', 'session', 'pass', 'config', 'settings',
+                               'environ', 'aa', 'bb', 'cc'])
 
     def test_default_environ_keys_whitelist(self):
         self.setUpClient()
@@ -344,7 +356,7 @@ class TestClientConfig(unittest.TestCase):
         config = {'errormator.log_namespace_blacklist': "aa,bb,cc.dd"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['log_namespace_blacklist'],
-                         ['errormator_client.client','aa', 'bb', 'cc.dd'])
+                         ['errormator_client.client', 'aa', 'bb', 'cc.dd'])
 
     def test_default_filter_callable(self):
         self.setUpClient()
@@ -376,7 +388,8 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.log_handler.level, logging.WARNING)
 
     def test_custom_logging_handler_level(self):
-        config = {'errormator.logging.level': "CRITICAL"}
+        config = {'errormator.logging.level': "CRITICAL",
+                  'errormator.api_key':'12345'}
         self.setUpClient(config)
         self.assertEqual(self.client.log_handler.level, logging.CRITICAL)
 
@@ -385,19 +398,22 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['timing'], {})
 
     def test_timing_config_disable(self):
-        config = {'errormator.timing.dbapi2_psycopg2': 'false'}
+        config = {'errormator.timing.dbapi2_psycopg2': 'false',
+                  'errormator.api_key':'12345'}
         self.setUpClient(config)
         self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'],
                          False)
 
     def test_timing_config_custom(self):
-        config = {'errormator.timing.dbapi2_psycopg2': '5'}
+        config = {'errormator.timing.dbapi2_psycopg2': '5',
+                  'errormator.api_key':'12345'}
         self.setUpClient(config)
         self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'], 5)
 
     def test_timing_config_mixed(self):
         config = {'errormator.timing.dbapi2_psycopg2': '5',
-                  'errormator.timing': {'urllib': 11, 'dbapi2_oursql': 6}
+                  'errormator.timing': {'urllib': 11, 'dbapi2_oursql': 6},
+                  'errormator.api_key':'12345'
         }
         self.setUpClient(config)
         self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'], 5)
@@ -505,6 +521,7 @@ class TestErrorParsing(unittest.TestCase):
 
 class TestLogs(unittest.TestCase):
     def setUpClient(self, config={}):
+        timing_conf['errormator.api_key'] = '12345'
         self.client = client.Client(config)
         self.maxDiff = None
 
@@ -553,7 +570,7 @@ class TestMakeMiddleware(unittest.TestCase):
             start_response('200 OK', [('content-type', 'text/html')])
             return ['Hello world!']
 
-        app = make_errormator_middleware(app, {'errormator': True})
+        app = make_errormator_middleware(app, {'errormator.api_key': '12345'})
         self.assertTrue(isinstance(app, ErrormatorWSGIWrapper))
 
     def test_make_middleware_disabled(self):
@@ -561,7 +578,7 @@ class TestMakeMiddleware(unittest.TestCase):
             start_response('200 OK', [('content-type', 'text/html')])
             return ['Hello world!']
 
-        app = make_errormator_middleware(app, {'errormator':'false'})
+        app = make_errormator_middleware(app, {'errormator': 'false'})
         self.assertFalse(isinstance(app, ErrormatorWSGIWrapper))
 
 
@@ -642,9 +659,10 @@ class TestRedisPY(unittest.TestCase):
             return
 
         client = redis.StrictRedis()
-        client.setex('testval', 10,'foo')
+        client.setex('testval', 10, 'foo')
         stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 1)
+
 
 class TestMemcache(unittest.TestCase):
     def setUpClient(self, config={}):
@@ -690,6 +708,7 @@ class TestPylibMc(unittest.TestCase):
         value = mc.get("some_key")
         stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertEqual(len(result), 2)
+
 
 class TestDBApi2Drivers(unittest.TestCase):
     def setUpClient(self, config={}):
@@ -1057,7 +1076,7 @@ class WSGITests(unittest.TestCase):
                 return
             conn = sqlite3.connect(':memory:')
             c = conn.cursor()
-            c.execute('''SELECT 1+2+3 as result''')
+            c.execute('''SELECT 1+2+3 AS result''')
             c.fetchone()
             c.close()
             conn.close()
@@ -1069,6 +1088,7 @@ class WSGITests(unittest.TestCase):
         stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertGreater(stats['main'], 0)
         self.assertGreater(stats['sql'], 0)
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: nocover
