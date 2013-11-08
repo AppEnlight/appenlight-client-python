@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import copy
 import datetime
 import logging
 import pkg_resources
@@ -106,7 +107,12 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
                                              'SERVER_NAME': u'localhost',
                                              'GET': {u'aaa': [u'1'],
                                                      u'bbb': [u'2']},
+                                             'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                             'HTTP_ACCEPT_ENCODING': u'gzip, deflate',
                                              'HTTP_ACCEPT_LANGUAGE': u'en-us,en;q=0.5',
+                                             'HTTP_CACHE_CONTROL': u'max-age=0',
+                                             'HTTP_HOST': u'localhost:6543',
+                                             'HTTP_METHOD': 'GET',
                                              'REMOTE_USER': u'foo',
                                              'HTTP_HOST': u'localhost:6543',
                                              'POST': {},
@@ -134,7 +140,15 @@ PARSED_SLOW_REPORT = {
                                                 u'http_referer': u'http://localhost:5000/'},
                                     'POST': {},
                                     'GET': {u'aaa': [u'1'], u'bbb': [u'2'],},
-                                    'HTTP_METHOD': 'GET'},
+                                     'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                     'HTTP_ACCEPT_ENCODING': u'gzip, deflate',
+                                     'HTTP_ACCEPT_LANGUAGE': u'en-us,en;q=0.5',
+                                     'HTTP_CACHE_CONTROL': u'max-age=0',
+                                     'HTTP_HOST': u'localhost:6543',
+                                     'HTTP_METHOD': 'GET',
+                                     'REMOTE_USER': u'foo',
+                                     'SERVER_NAME': u'localhost',
+                                    },
                         'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
                         'message': u'',
                         'end_time': REQ_END_TIME,
@@ -434,6 +448,7 @@ class TestClientSending(unittest.TestCase):
 
     def test_check_if_deliver_false(self):
         self.setUpClient()
+        self.client.last_submit = datetime.datetime.now()
         self.assertEqual(self.client.check_if_deliver(), False)
 
     def test_check_if_deliver_forced(self):
@@ -470,15 +485,18 @@ class TestErrorParsing(unittest.TestCase):
     def test_py_report_404(self):
         self.setUpClient()
         self.client.py_report(TEST_ENVIRON, http_status=404)
-        self.assertEqual(self.client.report_queue[0], PARSED_REPORT_404)
+        self.assertDictContainsSubset(PARSED_REPORT_404, self.client.report_queue[0])
 
     def test_py_report_500_no_traceback(self):
         self.setUpClient()
         self.client.py_report(TEST_ENVIRON, http_status=500)
-        bogus_500_report = PARSED_REPORT_404.copy()
+        bogus_500_report = copy.deepcopy(PARSED_REPORT_500)
         bogus_500_report['http_status'] = 500
         bogus_500_report['error_type'] = 'Unknown'
-        self.assertEqual(self.client.report_queue[0], bogus_500_report)
+        del bogus_500_report['traceback']
+        del bogus_500_report['report_details'][0]['frameinfo']
+        del bogus_500_report['report_details'][0]['request_stats']
+        self.assertDictContainsSubset(bogus_500_report, self.client.report_queue[0])
 
     def test_py_report_500_traceback(self):
         self.setUpClient()
@@ -495,7 +513,7 @@ class TestErrorParsing(unittest.TestCase):
         assert int(line_no) > 0
         # set line number to match as this will change over time
         PARSED_REPORT_500['report_details'][0]['frameinfo'][0]['line'] = line_no
-        self.assertEqual(self.client.report_queue[0], PARSED_REPORT_500)
+        self.assertDictContainsSubset(PARSED_REPORT_500, self.client.report_queue[0])
 
     def test_frameinfo(self):
         self.setUpClient(config={'errormator.report_local_vars': 'true'})
@@ -561,7 +579,7 @@ class TestSlowReportParsing(unittest.TestCase):
         self.maxDiff = None
         self.client.py_slow_report(TEST_ENVIRON, start_time=REQ_START_TIME,
                                    end_time=REQ_END_TIME)
-        self.assertEqual(self.client.slow_report_queue[0], PARSED_SLOW_REPORT)
+        self.assertDictContainsSubset(PARSED_SLOW_REPORT, self.client.slow_report_queue[0])
 
 
 class TestMakeMiddleware(unittest.TestCase):
@@ -1040,6 +1058,7 @@ class WSGITests(unittest.TestCase):
         req = Request.blank('http://localhost/test')
         app = make_errormator_middleware(app, global_config=timing_conf)
         app.errormator_client.config['reraise_exceptions'] = False
+        app.errormator_client.last_submit = datetime.datetime.now()
         req.get_response(app)
         self.assertEqual(len(app.errormator_client.report_queue), 1)
 
@@ -1051,6 +1070,7 @@ class WSGITests(unittest.TestCase):
 
         req = Request.blank('http://localhost/test')
         app = make_errormator_middleware(app, global_config=timing_conf)
+        app.errormator_client.last_submit = datetime.datetime.now()
         req.get_response(app)
         self.assertEqual(len(app.errormator_client.slow_report_queue), 1)
 
@@ -1063,6 +1083,7 @@ class WSGITests(unittest.TestCase):
 
         req = Request.blank('http://localhost/test')
         app = make_errormator_middleware(app, global_config=timing_conf)
+        app.errormator_client.last_submit = datetime.datetime.now()
         req.get_response(app)
         self.assertGreaterEqual(len(app.errormator_client.log_queue), 2)
 

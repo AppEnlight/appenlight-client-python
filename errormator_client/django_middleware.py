@@ -44,8 +44,8 @@ class ErrormatorMiddleware(object):
         request.__e_processed_exception__ = True
         environ = request.environ
         user = getattr(request, 'user', None)
-        if user:
-            environ['errormator.username'] = unicode(user.id)
+        if user and user.is_authenticated():
+            environ['errormator.username'] = unicode(user.pk)
         if isinstance(exception, Http404):
             http_status = 404
         else:

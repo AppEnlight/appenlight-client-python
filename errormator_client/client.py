@@ -203,8 +203,8 @@ class Client(object):
         self.request_stats = {}
         self.request_stats_lock = threading.RLock()
         self.uuid = uuid.uuid4()
-        self.last_submit = datetime.datetime.utcnow()
-        self.last_request_stats_submit = datetime.datetime.utcnow()
+        self.last_submit = datetime.datetime.utcnow() - datetime.timedelta(minutes=1)
+        self.last_request_stats_submit = datetime.datetime.utcnow() - datetime.timedelta(minutes=1)
 
     def submit_data(self):
         self.last_submit = datetime.datetime.utcnow()
