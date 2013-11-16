@@ -1,7 +1,7 @@
 CHANGELOG:
 ==========
 
-2013-11-??
+2013-11-16
     0.5.15 Minor bugfixes
            Allow for simple configuration using just API KEY
            Less conservative default timings
