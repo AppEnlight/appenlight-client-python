@@ -34,6 +34,8 @@ def add_errormator(app, config=None):
     """
     if not config and app.config.get('ERRORMATOR'):
         config = app.config.get('ERRORMATOR')
+    if config:
+        pass
     else:
         config = {}
     app.wsgi_app = make_errormator_middleware(app.wsgi_app, config)

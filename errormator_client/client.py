@@ -591,7 +591,7 @@ def get_config(config=None, path_to_config=None, section_name='errormator'):
         config['errormator.api_key'] = api_key
     if not config.get('errormator.api_key'):
         logging.warning("errormator.api_key is missing from the config, something went wrong."
-                        "hint: ERRORMATOR_INI/ERRORMATOR_API_KEY config variable is missing from environment "
+                        "hint: ERRORMATOR_INI/ERRORMATOR_KEY config variable is missing from environment "
                         "or errormator.config_path not passed in app global config")
     return config or {}
 
