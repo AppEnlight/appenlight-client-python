@@ -1,5 +1,5 @@
-from errormator_client.utils import import_module, deco_func_or_method
-from errormator_client.timing import time_trace
+from appenlight_client.utils import import_module, deco_func_or_method
+from appenlight_client.timing import time_trace
 
 import logging
 

@@ -1,5 +1,5 @@
-from errormator_client.exceptions import get_current_traceback
-from errormator_client.timing import get_local_storage, local_timing
+from appenlight_client.exceptions import get_current_traceback
+from appenlight_client.timing import get_local_storage, local_timing
 from pyramid.tweens import EXCVIEW
 import pyramid
 import logging
@@ -7,7 +7,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def errormator_tween_factory(handler, registry):
+def appenlight_tween_factory(handler, registry):
     blacklist = (pyramid.httpexceptions.WSGIHTTPException,)
 
     def error_tween(request):
@@ -16,10 +16,10 @@ def errormator_tween_factory(handler, registry):
         except blacklist as e:
             raise
         except:
-            if 'errormator.client' in request.environ:
+            if 'appenlight.client' in request.environ:
                 # pass the traceback object to middleware
                 request.environ[
-                    'errormator.__traceback'] = get_current_traceback(
+                    'appenlight.__traceback'] = get_current_traceback(
                     skip=1,
                     show_hidden_frames=True,
                     ignore_system_exceptions=True)
@@ -31,5 +31,5 @@ def errormator_tween_factory(handler, registry):
 
 def includeme(config):
     config.add_tween(
-        'errormator_client.ext.pyramid_tween.errormator_tween_factory',
+        'appenlight_client.ext.pyramid_tween.appenlight_tween_factory',
         under=EXCVIEW)

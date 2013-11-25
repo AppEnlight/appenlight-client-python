@@ -1,5 +1,5 @@
-from errormator_client.exceptions import get_current_traceback, Traceback
-from errormator_client.timing import local_timing, get_local_storage
+from appenlight_client.exceptions import get_current_traceback, Traceback
+from appenlight_client.timing import local_timing, get_local_storage
 import datetime
 import logging
 import uuid
@@ -16,8 +16,8 @@ def gather_data(client, environ, gather_exception=True,
         environ['wsgi.url_scheme'] = ''
     if not environ.get('HTTP_HOST'):
         environ['HTTP_HOST'] = 'localhost'
-    if not environ.get('errormator.request_id'):
-        environ['errormator.request_id'] = str(uuid.uuid4())
+    if not environ.get('appenlight.request_id'):
+        environ['appenlight.request_id'] = str(uuid.uuid4())
     if gather_exception and not exc_info:
         traceback = get_current_traceback(skip=1, show_hidden_frames=True,
                                           ignore_system_exceptions=True)
@@ -25,8 +25,8 @@ def gather_data(client, environ, gather_exception=True,
         traceback = Traceback(*exc_info)
     else:
         traceback = None
-    errormator_storage = get_local_storage(local_timing)
-    stats, slow_calls = errormator_storage.get_thread_stats()
+    appenlight_storage = get_local_storage(local_timing)
+    stats, slow_calls = appenlight_storage.get_thread_stats()
     if traceback:
         client.py_report(environ, traceback, http_status=500,
                          request_stats=stats)
@@ -36,7 +36,7 @@ def gather_data(client, environ, gather_exception=True,
         # report slowness
     now = datetime.datetime.utcnow()
     if clear_storage:
-        errormator_storage.clear()
+        appenlight_storage.clear()
     if client.config['slow_requests'] and gather_slowness:
         # do we have slow calls ?
         if (slow_calls):
@@ -49,8 +49,8 @@ def gather_data(client, environ, gather_exception=True,
         records = client.log_handler.get_records()
         client.log_handler.clear_records()
         client.py_log(environ, records=records, traceback=traceback,
-                      r_uuid=environ['errormator.request_id'])
+                      r_uuid=environ['appenlight.request_id'])
         # send all data we gathered immediately at the end of request
     client.check_if_deliver(client.config['force_send'] or
-                            environ.get('errormator.force_send'),
+                            environ.get('appenlight.force_send'),
                             spawn_thread=spawn_thread)

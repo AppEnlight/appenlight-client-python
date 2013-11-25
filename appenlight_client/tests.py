@@ -7,24 +7,24 @@ import socket
 import time
 import unittest
 import pprint
-from errormator_client import client, make_errormator_middleware
-from errormator_client.exceptions import get_current_traceback
-from errormator_client.logger import register_logging
-from errormator_client.wsgi import ErrormatorWSGIWrapper
+from appenlight_client import client, make_appenlight_middleware
+from appenlight_client.exceptions import get_current_traceback
+from appenlight_client.logger import register_logging
+from appenlight_client.wsgi import AppenlightWSGIWrapper
 from webob import Request
 
-fname = pkg_resources.resource_filename('errormator_client',
+fname = pkg_resources.resource_filename('appenlight_client',
                                         'templates/default_template.ini')
 timing_conf = client.get_config(path_to_config=fname)
 # set api key
 
 for k, v in timing_conf.iteritems():
-    if 'errormator.timing' in k:
+    if 'appenlight.timing' in k:
         timing_conf[k] = 0.0000001
 
 #this sets up timing decoration for us
 client.Client(config=timing_conf)
-from errormator_client.timing import local_timing, get_local_storage
+from appenlight_client.timing import local_timing, get_local_storage
 
 
 def example_filter_callable(structure, section=None):
@@ -86,7 +86,7 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
                      # this will be different everywhere
                      'report_details': [{'frameinfo': [
                          {'cline': u"raise Exception('Test Exception')",
-                          'file': 'errormator_client/tests.py',
+                          'file': 'appenlight_client/tests.py',
                           'fn': 'test_py_report_500_traceback',
                           'line': 454,
                           'vars': []},
@@ -163,7 +163,7 @@ PARSED_SLOW_REPORT = {
 class TestClientConfig(unittest.TestCase):
     def setUpClient(self, config=None):
         if config is None:
-            config = {'errormator.api_key': '12345'}
+            config = {'appenlight.api_key': '12345'}
         self.client = client.Client(config)
 
     def tearDown(self):
@@ -174,28 +174,28 @@ class TestClientConfig(unittest.TestCase):
         self.assertIsInstance(self.client, client.Client)
 
     def test_api_key(self):
-        config = {'errormator.api_key': '12345AAAAA'}
+        config = {'appenlight.api_key': '12345AAAAA'}
         self.setUpClient(config)
         self.assertEqual(self.client.config['api_key'],
-                         config['errormator.api_key'])
+                         config['appenlight.api_key'])
 
     def test_default_server(self):
         self.setUpClient()
         self.assertEqual(self.client.config['server_url'],
-                         'https://api.errormator.com')
+                         'https://api.appenlight.com')
 
     def test_custom_server(self):
-        config = {'errormator.server_url': "http://foo.bar.com"}
+        config = {'appenlight.server_url': "http://foo.bar.com"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['server_url'],
-                         config['errormator.server_url'])
+                         config['appenlight.server_url'])
 
     def test_enabled_client(self):
         self.setUpClient()
         self.assertEqual(self.client.config['enabled'], True)
 
     def test_disabled_client(self):
-        config = {'errormator': "false"}
+        config = {'appenlight': "false"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['enabled'], False)
 
@@ -204,20 +204,20 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['enabled'], False)
 
     def test_server_name(self):
-        config = {'errormator.server_name': "some_name"}
+        config = {'appenlight.server_name': "some_name"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['server_name'],
-                         config['errormator.server_name'])
+                         config['appenlight.server_name'])
 
     def test_default_server_name(self):
         self.setUpClient()
         self.assertEqual(self.client.config['server_name'], socket.getfqdn())
 
     def test_client_name(self):
-        config = {'errormator.client': "pythonX"}
+        config = {'appenlight.client': "pythonX"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['client'],
-                         config['errormator.client'])
+                         config['appenlight.client'])
 
     def test_default_client_name(self):
         self.setUpClient()
@@ -230,12 +230,12 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['timeout'], 10)
 
     def test_timeout(self):
-        config = {'errormator.timeout': "5"}
+        config = {'appenlight.timeout': "5"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['timeout'], 5)
 
     def test_reraise_exceptions(self):
-        config = {'errormator.reraise_exceptions': "false"}
+        config = {'appenlight.reraise_exceptions': "false"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['reraise_exceptions'], False)
 
@@ -248,7 +248,7 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['slow_requests'], True)
 
     def test_disabled_slow_requests(self):
-        config = {'errormator.reraise_exceptions': "false"}
+        config = {'appenlight.reraise_exceptions': "false"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['reraise_exceptions'], False)
 
@@ -258,13 +258,13 @@ class TestClientConfig(unittest.TestCase):
                          datetime.timedelta(seconds=1))
 
     def test_custom_slow_request_time(self):
-        config = {'errormator.slow_request_time': "2"}
+        config = {'appenlight.slow_request_time': "2"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['slow_request_time'],
                          datetime.timedelta(seconds=2))
 
     def test_too_low_custom_slow_request_time(self):
-        config = {'errormator.slow_request_time': "0.001"}
+        config = {'appenlight.slow_request_time': "0.001"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['slow_request_time'],
                          datetime.timedelta(seconds=0.01))
@@ -274,7 +274,7 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['logging'], True)
 
     def test_custom_logging(self):
-        config = {'errormator.logging': "false"}
+        config = {'appenlight.logging': "false"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['logging'], False)
 
@@ -283,7 +283,7 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['logging_on_error'], False)
 
     def test_custom_logging_on_error(self):
-        config = {'errormator.logging_on_error': "true"}
+        config = {'appenlight.logging_on_error': "true"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['logging_on_error'], True)
 
@@ -292,7 +292,7 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['report_404'], False)
 
     def test_custom_report_404r(self):
-        config = {'errormator.report_404': "true"}
+        config = {'appenlight.report_404': "true"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['report_404'], True)
 
@@ -301,7 +301,7 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['report_errors'], True)
 
     def test_custom_report_errors(self):
-        config = {'errormator.report_errors': "false"}
+        config = {'appenlight.report_errors': "false"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['report_errors'], False)
 
@@ -311,13 +311,13 @@ class TestClientConfig(unittest.TestCase):
                          datetime.timedelta(seconds=5))
 
     def test_custom_buffer_flush_interval(self):
-        config = {'errormator.buffer_flush_interval': "10"}
+        config = {'appenlight.buffer_flush_interval': "10"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['buffer_flush_interval'],
                          datetime.timedelta(seconds=10))
 
     def test_custom_small_buffer_flush_interval(self):
-        config = {'errormator.buffer_flush_interval': "0"}
+        config = {'appenlight.buffer_flush_interval': "0"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['buffer_flush_interval'],
                          datetime.timedelta(seconds=1))
@@ -327,7 +327,7 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['force_send'], False)
 
     def test_custom_force_send(self):
-        config = {'errormator.force_send': "1"}
+        config = {'appenlight.force_send': "1"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['force_send'], True)
 
@@ -339,7 +339,7 @@ class TestClientConfig(unittest.TestCase):
                                'session', 'pass', 'config', 'settings', 'environ'])
 
     def test_custom_request_keys_blacklist(self):
-        config = {'errormator.request_keys_blacklist': "aa,bb,cc"}
+        config = {'appenlight.request_keys_blacklist': "aa,bb,cc"}
         self.setUpClient(config)
         self.assertItemsEqual(self.client.config['request_keys_blacklist'],
                               ['password', 'passwd', 'pwd', 'auth_tkt', 'secret',
@@ -354,7 +354,7 @@ class TestClientConfig(unittest.TestCase):
                           'HTTP_REFERER'])
 
     def test_custom_environ_keys_whitelist(self):
-        config = {'errormator.environ_keys_whitelist': "aa,bb,cc"}
+        config = {'appenlight.environ_keys_whitelist': "aa,bb,cc"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['environ_keys_whitelist'],
                          ['REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME',
@@ -364,26 +364,26 @@ class TestClientConfig(unittest.TestCase):
     def test_default_log_namespace_blacklist(self):
         self.setUpClient()
         self.assertEqual(self.client.config['log_namespace_blacklist'],
-                         ['errormator_client.client'])
+                         ['appenlight_client.client'])
 
     def test_custom_log_namespace_blacklist(self):
-        config = {'errormator.log_namespace_blacklist': "aa,bb,cc.dd"}
+        config = {'appenlight.log_namespace_blacklist': "aa,bb,cc.dd"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['log_namespace_blacklist'],
-                         ['errormator_client.client', 'aa', 'bb', 'cc.dd'])
+                         ['appenlight_client.client', 'aa', 'bb', 'cc.dd'])
 
     def test_default_filter_callable(self):
         self.setUpClient()
         self.assertEqual(self.client.filter_callable, self.client.data_filter)
 
     def test_bad_filter_callable(self):
-        config = {'errormator.filter_callable': "foo.bar.baz:callable_name"}
+        config = {'appenlight.filter_callable': "foo.bar.baz:callable_name"}
         self.setUpClient(config)
         self.assertEqual(self.client.filter_callable, self.client.data_filter)
 
     def test_custom_filter_callable(self):
-        config = {'errormator.filter_callable':
-                      "errormator_client.tests:example_filter_callable"}
+        config = {'appenlight.filter_callable':
+                      "appenlight_client.tests:example_filter_callable"}
         self.setUpClient(config)
         self.assertEqual(self.client.filter_callable.__name__,
                          example_filter_callable.__name__)
@@ -393,7 +393,7 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(hasattr(self.client, 'log_handler'), True)
 
     def test_custom_logging_handler_present(self):
-        config = {'errormator.logging': "false"}
+        config = {'appenlight.logging': "false"}
         self.setUpClient(config)
         self.assertEqual(hasattr(self.client, 'log_handler'), False)
 
@@ -402,8 +402,8 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.log_handler.level, logging.WARNING)
 
     def test_custom_logging_handler_level(self):
-        config = {'errormator.logging.level': "CRITICAL",
-                  'errormator.api_key':'12345'}
+        config = {'appenlight.logging.level': "CRITICAL",
+                  'appenlight.api_key':'12345'}
         self.setUpClient(config)
         self.assertEqual(self.client.log_handler.level, logging.CRITICAL)
 
@@ -412,22 +412,22 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['timing'], {})
 
     def test_timing_config_disable(self):
-        config = {'errormator.timing.dbapi2_psycopg2': 'false',
-                  'errormator.api_key':'12345'}
+        config = {'appenlight.timing.dbapi2_psycopg2': 'false',
+                  'appenlight.api_key':'12345'}
         self.setUpClient(config)
         self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'],
                          False)
 
     def test_timing_config_custom(self):
-        config = {'errormator.timing.dbapi2_psycopg2': '5',
-                  'errormator.api_key':'12345'}
+        config = {'appenlight.timing.dbapi2_psycopg2': '5',
+                  'appenlight.api_key':'12345'}
         self.setUpClient(config)
         self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'], 5)
 
     def test_timing_config_mixed(self):
-        config = {'errormator.timing.dbapi2_psycopg2': '5',
-                  'errormator.timing': {'urllib': 11, 'dbapi2_oursql': 6},
-                  'errormator.api_key':'12345'
+        config = {'appenlight.timing.dbapi2_psycopg2': '5',
+                  'appenlight.timing': {'urllib': 11, 'dbapi2_oursql': 6},
+                  'appenlight.api_key':'12345'
         }
         self.setUpClient(config)
         self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'], 5)
@@ -440,7 +440,7 @@ def generate_error():
 
 
 class TestClientSending(unittest.TestCase):
-    def setUpClient(self, config={'errormator.api_key': 'blargh!'}):
+    def setUpClient(self, config={'appenlight.api_key': 'blargh!'}):
         self.client = client.Client(config)
 
     def tearDown(self):
@@ -516,7 +516,7 @@ class TestErrorParsing(unittest.TestCase):
         self.assertDictContainsSubset(PARSED_REPORT_500, self.client.report_queue[0])
 
     def test_frameinfo(self):
-        self.setUpClient(config={'errormator.report_local_vars': 'true'})
+        self.setUpClient(config={'appenlight.report_local_vars': 'true'})
         test = 1
         b = {1: 'a', '2': 2, 'ccc': 'ddd'}
         obj = object()
@@ -539,7 +539,7 @@ class TestErrorParsing(unittest.TestCase):
 
 class TestLogs(unittest.TestCase):
     def setUpClient(self, config={}):
-        timing_conf['errormator.api_key'] = '12345'
+        timing_conf['appenlight.api_key'] = '12345'
         self.client = client.Client(config)
         self.maxDiff = None
 
@@ -588,16 +588,16 @@ class TestMakeMiddleware(unittest.TestCase):
             start_response('200 OK', [('content-type', 'text/html')])
             return ['Hello world!']
 
-        app = make_errormator_middleware(app, {'errormator.api_key': '12345'})
-        self.assertTrue(isinstance(app, ErrormatorWSGIWrapper))
+        app = make_appenlight_middleware(app, {'appenlight.api_key': '12345'})
+        self.assertTrue(isinstance(app, AppenlightWSGIWrapper))
 
     def test_make_middleware_disabled(self):
         def app(environ, start_response):
             start_response('200 OK', [('content-type', 'text/html')])
             return ['Hello world!']
 
-        app = make_errormator_middleware(app, {'errormator': 'false'})
-        self.assertFalse(isinstance(app, ErrormatorWSGIWrapper))
+        app = make_appenlight_middleware(app, {'appenlight': 'false'})
+        self.assertFalse(isinstance(app, AppenlightWSGIWrapper))
 
 
 class TestTimingHTTPLibs(unittest.TestCase):
@@ -1045,9 +1045,9 @@ class WSGITests(unittest.TestCase):
             return ['Hello World!']
 
         req = Request.blank('http://localhost/test')
-        app = make_errormator_middleware(app, global_config=timing_conf)
+        app = make_appenlight_middleware(app, global_config=timing_conf)
         req.get_response(app)
-        self.assertEqual(len(app.errormator_client.slow_report_queue), 0)
+        self.assertEqual(len(app.appenlight_client.slow_report_queue), 0)
 
     def test_error_request(self):
         def app(environ, start_response):
@@ -1056,11 +1056,11 @@ class WSGITests(unittest.TestCase):
             return ['Hello World!']
 
         req = Request.blank('http://localhost/test')
-        app = make_errormator_middleware(app, global_config=timing_conf)
-        app.errormator_client.config['reraise_exceptions'] = False
-        app.errormator_client.last_submit = datetime.datetime.now()
+        app = make_appenlight_middleware(app, global_config=timing_conf)
+        app.appenlight_client.config['reraise_exceptions'] = False
+        app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
-        self.assertEqual(len(app.errormator_client.report_queue), 1)
+        self.assertEqual(len(app.appenlight_client.report_queue), 1)
 
     def test_slow_request(self):
         def app(environ, start_response):
@@ -1069,10 +1069,10 @@ class WSGITests(unittest.TestCase):
             return ['Hello World!']
 
         req = Request.blank('http://localhost/test')
-        app = make_errormator_middleware(app, global_config=timing_conf)
-        app.errormator_client.last_submit = datetime.datetime.now()
+        app = make_appenlight_middleware(app, global_config=timing_conf)
+        app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
-        self.assertEqual(len(app.errormator_client.slow_report_queue), 1)
+        self.assertEqual(len(app.appenlight_client.slow_report_queue), 1)
 
     def test_logging_request(self):
         def app(environ, start_response):
@@ -1082,10 +1082,10 @@ class WSGITests(unittest.TestCase):
             return ['Hello World!']
 
         req = Request.blank('http://localhost/test')
-        app = make_errormator_middleware(app, global_config=timing_conf)
-        app.errormator_client.last_submit = datetime.datetime.now()
+        app = make_appenlight_middleware(app, global_config=timing_conf)
+        app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
-        self.assertGreaterEqual(len(app.errormator_client.log_queue), 2)
+        self.assertGreaterEqual(len(app.appenlight_client.log_queue), 2)
 
     def test_timing_request(self):
         def app(environ, start_response):
@@ -1104,7 +1104,7 @@ class WSGITests(unittest.TestCase):
             return ['Hello World!']
 
         req = Request.blank('http://localhost/test')
-        app = make_errormator_middleware(app, global_config=timing_conf)
+        app = make_appenlight_middleware(app, global_config=timing_conf)
         req.get_response(app)
         stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertGreater(stats['main'], 0)

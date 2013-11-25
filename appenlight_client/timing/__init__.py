@@ -1,5 +1,5 @@
 from decorator import decorator
-from errormator_client.utils import import_module, import_from_module
+from appenlight_client.utils import import_module, import_from_module
 import logging
 import inspect
 import datetime
@@ -17,7 +17,7 @@ from operator import itemgetter
 default_timer = time.time
 
 
-class ErrormatorLocalStorage(object):
+class AppenlightLocalStorage(object):
     def __init__(self):
         self.clear()
 
@@ -77,9 +77,9 @@ log = logging.getLogger(__name__)
 
 
 def get_local_storage(local_timing):
-    if not hasattr(local_timing, '_errormator_storage'):
-        local_timing._errormator_storage = ErrormatorLocalStorage()
-    return local_timing._errormator_storage
+    if not hasattr(local_timing, '_appenlight_storage'):
+        local_timing._appenlight_storage = AppenlightLocalStorage()
+    return local_timing._appenlight_storage
 
 
 def _e_trace(info_gatherer, min_duration, e_callable, *args, **kw):
@@ -91,8 +91,8 @@ def _e_trace(info_gatherer, min_duration, e_callable, *args, **kw):
             'end': end,
             'min_duration': min_duration}
     info.update(info_gatherer(*args, **kw))
-    errormator_storage = get_local_storage(local_timing)
-    errormator_storage.slow_calls.append(info)
+    appenlight_storage = get_local_storage(local_timing)
+    appenlight_storage.slow_calls.append(info)
     return result
 
 
@@ -100,23 +100,23 @@ def trace_factory(info_gatherer, min_duration, is_template=False):
     """ Used to auto decorate callables in deco_func_or_method for other 
         non dbapi2 modules """
 
-    def _e_trace(func_errormator, *args, **kw):
+    def _e_trace(func_appenlight, *args, **kw):
         start = default_timer()
-        result = func_errormator(*args, **kw)
+        result = func_appenlight(*args, **kw)
         end = default_timer()
         info = {'start': start,
                 'end': end,
                 'min_duration': min_duration}
         info.update(info_gatherer(*args, **kw))
-        errormator_storage = get_local_storage(local_timing)
-        errormator_storage.slow_calls.append(info)
+        appenlight_storage = get_local_storage(local_timing)
+        appenlight_storage.slow_calls.append(info)
         return result
 
     return _e_trace
 
 
-def time_trace(func_errormator, gatherer, min_duration, is_template=False):
-    deco = decorator(trace_factory(gatherer, min_duration), func_errormator)
+def time_trace(func_appenlight, gatherer, min_duration, is_template=False):
+    deco = decorator(trace_factory(gatherer, min_duration), func_appenlight)
     deco._e_attached_tracer = True
     if is_template:
         deco._e_is_template = True
@@ -135,7 +135,7 @@ def register_timing(config):
         if min_time is not False:
             log.debug('%s slow time:%s' % (mod, min_time or 'default'))
             e_callable = import_from_module(
-                'errormator_client.timing.%s:add_timing' % mod)
+                'appenlight_client.timing.%s:add_timing' % mod)
             if e_callable:
                 if min_time:
                     e_callable(min_time)
@@ -147,7 +147,7 @@ def register_timing(config):
     db_modules = ['pg8000', 'psycopg2', 'MySQLdb', 'sqlite3', 'oursql',
                   'pyodbc', 'pypyodbc',
                   'cx_Oracle', 'kinterbasdb', 'postgresql', 'pymysql']
-    import errormator_client.timing.timing_dbapi2 as dbapi2
+    import appenlight_client.timing.timing_dbapi2 as dbapi2
 
     for mod in db_modules:
         min_time = config['timing'].get('dbapi2_%s' % mod.lower())

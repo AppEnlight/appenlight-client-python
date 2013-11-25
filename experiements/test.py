@@ -3,21 +3,21 @@ import logging
 import socket
 import pkg_resources
 import time
-from errormator_client import client, make_errormator_middleware
-from errormator_client.exceptions import get_current_traceback
-from errormator_client.logger import register_logging
-from errormator_client.wsgi import ErrormatorWSGIWrapper
+from appenlight_client import client, make_appenlight_middleware
+from appenlight_client.exceptions import get_current_traceback
+from appenlight_client.logger import register_logging
+from appenlight_client.wsgi import AppenlightWSGIWrapper
 
 
-fname = pkg_resources.resource_filename('errormator_client',
+fname = pkg_resources.resource_filename('appenlight_client',
                                         'templates/default_template.ini')
 timing_conf = client.get_config(path_to_config=fname)
 for k, v in timing_conf.iteritems():
-    if 'errormator.timing' in k:
+    if 'appenlight.timing' in k:
         timing_conf[k] = 0.00000001
 
 client.Client(config=timing_conf)
-from errormator_client.timing import local_timing, get_local_storage
+from appenlight_client.timing import local_timing, get_local_storage
 
 import timeit
 import jinja2

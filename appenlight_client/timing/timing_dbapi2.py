@@ -1,5 +1,5 @@
-from errormator_client.utils import import_module
-from errormator_client.timing import _e_trace
+from appenlight_client.utils import import_module
+from appenlight_client.timing import _e_trace
 
 import logging
 

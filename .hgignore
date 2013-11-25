@@ -18,6 +18,6 @@ syntax: regexp
 syntax: regexp
 ^\.coverage$
 syntax: regexp
-^errormator_client/\.coverage$
+^appenlight_client/\.coverage$
 syntax: regexp
 ^build$

@@ -1,2 +1,2 @@
 include *.txt *.ini *.cfg *.rst
-recursive-include errormator_client *.txt *.ini *.cfg *.rst
+recursive-include appenlight_client *.txt *.ini *.cfg *.rst

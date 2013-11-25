@@ -2,7 +2,7 @@ __version__ = '0.5.15'
 __protocol_version__ = '0.3.7'
 
 
-class ErrormatorException(Exception):
+class AppenlightException(Exception):
     @property
     def message(self):
         return self._message
@@ -15,4 +15,4 @@ class ErrormatorException(Exception):
         return repr(self.args)
 
 
-from errormator_client.client import make_errormator_middleware
+from appenlight_client.client import make_appenlight_middleware

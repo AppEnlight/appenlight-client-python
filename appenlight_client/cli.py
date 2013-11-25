@@ -2,7 +2,7 @@ from __future__ import with_statement
 import os
 import pkg_resources
 import sys
-from errormator_client import client
+from appenlight_client import client
 import logging
 
 logging.basicConfig()
@@ -31,14 +31,14 @@ class CommandRouter(object):
                 print '\nFile %s already exists' % ini_path
             else:
                 ini_str = pkg_resources.resource_string(
-                    'errormator_client',
+                    'appenlight_client',
                     'templates/default_template.ini')
                 with open(ini_path, 'w') as f:
                     if client.PY3:
                         f.write(ini_str.decode('utf8'))
                     else:
                         f.write(ini_str)
-                print '\nCreated new errormator client config: %s' % ini_path
+                print '\nCreated new appenlight client config: %s' % ini_path
                 print 'REMEMBER TO UPDATE YOUR API KEY IN INI FILE'
 
         print "\n\nFinished"
@@ -49,13 +49,13 @@ class CommandRouter(object):
         ini_path = os.path.join(cwd, ini_name)
         config = client.get_config(path_to_config=ini_path)
         print 'INI file read - creating client'
-        errormator_client = client.Client(config)
+        appenlight_client = client.Client(config)
         print 'Client created, sending test entry'
-        record = logging.makeLogRecord({'name': 'errormator.client.test',
+        record = logging.makeLogRecord({'name': 'appenlight.client.test',
                                         'message': 'Test entry'})
 
-        errormator_client.py_log({}, [record])
-        result = errormator_client.submit_data()
+        appenlight_client.py_log({}, [record])
+        result = appenlight_client.submit_data()
         if not result['logs']:
             print 'something went wrong, please check your API key'
             return False
@@ -67,13 +67,13 @@ class CommandRouter(object):
     def pserve(self, *args, **kwargs):
         argv = sys.argv
         quiet = False
-        ini_path = os.environ.get('ERRORMATOR_INI')
+        ini_path = os.environ.get('APPENLIGHT_INI')
         config = {}
         if not ini_path:
-            print "ERRORMATOR_INI variable is missing from environment/run cmd"
+            print "APPENLIGHT_INI variable is missing from environment/run cmd"
         else:
             config = client.get_config(path_to_config=ini_path)
-        if not config.get('errormator'):
+        if not config.get('appenlight'):
             print 'WARNING Could not instantiate the client properly'
         else:
             client.Client(config)
@@ -88,11 +88,11 @@ def cli_start():
     if len(args) < 2:
         print """
     Possible commands
-    makeini [ERRORMATOR_INI_NAME] - creates new config file for errormator
+    makeini [APPENLIGHT_INI_NAME] - creates new config file for appenlight
 
-    testini [ERRORMATOR_INI_NAME] - sends a test log entry to test your API key
+    testini [APPENLIGHT_INI_NAME] - sends a test log entry to test your API key
 
-    pserve  [APP_CONFIG.ini]      - ensures errormator client decorates all
+    pserve  [APP_CONFIG.ini]      - ensures appenlight client decorates all
                                     libs before pyramid's pserve command is
                                     executed, use instead normal pserve command
         """

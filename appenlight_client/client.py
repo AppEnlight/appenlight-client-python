@@ -40,10 +40,10 @@ import uuid
 import os
 import decorator
 
-from errormator_client import __version__, __protocol_version__
-from errormator_client.ext_json import json
-from errormator_client.utils import asbool, aslist
-from errormator_client.timing import local_timing, get_local_storage
+from appenlight_client import __version__, __protocol_version__
+from appenlight_client.ext_json import json
+from appenlight_client.utils import asbool, aslist
+from appenlight_client.timing import local_timing, get_local_storage
 from webob import Request
 
 if PY3:
@@ -72,83 +72,83 @@ class Client(object):
         """
         at minimum client expects following keys to be present::
 
-            errormator = true
-            errormator.server_url = https://api.errormator.com
-            errormator.api_key = YOUR_API_KEY
+            appenlight = true
+            appenlight.server_url = https://api.appenlight.com
+            appenlight.api_key = YOUR_API_KEY
 
         """
         self.config = {}
         # general options
-        self.config['enabled'] = asbool(config.get('errormator', True))
-        self.config['server_name'] = config.get('errormator.server_name') \
+        self.config['enabled'] = asbool(config.get('appenlight', True))
+        self.config['server_name'] = config.get('appenlight.server_name') \
             or socket.getfqdn()
         if PY3:
             default_client = 'python3'
         else:
             default_client = 'python'
-        self.config['client'] = config.get('errormator.client', default_client)
-        self.config['api_key'] = config.get('errormator.api_key')
+        self.config['client'] = config.get('appenlight.client', default_client)
+        self.config['api_key'] = config.get('appenlight.api_key')
         if not self.config['api_key']:
             self.config['enabled'] = False
-            logging.warning("Disabling errormator client, no api key")
+            logging.warning("Disabling appenlight client, no api key")
 
-        self.config['server_url'] = config.get('errormator.server_url',
-                                               'https://api.errormator.com')
-        self.config['timeout'] = int(config.get('errormator.timeout', 10))
+        self.config['server_url'] = config.get('appenlight.server_url',
+                                               'https://api.appenlight.com')
+        self.config['timeout'] = int(config.get('appenlight.timeout', 10))
         self.config['reraise_exceptions'] = asbool(
-            config.get('errormator.reraise_exceptions', True))
+            config.get('appenlight.reraise_exceptions', True))
         self.config['slow_requests'] = asbool(
-            config.get('errormator.slow_requests', True))
+            config.get('appenlight.slow_requests', True))
         self.config['slow_request_time'] = float(
-            config.get('errormator.slow_request_time', 1))
+            config.get('appenlight.slow_request_time', 1))
         if self.config['slow_request_time'] < 0.01:
             self.config['slow_request_time'] = 0.01
         self.config['slow_request_time'] = datetime.timedelta(
             seconds=self.config['slow_request_time'])
-        self.config['logging'] = asbool(config.get('errormator.logging', True))
+        self.config['logging'] = asbool(config.get('appenlight.logging', True))
         self.config['logging_on_error'] = asbool(
-            config.get('errormator.logging_on_error', False))
-        self.config['report_404'] = asbool(config.get('errormator.report_404',
+            config.get('appenlight.logging_on_error', False))
+        self.config['report_404'] = asbool(config.get('appenlight.report_404',
                                                       False))
         self.config['report_local_vars'] = asbool(
-            config.get('errormator.report_local_vars', False))
+            config.get('appenlight.report_local_vars', False))
         self.config['report_errors'] = asbool(
-            config.get('errormator.report_errors', True))
+            config.get('appenlight.report_errors', True))
         self.config['buffer_flush_interval'] = int(
-            config.get('errormator.buffer_flush_interval', 5))
-        self.config['force_send'] = asbool(config.get('errormator.force_send',
+            config.get('appenlight.buffer_flush_interval', 5))
+        self.config['force_send'] = asbool(config.get('appenlight.force_send',
                                                       False))
         self.config['request_keys_blacklist'] = ['password', 'passwd', 'pwd',
                                                  'auth_tkt', 'secret', 'csrf',
                                                  'session', 'pass', 'config',
                                                  'settings', 'environ', 'xsrf',
                                                  'auth']
-        req_blacklist = aslist(config.get('errormator.request_keys_blacklist',
+        req_blacklist = aslist(config.get('appenlight.request_keys_blacklist',
                                            config.get(
-                                               'errormator.bad_request_keys')),
+                                               'appenlight.bad_request_keys')),
                                 ',')
         self.config['request_keys_blacklist'].extend(
             filter(lambda x: x, req_blacklist)
         )
-        if config.get('errormator.bad_request_keys'):
-            log.warning('errormator.bad_request_keys is deprecated use '
+        if config.get('appenlight.bad_request_keys'):
+            log.warning('appenlight.bad_request_keys is deprecated use '
                         'request_keys_blacklist')  # pragma: nocover
 
         self.config['environ_keys_whitelist'] = [
             'REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME', 'CONTENT_TYPE',
             'HTTP_REFERER']
         environ_whitelist = aslist(
-            config.get('errormator.environ_keys_whitelist'), ',')
+            config.get('appenlight.environ_keys_whitelist'), ',')
         self.config['environ_keys_whitelist'].extend(
             filter(lambda x: x, environ_whitelist))
-        self.config['log_namespace_blacklist'] = ['errormator_client.client']
+        self.config['log_namespace_blacklist'] = ['appenlight_client.client']
 
         log_blacklist = aslist(
-            config.get('errormator.log_namespace_blacklist'), ',')
+            config.get('appenlight.log_namespace_blacklist'), ',')
         self.config['log_namespace_blacklist'].extend(filter(
             lambda x: x, log_blacklist))
 
-        self.filter_callable = config.get('errormator.filter_callable')
+        self.filter_callable = config.get('appenlight.filter_callable')
         if self.filter_callable:
             try:
                 parts = self.filter_callable.split(':')
@@ -167,25 +167,25 @@ class Client(object):
         self.config['buffer_flush_interval'] = datetime.timedelta(
             seconds=self.config['buffer_flush_interval'])
         # register logging
-        import errormator_client.logger
+        import appenlight_client.logger
         if self.config['logging'] and self.config['enabled']:
-            self.log_handler = errormator_client.logger.register_logging()
-            level = LEVELS.get(config.get('errormator.logging.level',
+            self.log_handler = appenlight_client.logger.register_logging()
+            level = LEVELS.get(config.get('appenlight.logging.level',
                                           'WARNING').lower(), logging.WARNING)
             self.log_handler.setLevel(level)
 
         # register slow call metrics
         if self.config['slow_requests'] and self.config['enabled']:
-            self.config['timing'] = config.get('errormator.timing', {})
+            self.config['timing'] = config.get('appenlight.timing', {})
             for k, v in config.items():
-                if k.startswith('errormator.timing'):
+                if k.startswith('appenlight.timing'):
                     try:
                         self.config['timing'][k[18:]] = float(v)
                     except (TypeError, ValueError) as e:
                         self.config['timing'][k[18:]] = False
-            import errormator_client.timing
+            import appenlight_client.timing
 
-            errormator_client.timing.register_timing(self.config)
+            appenlight_client.timing.register_timing(self.config)
 
         self.endpoints = {
             "reports": '/api/reports',
@@ -273,14 +273,14 @@ class Client(object):
         server_url = '%s%s?%s' % (self.config['server_url'], endpoint,
                                   GET_vars,)
         headers = {'content-type': 'application/json',
-                   'x-errormator-api-key': self.config['api_key']}
+                   'x-appenlight-api-key': self.config['api_key']}
         log.info('sending out %s entries to %s' % (len(data), endpoint,))
         try:
             req = urllib2.Request(server_url,
                                   json.dumps(data).encode('utf8'),
                                   headers=headers)
         except IOError as e:
-            message = 'ERRORMATOR: problem: %s' % e
+            message = 'APPENLIGHT: problem: %s' % e
             log.error(message)
             return False
         try:
@@ -292,7 +292,7 @@ class Client(object):
             conn.close()
             return True
         if conn.getcode() != 200:
-            message = 'ERRORMATOR: response code: %s' % conn.getcode()
+            message = 'APPENLIGHT: response code: %s' % conn.getcode()
             log.error(message)
 
     def data_filter(self, structure, section=None):
@@ -335,7 +335,7 @@ class Client(object):
                   start_time=None, request_stats=None):
         if not request_stats:
             request_stats = {}
-        report_data, errormator_info = self.create_report_structure(
+        report_data, appenlight_info = self.create_report_structure(
             environ,
             traceback,
             server=
@@ -368,7 +368,7 @@ class Client(object):
             records = self.log_handler.get_records()
             self.log_handler.clear_records()
 
-        if not environ.get('errormator.force_logs') and \
+        if not environ.get('appenlight.force_logs') and \
                 (self.config['logging_on_error'] and traceback is None):
             return False
 
@@ -407,7 +407,7 @@ class Client(object):
                        request_stats=None):
         if not request_stats:
             request_stats = {}
-        report_data, errormator_info = self.create_report_structure(
+        report_data, appenlight_info = self.create_report_structure(
             environ,
             server=
             self.config['server_name'],
@@ -421,7 +421,7 @@ class Client(object):
         for record in records:
             # we don't need that and json will barf anyways
             # but operate on copy
-            r = dict(getattr(record, 'errormator_data', record))
+            r = dict(getattr(record, 'appenlight_data', record))
             del r['ignore_in']
             del r['parents']
             report_data['report_details'][0]['slow_calls'].append(r)
@@ -449,15 +449,15 @@ class Client(object):
     def process_environ(self, environ, traceback=None, include_params=False, http_status=200):
         # form friendly to json encode
         parsed_environ = {}
-        errormator_info = {}
+        appenlight_info = {}
         req = Request(environ)
         for key, value in req.environ.items():
-            if key.startswith('errormator.') \
-                and key not in ('errormator.client', 'errormator.force_send',
-                                'errormator.log', 'errormator.report',
-                                'errormator.force_logs',
-                                'errormator.post_vars'):
-                errormator_info[key[11:]] = unicode(value)
+            if key.startswith('appenlight.') \
+                and key not in ('appenlight.client', 'appenlight.force_send',
+                                'appenlight.log', 'appenlight.report',
+                                'appenlight.force_logs',
+                                'appenlight.post_vars'):
+                appenlight_info[key[11:]] = unicode(value)
             else:
                 whitelisted = key.startswith('HTTP') or key in self.config[
                     'environ_keys_whitelist']
@@ -489,7 +489,7 @@ class Client(object):
                 parsed_environ['GET'] = {}
             try:
                 # handle werkzeug and django
-                wz_post_vars = req.environ.get('errormator.post_vars', None)
+                wz_post_vars = req.environ.get('appenlight.post_vars', None)
                 if wz_post_vars is not None:
                     parsed_environ['POST'] = dict(wz_post_vars)
                 else:
@@ -509,21 +509,21 @@ class Client(object):
         parsed_environ['HTTP_USER_AGENT'] = environ.get("HTTP_USER_AGENT", '')
         parsed_environ['REMOTE_ADDR'] = remote_addr
         try:
-            errormator_info['username'] = u'%s' % environ.get(
+            appenlight_info['username'] = u'%s' % environ.get(
                 'REMOTE_USER',
-                errormator_info.get('username', u''))
+                appenlight_info.get('username', u''))
         except (UnicodeEncodeError, UnicodeDecodeError) as exc:
-            errormator_info['username'] = "undecodable"
+            appenlight_info['username'] = "undecodable"
         try:
-            errormator_info['URL'] = req.url
+            appenlight_info['URL'] = req.url
         except (UnicodeEncodeError, UnicodeDecodeError) as exc:
-            errormator_info['URL'] = '/invalid-encoded-url'
-        return parsed_environ, errormator_info
+            appenlight_info['URL'] = '/invalid-encoded-url'
+        return parsed_environ, appenlight_info
 
     def create_report_structure(self, environ, traceback=None, message=None,
                                 http_status=200, server='unknown server',
                                 include_params=False):
-        (parsed_environ, errormator_info) = self.process_environ(
+        (parsed_environ, appenlight_info) = self.process_environ(
             environ,
             traceback,
             include_params,
@@ -535,7 +535,7 @@ class Client(object):
             exception_text = traceback.exception
             report_data['error_type'] = exception_text
             local_vars = (self.config['report_local_vars'] or
-                          environ.get('errormator.report_local_vars'))
+                          environ.get('appenlight.report_local_vars'))
             detail_entry['frameinfo'] = traceback.frameinfo(
                 include_vars=local_vars)
 
@@ -549,30 +549,34 @@ class Client(object):
         # fill in all other required info
         detail_entry['ip'] = parsed_environ.get('REMOTE_ADDR', u'')
         detail_entry['user_agent'] = parsed_environ['HTTP_USER_AGENT']
-        detail_entry['username'] = errormator_info.pop('username')
-        detail_entry['url'] = errormator_info.pop('URL', 'unknown')
-        if 'request_id' in errormator_info:
-            detail_entry['request_id'] = errormator_info.pop('request_id',
+        detail_entry['username'] = appenlight_info.pop('username')
+        detail_entry['url'] = appenlight_info.pop('URL', 'unknown')
+        if 'request_id' in appenlight_info:
+            detail_entry['request_id'] = appenlight_info.pop('request_id',
                                                              None)
-        detail_entry['message'] = message or errormator_info.get('message',
+        detail_entry['message'] = message or appenlight_info.get('message',
                                                                  u'')
         # conserve bandwidth pop keys that we dont need in request details
         exclude_keys = ('HTTP_USER_AGENT', 'REMOTE_ADDR', 'HTTP_COOKIE',
-                        'errormator.client')
+                        'appenlight.client')
         for k in exclude_keys:
             detail_entry['request'].pop(k, None)
         report_data['report_details'].append(detail_entry)
-        report_data.update(errormator_info)
+        report_data.update(appenlight_info)
         del traceback
-        return report_data, errormator_info
+        return report_data, appenlight_info
 
 
-def get_config(config=None, path_to_config=None, section_name='errormator'):
+def get_config(config=None, path_to_config=None, section_name='appenlight'):
     if not config and not path_to_config:
-        path_to_config = os.environ.get('ERRORMATOR_INI')
+        path_to_config = os.environ.get('APPENLIGHT_INI')
+        if not path_to_config:
+            path_to_config = os.environ.get('ERRORMATOR_INI')
     if config is None:
         config = {}
-    api_key = os.environ.get('ERRORMATOR_KEY')
+    api_key = os.environ.get('APPENLIGHT_KEY')
+    if not api_key:
+        api_key = os.environ.get('ERRORMATOR_KEY')
     if path_to_config:
         config = {}
         if not os.path.exists(path_to_config):
@@ -586,53 +590,58 @@ def get_config(config=None, path_to_config=None, section_name='errormator'):
             except ConfigParser.NoSectionError as exc:
                 logging.warning('No section name called %s in file' % section_name)
             if not config.get('api_key') and api_key:
-                config['errormator.api_key'] = api_key
+                config['appenlight.api_key'] = api_key
     if config is not None and not config.get('api_key') and api_key:
-        config['errormator.api_key'] = api_key
-    if not config.get('errormator.api_key'):
-        logging.warning("errormator.api_key is missing from the config, something went wrong."
-                        "hint: ERRORMATOR_INI/ERRORMATOR_KEY config variable is missing from environment "
+        config['appenlight.api_key'] = api_key
+    if not config.get('appenlight.api_key'):
+        logging.warning("appenlight.api_key is missing from the config, something went wrong."
+                        "hint: APPENLIGHT_INI/APPENLIGHT_KEY config variable is missing from environment "
                         "or api key was not passed in app global config")
     return config or {}
 
 
 def decorate(ini_file=None, register_timing=True):
-    def make_errormator_middleware(app, global_config=None, **kw):
+    def make_appenlight_middleware(app, global_config=None, **kw):
         if not global_config:
             global_config = {}
         config = global_config.copy()
         config.update(kw)
-        # this shuts down all errormator functionalities
-        if not asbool(config.get('errormator', True)):
+        # this shuts down all appenlight functionalities
+        if not asbool(config.get('appenlight', True)):
             return app
-        logging.critical('ERRORMATOR MIDDLEWARE')
-        ini_path = os.environ.get('ERRORMATOR_INI',
+        logging.critical('APPENLIGHT MIDDLEWARE')
+        ini_path = os.environ.get('APPENLIGHT_INI',
+                                  config.get('appenlight.config_path',
+                                             ini_file))
+        if not ini_path:
+            ini_path = os.environ.get('ERRORMATOR_INI',
                                   config.get('errormator.config_path',
                                              ini_file))
-
         config = get_config(config=config, path_to_config=ini_path)
         client = Client(config)
-        from errormator_client.wsgi import ErrormatorWSGIWrapper
-        app = ErrormatorWSGIWrapper(app, client)
+        from appenlight_client.wsgi import AppenlightWSGIWrapper
+        app = AppenlightWSGIWrapper(app, client)
         return app
 
     def foo(f):
-        return decorator.decorator(make_errormator_middleware, f)
+        return decorator.decorator(make_appenlight_middleware, f)
 
     return foo
 
 
 # TODO: refactor this to share the code
-def make_errormator_middleware(app, global_config=None, **kw):
+def make_appenlight_middleware(app, global_config=None, **kw):
     if global_config:
         config = global_config.copy()
     else:
         config = {}
     config.update(kw)
-    ini_path = os.environ.get('ERRORMATOR_INI', config.get('errormator.config_path'))
+    ini_path = os.environ.get('APPENLIGHT_INI', config.get('appenlight.config_path'))
+    if not ini_path:
+        ini_path = os.environ.get('ERRORMATOR_INI', config.get('errormator.config_path'))
     config = get_config(config=config, path_to_config=ini_path)
     client = Client(config)
-    from errormator_client.wsgi import ErrormatorWSGIWrapper
+    from appenlight_client.wsgi import AppenlightWSGIWrapper
     if client.config['enabled']:
-        app = ErrormatorWSGIWrapper(app, client)
+        app = AppenlightWSGIWrapper(app, client)
     return app

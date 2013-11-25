@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 
-setup(name='errormator_client',
+setup(name='appenlight_client',
       version='0.5.15',
-      description='Client for Errormator reporting - supporting WSGI and django (http://errormator.com)',
+      description='Client for Appenlight reporting - supporting WSGI and django (http://appenlight.com)',
       classifiers=[
           'Intended Audience :: Developers',
           'License :: DFSG approved',
@@ -24,7 +24,7 @@ setup(name='errormator_client',
       include_package_data=True,
       package_data={
           '': ['*.txt', '*.rst', '*.ini'],
-          'errormator_client': ['templates/*.ini'],
+          'appenlight_client': ['templates/*.ini'],
       },
       install_requires=[
           "webob",
@@ -32,12 +32,12 @@ setup(name='errormator_client',
       ],
       entry_points="""
       [paste.filter_app_factory]
-      main = errormator_client.client:make_errormator_middleware
-      errormator = errormator_client.client:make_errormator_middleware
+      main = appenlight_client.client:make_appenlight_middleware
+      appenlight = appenlight_client.client:make_appenlight_middleware
       [console_scripts]
-      errormator_client = errormator_client.cli:cli_start
+      appenlight_client = appenlight_client.cli:cli_start
       """,
-      test_suite='errormator_client.tests',
+      test_suite='appenlight_client.tests',
       use_2to3=True,
       se_2to3_exclude_fixers=['lib2to3.fixes.next', 'lib2to3.fixes.fix_import']
 )
