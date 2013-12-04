@@ -39,9 +39,9 @@ class AppenlightMiddleware(object):
     def process_exception(self, request, exception):
         if (not getattr(self, 'appenlight_client') or not self.appenlight_client.config.get('enabled')):
             return None
-        if not self.appenlight_client.config['report_errors']:
-            return None
         environ = request.environ
+        if not self.appenlight_client.config['report_errors'] or environ.get('errormator.ignore_error'):
+            return None
         user = getattr(request, 'user', None)
         end_time = default_timer()
         if user and user.is_authenticated():
@@ -71,8 +71,8 @@ class AppenlightMiddleware(object):
             return response
         finally:
             environ = request.environ
-            if self.appenlight_client.config.get('enabled') and not request._errormator_create_report:
-                print 'PROCESS RESPONSE'
+            if (self.appenlight_client.config.get('enabled') and not request._errormator_create_report
+                or not environ.get('errormator.ignore_slow')):
                 end_time = default_timer()
                 user = getattr(request, 'user', None)
                 http_status = response.status_code

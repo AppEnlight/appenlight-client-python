@@ -1076,6 +1076,20 @@ class WSGITests(unittest.TestCase):
         req.get_response(app)
         self.assertEqual(len(app.appenlight_client.report_queue), 1)
 
+    def test_ignored_error_request(self):
+        def app(environ, start_response):
+            start_response('200 OK', [('Content-Type', 'text/html')])
+            raise Exception('WTF?')
+            return ['Hello World!']
+
+        req = Request.blank('http://localhost/test')
+        req.environ['errormator.ignore_error'] = 1
+        app = make_appenlight_middleware(app, global_config=timing_conf)
+        app.appenlight_client.config['reraise_exceptions'] = False
+        app.appenlight_client.last_submit = datetime.datetime.now()
+        req.get_response(app)
+        self.assertEqual(len(app.appenlight_client.report_queue), 0)
+
     def test_slow_request(self):
         def app(environ, start_response):
             start_response('200 OK', [('Content-Type', 'text/html')])
@@ -1087,6 +1101,19 @@ class WSGITests(unittest.TestCase):
         app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
         self.assertEqual(len(app.appenlight_client.report_queue), 1)
+
+    def test_ignored_slow_request(self):
+        def app(environ, start_response):
+            start_response('200 OK', [('Content-Type', 'text/html')])
+            time.sleep(1.1)
+            return ['Hello World!']
+
+        req = Request.blank('http://localhost/test')
+        req.environ['errormator.ignore_slow'] = 1
+        app = make_appenlight_middleware(app, global_config=timing_conf)
+        app.appenlight_client.last_submit = datetime.datetime.now()
+        req.get_response(app)
+        self.assertEqual(len(app.appenlight_client.report_queue), 0)
 
     def test_logging_request(self):
         def app(environ, start_response):

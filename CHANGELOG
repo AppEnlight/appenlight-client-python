@@ -4,6 +4,7 @@ CHANGELOG:
 2013-12-??
     0.5.16 Minor bugfixes
            Use 0.4 api - unifiy slow and exception reports into one
+           Add `errormator.ignore_error` and `errormator.ignore_slow` environ keywords
 
 2013-11-16
     0.5.15 Minor bugfixes
