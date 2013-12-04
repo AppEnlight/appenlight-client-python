@@ -308,7 +308,7 @@ class Client(object):
                 filter_dict(source, source.keys)
                 # try to filter local frame vars, to prevent people
                 #  leaking as much data as possible when enabling frameinfo
-        frameinfo = structure['report_details'][0].get('frameinfo')
+        frameinfo = structure['report_details'][0].get('traceback')
         if frameinfo:
             for f in frameinfo:
                 for source in f.get('vars', []):
@@ -513,7 +513,7 @@ class Client(object):
             report_data['error_type'] = exception_text
             local_vars = (self.config['report_local_vars'] or
                           environ.get('appenlight.report_local_vars'))
-            detail_entry['frameinfo'] = traceback.frameinfo(
+            detail_entry['traceback'] = traceback.frameinfo(
                 include_vars=local_vars)
 
         report_data['http_status'] = 500 if traceback else http_status

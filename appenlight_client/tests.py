@@ -90,7 +90,7 @@ PARSED_REPORT_404 = {
 
 PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
                      # this will be different everywhere
-                     'report_details': [{'frameinfo': [
+                     'report_details': [{'traceback': [
                          {'cline': u"raise Exception('Test Exception')",
                           'file': 'appenlight_client/tests.py',
                           'fn': 'test_py_report_500_traceback',
@@ -505,7 +505,7 @@ class TestErrorParsing(unittest.TestCase):
         bogus_500_report['http_status'] = 500
         bogus_500_report['error_type'] = 'Unknown'
         del bogus_500_report['traceback']
-        del bogus_500_report['report_details'][0]['frameinfo']
+        del bogus_500_report['report_details'][0]['traceback']
         bogus_500_report['report_details'][0]['request_stats'] = {}
         self.assertDictContainsSubset(bogus_500_report, self.client.report_queue[0])
 
@@ -522,10 +522,10 @@ class TestErrorParsing(unittest.TestCase):
                               end_time=REQ_END_TIME)
         self.client.report_queue[0]['traceback'] = \
             'Traceback (most recent call last):'
-        line_no = self.client.report_queue[0]['report_details'][0]['frameinfo'][0]['line']
+        line_no = self.client.report_queue[0]['report_details'][0]['traceback'][0]['line']
         assert int(line_no) > 0
         # set line number to match as this will change over time
-        PARSED_REPORT_500['report_details'][0]['frameinfo'][0]['line'] = line_no
+        PARSED_REPORT_500['report_details'][0]['traceback'][0]['line'] = line_no
         self.assertDictContainsSubset(PARSED_REPORT_500, self.client.report_queue[0])
 
     def test_frameinfo(self):
@@ -546,7 +546,7 @@ class TestErrorParsing(unittest.TestCase):
         self.client.py_report(TEST_ENVIRON, traceback=traceback,
                               http_status=500)
         assert len(
-            self.client.report_queue[0]['report_details'][0]['frameinfo'][0][
+            self.client.report_queue[0]['report_details'][0]['traceback'][0][
                 'vars']) == 9
 
 
