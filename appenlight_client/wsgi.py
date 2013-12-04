@@ -27,7 +27,9 @@ class AppenlightWSGIWrapper(object):
         appenlight_storage.clear()
         app_iter = None
         detected_data = []
+        create_report = False
         traceback = None
+        http_status = 200
         start_time = default_timer()
 
         def detect_headers(status, headers, *k, **kw):
@@ -77,53 +79,45 @@ class AppenlightWSGIWrapper(object):
             # report slowness
             end_time = default_timer()
             appenlight_storage.thread_stats['main'] = end_time - start_time
+            delta = datetime.timedelta(seconds=(end_time - start_time))
             stats, slow_calls = appenlight_storage.get_thread_stats()
+            if detected_data and detected_data[0]:
+                http_status = int(detected_data[0])
+            if self.appenlight_client.config['slow_requests']:
+                # do we have slow calls/request ?
+                if (delta >= self.appenlight_client.config['slow_request_time'] or slow_calls):
+                    create_report = True
             if 'appenlight.__traceback' in environ:
-                # get traceback gathered by tween
+                # get traceback gathered by pyramid tween
                 traceback = environ['appenlight.__traceback']
                 del environ['appenlight.__traceback']
+                http_status = 500
+                create_report = True
             if traceback and self.appenlight_client.config['report_errors']:
                 http_status = 500
-            elif (self.appenlight_client.config['report_404'] and
-                      detected_data and detected_data[0] == '404'):
-                http_status = int(detected_data[0])
-            else:
-                http_status = None
-            if http_status:
-                self.appenlight_client.py_report(
-                    environ, traceback,
-                    message=None,
-                    http_status=http_status,
-                    start_time=datetime.datetime.utcfromtimestamp(
-                        start_time),
-                    request_stats=stats)
+                create_report = True
+            elif (self.appenlight_client.config['report_404'] and http_status == 404):
+                create_report = True
+            if create_report:
+                self.appenlight_client.py_report(environ, traceback,
+                                                 message=None,
+                                                 http_status=http_status,
+                                                 start_time=datetime.datetime.utcfromtimestamp(start_time),
+                                                 end_time=datetime.datetime.utcfromtimestamp(end_time),
+                                                 request_stats=stats,
+                                                 slow_calls=slow_calls)
                 # dereference
                 del traceback
+                # force log fetching
                 traceback = True
-            delta = datetime.timedelta(seconds=(end_time - start_time))
             self.appenlight_client.save_request_stats(stats)
-            if self.appenlight_client.config['slow_requests']:
-                # do we have slow calls ?
-                if (delta >= self.appenlight_client.config['slow_request_time']
-                    or slow_calls):
-                    self.appenlight_client.py_slow_report(
-                        environ,
-                        datetime.datetime.utcfromtimestamp(start_time),
-                        datetime.datetime.utcfromtimestamp(end_time),
-                        slow_calls,
-                        request_stats=stats)
-                    # force log fetching
-                    traceback = True
             if self.appenlight_client.config['logging']:
                 records = self.appenlight_client.log_handler.get_records()
                 self.appenlight_client.log_handler.clear_records()
-                self.appenlight_client.py_log(
-                    environ,
-                    records=records,
-                    r_uuid=environ[
-                        'appenlight.request_id'],
-                    traceback=traceback)
+                self.appenlight_client.py_log(environ,
+                                              records=records,
+                                              r_uuid=environ['appenlight.request_id'],
+                                              created_report=create_report)
                 # send all data we gathered immediately at the end of request
-            self.appenlight_client.check_if_deliver(
-                self.appenlight_client.config['force_send'] or
-                environ.get('appenlight.force_send'))
+            self.appenlight_client.check_if_deliver(self.appenlight_client.config['force_send'] or
+                                                    environ.get('appenlight.force_send'))

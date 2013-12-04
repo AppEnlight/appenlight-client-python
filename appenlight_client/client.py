@@ -124,9 +124,9 @@ class Client(object):
                                                  'settings', 'environ', 'xsrf',
                                                  'auth']
         req_blacklist = aslist(config.get('appenlight.request_keys_blacklist',
-                                           config.get(
-                                               'appenlight.bad_request_keys')),
-                                ',')
+                                          config.get(
+                                              'appenlight.bad_request_keys')),
+                               ',')
         self.config['request_keys_blacklist'].extend(
             filter(lambda x: x, req_blacklist)
         )
@@ -168,6 +168,7 @@ class Client(object):
             seconds=self.config['buffer_flush_interval'])
         # register logging
         import appenlight_client.logger
+
         if self.config['logging'] and self.config['enabled']:
             self.log_handler = appenlight_client.logger.register_logging()
             level = LEVELS.get(config.get('appenlight.logging.level',
@@ -196,8 +197,6 @@ class Client(object):
 
         self.report_queue = []
         self.report_queue_lock = threading.RLock()
-        self.slow_report_queue = []
-        self.slow_report_queue_lock = threading.RLock()
         self.log_queue = []
         self.log_queue_lock = threading.RLock()
         self.request_stats = {}
@@ -210,20 +209,14 @@ class Client(object):
         self.last_submit = datetime.datetime.utcnow()
         results = {'reports': False,
                    'logs': False,
-                   'slow_reports': False,
                    'request_stats': False}
         with self.report_queue_lock:
             reports = self.report_queue[:250]
             self.report_queue = self.report_queue[250:]
-        with self.slow_report_queue_lock:
-            slow_reports = self.slow_report_queue[:250]
-            self.slow_report_queue = self.slow_report_queue[250:]
         with self.log_queue_lock:
             logs = self.log_queue[:2000]
             self.log_queue = self.log_queue[2000:]
         results['reports'] = self.api_create_submit(reports, 'reports')
-        results['slow_reports'] = self.api_create_submit(slow_reports,
-                                                         'slow_reports')
         results['logs'] = self.api_create_submit(logs, 'logs')
         delta = datetime.datetime.utcnow() - self.last_request_stats_submit
         if delta >= datetime.timedelta(seconds=60):
@@ -332,7 +325,7 @@ class Client(object):
         return structure
 
     def py_report(self, environ, traceback=None, message=None, http_status=200,
-                  start_time=None, request_stats=None):
+                  start_time=None, end_time=None, request_stats=None, slow_calls=None):
         if not request_stats:
             request_stats = {}
         report_data, appenlight_info = self.create_report_structure(
@@ -353,23 +346,36 @@ class Client(object):
             report_data['report_details'][0]['request_stats'] = request_stats
         with self.report_queue_lock:
             self.report_queue.append(report_data)
-        log.warning(u'%s code: %s @%s' % (http_status,
+        if traceback:
+            log.warning(u'%s code: %s @%s' % (http_status,
                                           report_data.get('error_type'),
                                           url,))
-        if traceback:
             log.error(report_data.get('error_type'))
             log.error(traceback.plaintext)
         del traceback
+        report_data['report_details'][0]['start_time'] = start_time
+        report_data['report_details'][0]['end_time'] = end_time
+        report_data['report_details'][0]['request_stats'] = request_stats
+        report_data['report_details'][0]['slow_calls'] = []
+        if slow_calls:
+            for record in slow_calls:
+                # we don't need that and json will barf anyways
+                # but operate on copy
+                r = dict(getattr(record, 'appenlight_data', record))
+                del r['ignore_in']
+                del r['parents']
+                report_data['report_details'][0]['slow_calls'].append(r)
+            log.info('slow request/queries detected: %s' % url)
         return True
 
-    def py_log(self, environ, records=None, r_uuid=None, traceback=None):
+    def py_log(self, environ, records=None, r_uuid=None, created_report=None):
         log_entries = []
         if not records:
             records = self.log_handler.get_records()
             self.log_handler.clear_records()
 
         if not environ.get('appenlight.force_logs') and \
-                (self.config['logging_on_error'] and traceback is None):
+                (self.config['logging_on_error'] and created_report is None):
             return False
 
         for record in records:
@@ -403,33 +409,6 @@ class Client(object):
         log.debug('add %s log entries to queue' % len(records))
         return True
 
-    def py_slow_report(self, environ, start_time, end_time, records=(),
-                       request_stats=None):
-        if not request_stats:
-            request_stats = {}
-        report_data, appenlight_info = self.create_report_structure(
-            environ,
-            server=
-            self.config['server_name'],
-            include_params=True)
-        report_data = self.filter_callable(report_data, 'slow_report')
-        url = report_data['report_details'][0]['url']
-        report_data['report_details'][0]['start_time'] = start_time
-        report_data['report_details'][0]['end_time'] = end_time
-        report_data['report_details'][0]['request_stats'] = request_stats
-        report_data['report_details'][0]['slow_calls'] = []
-        for record in records:
-            # we don't need that and json will barf anyways
-            # but operate on copy
-            r = dict(getattr(record, 'appenlight_data', record))
-            del r['ignore_in']
-            del r['parents']
-            report_data['report_details'][0]['slow_calls'].append(r)
-        with self.slow_report_queue_lock:
-            self.slow_report_queue.append(report_data)
-        log.info('slow request/queries detected: %s' % url)
-        return True
-
     def save_request_stats(self, stats):
         with self.request_stats_lock:
             req_time = datetime.datetime.utcnow().replace(second=0,
@@ -453,8 +432,10 @@ class Client(object):
         req = Request(environ)
         for key, value in req.environ.items():
             if key.startswith('appenlight.') \
-                and key not in ('appenlight.client', 'appenlight.force_send',
-                                'appenlight.log', 'appenlight.report',
+                and key not in ('appenlight.client',
+                                'appenlight.force_send',
+                                'appenlight.log',
+                                'appenlight.report',
                                 'appenlight.force_logs',
                                 'appenlight.post_vars'):
                 appenlight_info[key[11:]] = unicode(value)
@@ -501,17 +482,13 @@ class Client(object):
 
         # figure out real ip
         if environ.get("HTTP_X_FORWARDED_FOR"):
-            remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[0] \
-                .strip()
+            remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[0].strip()
         else:
-            remote_addr = (environ.get("HTTP_X_REAL_IP")
-                           or environ.get('REMOTE_ADDR'))
+            remote_addr = (environ.get("HTTP_X_REAL_IP") or environ.get('REMOTE_ADDR'))
         parsed_environ['HTTP_USER_AGENT'] = environ.get("HTTP_USER_AGENT", '')
         parsed_environ['REMOTE_ADDR'] = remote_addr
         try:
-            appenlight_info['username'] = u'%s' % environ.get(
-                'REMOTE_USER',
-                appenlight_info.get('username', u''))
+            appenlight_info['username'] = u'%s' % environ.get('REMOTE_USER', appenlight_info.get('username', u''))
         except (UnicodeEncodeError, UnicodeDecodeError) as exc:
             appenlight_info['username'] = "undecodable"
         try:
@@ -615,11 +592,12 @@ def decorate(ini_file=None, register_timing=True):
                                              ini_file))
         if not ini_path:
             ini_path = os.environ.get('ERRORMATOR_INI',
-                                  config.get('errormator.config_path',
-                                             ini_file))
+                                      config.get('errormator.config_path',
+                                                 ini_file))
         config = get_config(config=config, path_to_config=ini_path)
         client = Client(config)
         from appenlight_client.wsgi import AppenlightWSGIWrapper
+
         app = AppenlightWSGIWrapper(app, client)
         return app
 
@@ -642,6 +620,7 @@ def make_appenlight_middleware(app, global_config=None, **kw):
     config = get_config(config=config, path_to_config=ini_path)
     client = Client(config)
     from appenlight_client.wsgi import AppenlightWSGIWrapper
+
     if client.config['enabled']:
         app = AppenlightWSGIWrapper(app, client)
     return app

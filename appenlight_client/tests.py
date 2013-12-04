@@ -67,15 +67,21 @@ PARSED_REPORT_404 = {
     'report_details': [{'username': u'foo',
                         'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
                         'ip': '127.0.0.1',
+                        'start_time': REQ_START_TIME,
+                        'slow_calls': [],
                         'request': {'COOKIES': {u'country': u'US',
                                                 u'sessionId': u'***',
                                                 u'test_group_id': u'5',
                                                 u'http_referer': u'http://localhost:5000/'},
                                     'POST': {},
                                     'GET': {u'aaa': [u'1'], u'bbb': [u'2']},
-                                    'HTTP_METHOD': 'GET'},
+                                    'HTTP_METHOD': 'GET',
+                                    },
                         'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
-                        'message': u''}],
+                        'message': u'',
+                        'end_time': REQ_END_TIME,
+                        'request_stats': {}
+                       }],
     'error_type': '404 Not Found',
     'server': SERVER_NAME,
     'priority': 5,
@@ -98,6 +104,8 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
                                          'username': u'foo',
                                          'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
                                          'ip': '127.0.0.1',
+                                         'start_time': REQ_START_TIME,
+                                         'slow_calls': [],
                                          'request': {
                                              'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                                              'COOKIES': {u'country': u'US',
@@ -121,6 +129,7 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
                                              'HTTP_METHOD': 'GET'},
                                          'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
                                          'message': u'',
+                                         'end_time': REQ_END_TIME,
                                          'request_stats': {}}],
                      'error_type': u'Exception: Test Exception',
                      'server': SERVER_NAME,
@@ -139,16 +148,16 @@ PARSED_SLOW_REPORT = {
                                                 u'test_group_id': u'5',
                                                 u'http_referer': u'http://localhost:5000/'},
                                     'POST': {},
-                                    'GET': {u'aaa': [u'1'], u'bbb': [u'2'],},
-                                     'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                                     'HTTP_ACCEPT_ENCODING': u'gzip, deflate',
-                                     'HTTP_ACCEPT_LANGUAGE': u'en-us,en;q=0.5',
-                                     'HTTP_CACHE_CONTROL': u'max-age=0',
-                                     'HTTP_HOST': u'localhost:6543',
-                                     'HTTP_METHOD': 'GET',
-                                     'REMOTE_USER': u'foo',
-                                     'SERVER_NAME': u'localhost',
-                                    },
+                                    'GET': {u'aaa': [u'1'], u'bbb': [u'2'], },
+                                    'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                    'HTTP_ACCEPT_ENCODING': u'gzip, deflate',
+                                    'HTTP_ACCEPT_LANGUAGE': u'en-us,en;q=0.5',
+                                    'HTTP_CACHE_CONTROL': u'max-age=0',
+                                    'HTTP_HOST': u'localhost:6543',
+                                    'HTTP_METHOD': 'GET',
+                                    'REMOTE_USER': u'foo',
+                                    'SERVER_NAME': u'localhost',
+                        },
                         'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
                         'message': u'',
                         'end_time': REQ_END_TIME,
@@ -403,7 +412,7 @@ class TestClientConfig(unittest.TestCase):
 
     def test_custom_logging_handler_level(self):
         config = {'appenlight.logging.level': "CRITICAL",
-                  'appenlight.api_key':'12345'}
+                  'appenlight.api_key': '12345'}
         self.setUpClient(config)
         self.assertEqual(self.client.log_handler.level, logging.CRITICAL)
 
@@ -413,21 +422,21 @@ class TestClientConfig(unittest.TestCase):
 
     def test_timing_config_disable(self):
         config = {'appenlight.timing.dbapi2_psycopg2': 'false',
-                  'appenlight.api_key':'12345'}
+                  'appenlight.api_key': '12345'}
         self.setUpClient(config)
         self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'],
                          False)
 
     def test_timing_config_custom(self):
         config = {'appenlight.timing.dbapi2_psycopg2': '5',
-                  'appenlight.api_key':'12345'}
+                  'appenlight.api_key': '12345'}
         self.setUpClient(config)
         self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'], 5)
 
     def test_timing_config_mixed(self):
         config = {'appenlight.timing.dbapi2_psycopg2': '5',
                   'appenlight.timing': {'urllib': 11, 'dbapi2_oursql': 6},
-                  'appenlight.api_key':'12345'
+                  'appenlight.api_key': '12345'
         }
         self.setUpClient(config)
         self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'], 5)
@@ -484,18 +493,20 @@ class TestErrorParsing(unittest.TestCase):
 
     def test_py_report_404(self):
         self.setUpClient()
-        self.client.py_report(TEST_ENVIRON, http_status=404)
+        self.client.py_report(TEST_ENVIRON, http_status=404, start_time=REQ_START_TIME, end_time=REQ_END_TIME)
         self.assertDictContainsSubset(PARSED_REPORT_404, self.client.report_queue[0])
 
     def test_py_report_500_no_traceback(self):
         self.setUpClient()
-        self.client.py_report(TEST_ENVIRON, http_status=500)
+        self.client.py_report(TEST_ENVIRON, http_status=500,
+                              start_time=REQ_START_TIME,
+                              end_time=REQ_END_TIME)
         bogus_500_report = copy.deepcopy(PARSED_REPORT_500)
         bogus_500_report['http_status'] = 500
         bogus_500_report['error_type'] = 'Unknown'
         del bogus_500_report['traceback']
         del bogus_500_report['report_details'][0]['frameinfo']
-        del bogus_500_report['report_details'][0]['request_stats']
+        bogus_500_report['report_details'][0]['request_stats'] = {}
         self.assertDictContainsSubset(bogus_500_report, self.client.report_queue[0])
 
     def test_py_report_500_traceback(self):
@@ -506,7 +517,9 @@ class TestErrorParsing(unittest.TestCase):
             traceback = get_current_traceback(skip=1, show_hidden_frames=True,
                                               ignore_system_exceptions=True)
         self.client.py_report(TEST_ENVIRON, traceback=traceback,
-                              http_status=500)
+                              http_status=500,
+                              start_time=REQ_START_TIME,
+                              end_time=REQ_END_TIME)
         self.client.report_queue[0]['traceback'] = \
             'Traceback (most recent call last):'
         line_no = self.client.report_queue[0]['report_details'][0]['frameinfo'][0]['line']
@@ -540,6 +553,7 @@ class TestErrorParsing(unittest.TestCase):
 class TestLogs(unittest.TestCase):
     def setUpClient(self, config={}):
         timing_conf['appenlight.api_key'] = '12345'
+        config = {'appenlight.api_key': '12345'}
         self.client = client.Client(config)
         self.maxDiff = None
 
@@ -564,8 +578,8 @@ class TestLogs(unittest.TestCase):
         self.setUpClient()
         handler = register_logging()
         self.client.py_report(TEST_ENVIRON, http_status=500)
-        self.client.py_slow_report(TEST_ENVIRON, start_time=REQ_START_TIME,
-                                   end_time=REQ_END_TIME)
+        self.client.py_report(TEST_ENVIRON, start_time=REQ_START_TIME,
+                              end_time=REQ_END_TIME)
         self.client.py_log(TEST_ENVIRON, records=handler.get_records())
         self.assertEqual(len(self.client.log_queue), 0)
 
@@ -577,9 +591,9 @@ class TestSlowReportParsing(unittest.TestCase):
     def test_py_report_slow(self):
         self.setUpClient()
         self.maxDiff = None
-        self.client.py_slow_report(TEST_ENVIRON, start_time=REQ_START_TIME,
-                                   end_time=REQ_END_TIME)
-        self.assertDictContainsSubset(PARSED_SLOW_REPORT, self.client.slow_report_queue[0])
+        self.client.py_report(TEST_ENVIRON, start_time=REQ_START_TIME,
+                              end_time=REQ_END_TIME)
+        self.assertDictContainsSubset(PARSED_SLOW_REPORT, self.client.report_queue[0])
 
 
 class TestMakeMiddleware(unittest.TestCase):
@@ -1047,7 +1061,7 @@ class WSGITests(unittest.TestCase):
         req = Request.blank('http://localhost/test')
         app = make_appenlight_middleware(app, global_config=timing_conf)
         req.get_response(app)
-        self.assertEqual(len(app.appenlight_client.slow_report_queue), 0)
+        self.assertEqual(len(app.appenlight_client.report_queue), 0)
 
     def test_error_request(self):
         def app(environ, start_response):
@@ -1072,7 +1086,7 @@ class WSGITests(unittest.TestCase):
         app = make_appenlight_middleware(app, global_config=timing_conf)
         app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
-        self.assertEqual(len(app.appenlight_client.slow_report_queue), 1)
+        self.assertEqual(len(app.appenlight_client.report_queue), 1)
 
     def test_logging_request(self):
         def app(environ, start_response):
