@@ -22,7 +22,7 @@ class AppenlightMiddleware(object):
             AppenlightMiddleware.appenlight_client = Client(config=base_config)
 
     def process_request(self, request):
-        request.__e_processed_exception__ = False
+        request._errormator_create_report = False
         request.__traceback__ = None
         environ = request.environ
         environ['appenlight.request_id'] = str(uuid.uuid4())
@@ -37,86 +37,74 @@ class AppenlightMiddleware(object):
         return None
 
     def process_exception(self, request, exception):
-        if (not getattr(self, 'appenlight_client') or
-                not self.appenlight_client.config.get('enabled')):
+        if (not getattr(self, 'appenlight_client') or not self.appenlight_client.config.get('enabled')):
             return None
-
-        request.__e_processed_exception__ = True
-        environ = request.environ
-        user = getattr(request, 'user', None)
-        if user and user.is_authenticated():
-            environ['appenlight.username'] = unicode(user.pk)
-        if isinstance(exception, Http404):
-            http_status = 404
-        else:
-            http_status = 500
-            request.__traceback__ = get_current_traceback(
-                skip=1,
-                show_hidden_frames=True,
-                ignore_system_exceptions=True)
-
-        # report 500's and 404's
         if not self.appenlight_client.config['report_errors']:
             return None
-
+        environ = request.environ
+        user = getattr(request, 'user', None)
+        end_time = default_timer()
+        if user and user.is_authenticated():
+            environ['appenlight.username'] = unicode(user.pk)
+        http_status = 500
+        request._errormator_create_report = True
+        traceback = get_current_traceback(skip=1,
+                                          show_hidden_frames=True,
+                                          ignore_system_exceptions=True)
         appenlight_storage = get_local_storage(local_timing)
+        appenlight_storage.thread_stats['main'] = end_time - request.__start_time__
         stats, slow_calls = appenlight_storage.get_thread_stats()
-        self.appenlight_client.py_report(
-            environ,
-            request.__traceback__,
-            message=None,
-            http_status=http_status,
-            start_time=datetime.utcfromtimestamp(request.__start_time__),
-            request_stats=stats)
-        if request.__traceback__:
-            # dereference tb object but set it to true afterwards for
-            # other stuff
-            del request.__traceback__
-            request.__traceback__ = True
+        self.appenlight_client.save_request_stats(stats)
+        self.appenlight_client.py_report(environ,
+                                         traceback,
+                                         message=None,
+                                         http_status=http_status,
+                                         start_time=datetime.utcfromtimestamp(request.__start_time__),
+                                         end_time=datetime.utcfromtimestamp(end_time),
+                                         request_stats=stats,
+                                         slow_calls=slow_calls)
+        del traceback
+
 
     def process_response(self, request, response):
         try:
             return response
         finally:
-            if self.appenlight_client.config.get('enabled'):
+            environ = request.environ
+            if self.appenlight_client.config.get('enabled') and not request._errormator_create_report:
+                print 'PROCESS RESPONSE'
                 end_time = default_timer()
-                environ = request.environ
                 user = getattr(request, 'user', None)
-                if user:
-                    environ['appenlight.username'] = unicode(user.id)
-                if (response.status_code == 404 and
-                        not request.__e_processed_exception__):
-                    self.process_exception(request, Http404())
-                delta = timedelta(
-                    seconds=(end_time - request.__start_time__))
+                http_status = response.status_code
+                if user and user.is_authenticated():
+                    environ['appenlight.username'] = unicode(user.pk)
+                if (http_status == 404 and self.appenlight_client.config['report_404']):
+                    request._errormator_create_report = True
+                delta = timedelta(seconds=(end_time - request.__start_time__))
                 appenlight_storage = get_local_storage(local_timing)
-                appenlight_storage.thread_stats[
-                    'main'] = end_time - request.__start_time__
+                appenlight_storage.thread_stats['main'] = end_time - request.__start_time__
                 stats, slow_calls = appenlight_storage.get_thread_stats()
-                # report slowness
                 self.appenlight_client.save_request_stats(stats)
                 if self.appenlight_client.config['slow_requests']:
-                    # do we have slow calls ?
-                    if (delta >= self.appenlight_client.config[
-                        'slow_request_time'] or slow_calls):
-                        self.appenlight_client.py_slow_report(
-                            environ,
-                            datetime.utcfromtimestamp(request.__start_time__),
-                            datetime.utcfromtimestamp(end_time),
-                            slow_calls,
-                            request_stats=stats)
-                        # force log fetching
-                        request.__traceback__ = True
+                    if (delta >= self.appenlight_client.config['slow_request_time'] or slow_calls):
+                        request._errormator_create_report = True
+                if request._errormator_create_report:
+                        self.appenlight_client.py_report(environ,
+                                                         None,
+                                                         message=None,
+                                                         http_status=http_status,
+                                                         start_time=datetime.utcfromtimestamp(request.__start_time__),
+                                                         end_time=datetime.utcfromtimestamp(end_time),
+                                                         request_stats=stats,
+                                                         slow_calls=slow_calls)
 
                 if self.appenlight_client.config['logging']:
                     records = self.appenlight_client.log_handler.get_records()
                     self.appenlight_client.log_handler.clear_records()
-                    self.appenlight_client.py_log(
-                        environ, records=records,
-                        r_uuid=environ['appenlight.request_id'],
-                        traceback=request.__traceback__)
-                    # send all data we gathered immediately at the
-                    # end of request
-                self.appenlight_client.check_if_deliver(
-                    self.appenlight_client.config['force_send'] or
-                    environ.get('appenlight.force_send'))
+                    self.appenlight_client.py_log(environ,
+                                                  records=records,
+                                                  r_uuid=environ['appenlight.request_id'],
+                                                  created_report=request._errormator_create_report)
+            if self.appenlight_client.config.get('enabled'):
+                self.appenlight_client.check_if_deliver(self.appenlight_client.config['force_send'] or
+                                                        environ.get('appenlight.force_send'))
