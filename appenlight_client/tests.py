@@ -24,7 +24,7 @@ for k, v in timing_conf.iteritems():
 
 #this sets up timing decoration for us
 client.Client(config=timing_conf)
-from appenlight_client.timing import local_timing, get_local_storage
+from appenlight_client.timing import local_timing, get_local_storage, time_trace
 
 
 def example_filter_callable(structure, section=None):
@@ -1131,19 +1131,27 @@ class WSGITests(unittest.TestCase):
     def test_timing_request(self):
         def app(environ, start_response):
             start_response('200 OK', [('Content-Type', 'text/html')])
+
+            @time_trace(name='foo_func', min_duration=0.1)
+            def foo(arg):
+                time.sleep(0.2)
+                return arg
+            foo('a')
             time.sleep(0.1)
             try:
-                import sqlite3
+                import psycopg2
             except ImportError:
                 return
-            conn = sqlite3.connect(':memory:')
+            conn = psycopg2.connect(
+                "user=test host=127.0.0.1 dbname=test password=test")
             c = conn.cursor()
-            c.execute('''SELECT 1+2+3 AS result''')
+            psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, c)
+            c.execute('SELECT 1, pg_sleep(0.5)')
             c.fetchone()
             c.close()
             conn.close()
             return ['Hello World!']
-
+        get_local_storage(local_timing).clear()
         req = Request.blank('http://localhost/test')
         app = make_appenlight_middleware(app, global_config=timing_conf)
         req.get_response(app)

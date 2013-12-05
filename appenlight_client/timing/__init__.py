@@ -40,7 +40,7 @@ class AppenlightLocalStorage(object):
         self.thread_stats = {'main': 0, 'sql': 0, 'nosql': 0, 'remote': 0,
                              'tmpl': 0, 'unknown': 0, 'sql_calls': 0,
                              'nosql_calls': 0, 'remote_calls': 0,
-                             'tmpl_calls': 0}
+                             'tmpl_calls': 0, 'custom':0, 'custom_calls':0}
         self.slow_calls = []
 
     def get_thread_stats(self):
@@ -55,8 +55,6 @@ class AppenlightLocalStorage(object):
             stats[row['type']] += duration
             if row.get('count'):
                 stats['%s_calls' % row['type']] += 1
-                #count is not needed anymore - we don't want to send this
-            row.pop('count', None)
             # if this call was being made inside template - substract duration
             # from template timing
             if 'tmpl' in row['parents'] and row['parents'][-1] != 'tmpl':
@@ -115,7 +113,19 @@ def trace_factory(info_gatherer, min_duration, is_template=False):
     return _e_trace
 
 
-def time_trace(func_appenlight, gatherer, min_duration, is_template=False):
+def time_trace(func_appenlight=None, gatherer=None, min_duration=0.1, is_template=False, name=None):
+    if gatherer is None:
+        if not name:
+            name = 'Unnamed callable'
+        def gatherer(*args, **kwargs):
+            return {'type': 'custom',
+                    'subtype': 'user_defined',
+                    'statement': name,
+                    'parameters': '',
+                    'count': True,
+                    'ignore_in': set()}
+
+
     deco = decorator(trace_factory(gatherer, min_duration), func_appenlight)
     deco._e_attached_tracer = True
     if is_template:

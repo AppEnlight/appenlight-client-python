@@ -5,6 +5,7 @@ CHANGELOG:
     0.5.16 Minor bugfixes
            Use 0.4 api - unifiy slow and exception reports into one
            Add `errormator.ignore_error` and `errormator.ignore_slow` environ keywords
+           Add @time_trace decorator support for user defined function timing
 
 2013-11-16
     0.5.15 Minor bugfixes

@@ -9,9 +9,7 @@ from appenlight_client.logger import register_logging
 from appenlight_client.wsgi import AppenlightWSGIWrapper
 
 
-fname = pkg_resources.resource_filename('appenlight_client',
-                                        'templates/default_template.ini')
-timing_conf = client.get_config(path_to_config=fname)
+timing_conf = client.get_config({'appenlight.api_key':'1234'})
 for k, v in timing_conf.iteritems():
     if 'appenlight.timing' in k:
         timing_conf[k] = 0.00000001

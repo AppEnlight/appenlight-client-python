@@ -362,8 +362,9 @@ class Client(object):
                 # we don't need that and json will barf anyways
                 # but operate on copy
                 r = dict(getattr(record, 'appenlight_data', record))
-                del r['ignore_in']
-                del r['parents']
+                r.pop('ignore_in', None)
+                r.pop('parents', None)
+                r.pop('count', None)
                 report_data['report_details'][0]['slow_calls'].append(r)
             log.info('slow request/queries detected: %s' % url)
         return True
@@ -417,10 +418,13 @@ class Client(object):
                 self.request_stats[req_time] = {'main': 0, 'sql': 0,
                                                 'nosql': 0, 'remote': 0,
                                                 'tmpl': 0, 'unknown': 0,
-                                                'requests': 0, 'sql_calls': 0,
+                                                'requests': 0,
+                                                'custom': 0,
+                                                'sql_calls': 0,
                                                 'nosql_calls': 0,
                                                 'remote_calls': 0,
-                                                'tmpl_calls': 0}
+                                                'tmpl_calls': 0,
+                                                'custom_calls':0}
             self.request_stats[req_time]['requests'] += 1
             for k, v in stats.iteritems():
                 self.request_stats[req_time][k] += v
