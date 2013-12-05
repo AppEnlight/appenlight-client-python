@@ -40,7 +40,7 @@ class AppenlightMiddleware(object):
         if (not getattr(self, 'appenlight_client') or not self.appenlight_client.config.get('enabled')):
             return None
         environ = request.environ
-        if not self.appenlight_client.config['report_errors'] or environ.get('errormator.ignore_error'):
+        if not self.appenlight_client.config['report_errors'] or environ.get('appenlight.ignore_error'):
             return None
         user = getattr(request, 'user', None)
         end_time = default_timer()
@@ -72,7 +72,7 @@ class AppenlightMiddleware(object):
         finally:
             environ = request.environ
             if (self.appenlight_client.config.get('enabled') and not request._errormator_create_report
-                or not environ.get('errormator.ignore_slow')):
+                or not environ.get('appenlight.ignore_slow')):
                 end_time = default_timer()
                 user = getattr(request, 'user', None)
                 http_status = response.status_code

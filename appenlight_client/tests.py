@@ -1083,7 +1083,7 @@ class WSGITests(unittest.TestCase):
             return ['Hello World!']
 
         req = Request.blank('http://localhost/test')
-        req.environ['errormator.ignore_error'] = 1
+        req.environ['appenlight.ignore_error'] = 1
         app = make_appenlight_middleware(app, global_config=timing_conf)
         app.appenlight_client.config['reraise_exceptions'] = False
         app.appenlight_client.last_submit = datetime.datetime.now()
@@ -1109,7 +1109,7 @@ class WSGITests(unittest.TestCase):
             return ['Hello World!']
 
         req = Request.blank('http://localhost/test')
-        req.environ['errormator.ignore_slow'] = 1
+        req.environ['appenlight.ignore_slow'] = 1
         app = make_appenlight_middleware(app, global_config=timing_conf)
         app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)

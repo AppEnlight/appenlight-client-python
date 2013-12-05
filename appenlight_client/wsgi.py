@@ -83,17 +83,17 @@ class AppenlightWSGIWrapper(object):
             stats, slow_calls = appenlight_storage.get_thread_stats()
             if detected_data and detected_data[0]:
                 http_status = int(detected_data[0])
-            if self.appenlight_client.config['slow_requests'] and not environ.get('errormator.ignore_slow'):
+            if self.appenlight_client.config['slow_requests'] and not environ.get('appenlight.ignore_slow'):
                 # do we have slow calls/request ?
                 if (delta >= self.appenlight_client.config['slow_request_time'] or slow_calls):
                     create_report = True
-            if 'appenlight.__traceback' in environ and not environ.get('errormator.ignore_error'):
+            if 'appenlight.__traceback' in environ and not environ.get('appenlight.ignore_error'):
                 # get traceback gathered by pyramid tween
                 traceback = environ['appenlight.__traceback']
                 del environ['appenlight.__traceback']
                 http_status = 500
                 create_report = True
-            if traceback and self.appenlight_client.config['report_errors'] and not environ.get('errormator.ignore_error'):
+            if traceback and self.appenlight_client.config['report_errors'] and not environ.get('appenlight.ignore_error'):
                 http_status = 500
                 create_report = True
             elif (self.appenlight_client.config['report_404'] and http_status == 404):
