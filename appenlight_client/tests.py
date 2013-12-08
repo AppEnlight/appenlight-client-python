@@ -11,6 +11,7 @@ from appenlight_client import client, make_appenlight_middleware
 from appenlight_client.exceptions import get_current_traceback
 from appenlight_client.logger import register_logging
 from appenlight_client.wsgi import AppenlightWSGIWrapper
+from appenlight_client.utils import fullyQualifiedName
 from webob import Request
 
 fname = pkg_resources.resource_filename('appenlight_client',
@@ -1158,6 +1159,48 @@ class WSGITests(unittest.TestCase):
         stats, result = get_local_storage(local_timing).get_thread_stats()
         self.assertGreater(stats['main'], 0)
         self.assertGreater(stats['sql'], 0)
+
+class CallableNameTests(unittest.TestCase):
+    def setUpClient(self, config={}):
+        self.client = client.Client(timing_conf)
+
+    def tearDown(self):
+        get_local_storage(local_timing).clear()
+
+    def test_func(self):
+        def some_call():
+            return 1
+        fullyQualifiedName(some_call)
+        some_call()
+        self.assertEqual(some_call._appenlight_name, 'appenlight_client/tests:some_call')
+
+    def test_newstyle_class(self):
+        class Foo(object):
+
+            def test(self):
+                return 1
+
+            def __call__(self):
+                return 2
+
+        fullyQualifiedName(Foo)
+        fullyQualifiedName(Foo.test)
+        self.assertEqual(Foo._appenlight_name, 'appenlight_client/tests:Foo')
+        self.assertEqual(Foo.test._appenlight_name, 'appenlight_client/tests:Foo.test')
+
+    def test_oldstyle_class(self):
+        class Bar():
+
+            def test(self):
+                return 1
+
+            def __call__(self):
+                return 2
+
+        fullyQualifiedName(Bar)
+        fullyQualifiedName(Bar.test)
+        self.assertEqual(Bar._appenlight_name, 'appenlight_client/tests:Bar')
+        self.assertEqual(Bar.test._appenlight_name, 'appenlight_client/tests:Bar.test')
 
 
 if __name__ == '__main__':

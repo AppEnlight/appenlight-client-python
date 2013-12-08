@@ -1,4 +1,9 @@
 import logging
+import inspect
+import os
+import sys
+from decorator import decorator
+
 
 log = logging.getLogger(__name__)
 
@@ -71,3 +76,55 @@ def deco_func_or_method(module, name, deco_f, gatherer, min_duration,
                            min_duration, is_template))
     else:
         log.debug("can't decorate %s " % name)
+
+
+def _name_resolve(appenlight_callable, *args, **kw):
+    appenlight_callable(*args, **kw)
+
+
+def name_resolve(appenlight_callable):
+    return decorator(_name_resolve, appenlight_callable)
+
+
+def resolveModule(module_name):
+    module = sys.modules.get(module_name, None)
+    if module:
+        to_trunc = module.__file__.rsplit(os.sep, 2)[0]
+        filename = module.__file__.split(to_trunc, 1)[-1][1:]
+        filename = os.path.splitext(filename)[0]
+    return filename
+
+# from http://twistedmatrix.com/trac/browser/trunk/twisted/python/deprecate.py
+# License MIT: http://twistedmatrix.com/trac/browser/trunk/LICENSE
+
+def fullyQualifiedName(obj):
+    if hasattr(obj, '_appenlight_name'):
+        return obj._appenlight_name
+    name = '<unknown>'
+    try:
+        name = obj.__qualname__
+    except AttributeError:
+        name = obj.__name__
+
+    if inspect.isclass(obj) or inspect.isfunction(obj):
+        moduleName = obj.__module__
+        try:
+            moduleName = resolveModule(moduleName)
+        except Exception, e:
+            pass
+        name = "%s:%s" % (moduleName, name)
+    elif inspect.ismethod(obj):
+        try:
+            cls = obj.im_class
+        except AttributeError:
+            # Python 3 eliminates im_class, substitutes __module__ and
+            # __qualname__ to provide similar information.
+            name = "%s:%s" % (obj.__module__, obj.__qualname__)
+        else:
+            className = fullyQualifiedName(cls)
+            name = "%s.%s" % (className, name)
+    if hasattr(obj, '__func__'):
+        obj.__func__._appenlight_name = name
+    else:
+        obj._appenlight_name = name
+    return name
