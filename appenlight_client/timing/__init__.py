@@ -42,6 +42,7 @@ class AppenlightLocalStorage(object):
                              'nosql_calls': 0, 'remote_calls': 0,
                              'tmpl_calls': 0, 'custom':0, 'custom_calls':0}
         self.slow_calls = []
+        self.view_name = ''
 
     def get_thread_stats(self):
         """ resets thread stats at same time """
@@ -95,7 +96,7 @@ def _e_trace(info_gatherer, min_duration, e_callable, *args, **kw):
 
 
 def trace_factory(info_gatherer, min_duration, is_template=False):
-    """ Used to auto decorate callables in deco_func_or_method for other 
+    """ Used to auto decorate callables in deco_func_or_method for other
         non dbapi2 modules """
 
     def _e_trace(func_appenlight, *args, **kw):

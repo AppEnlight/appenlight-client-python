@@ -2,8 +2,6 @@ import logging
 import inspect
 import os
 import sys
-from decorator import decorator
-
 
 log = logging.getLogger(__name__)
 
@@ -76,15 +74,6 @@ def deco_func_or_method(module, name, deco_f, gatherer, min_duration,
                            min_duration, is_template))
     else:
         log.debug("can't decorate %s " % name)
-
-
-def _name_resolve(appenlight_callable, *args, **kw):
-    appenlight_callable(*args, **kw)
-
-
-def name_resolve(appenlight_callable):
-    return decorator(_name_resolve, appenlight_callable)
-
 
 def resolveModule(module_name):
     module = sys.modules.get(module_name, None)

@@ -31,6 +31,7 @@ class AppenlightMiddleware(object):
             environ['appenlight.client'] = self.appenlight_client
         environ['appenlight.post_vars'] = request.POST
         appenlight_storage = get_local_storage(local_timing)
+        environ['appenlight.view_name'] = getattr(appenlight_storage,'view_name', '')
         # clear out thread stats on request start
         appenlight_storage.clear()
         request.__start_time__ = default_timer()
