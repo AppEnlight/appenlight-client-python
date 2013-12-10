@@ -81,6 +81,7 @@ PARSED_REPORT_404 = {
                         'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
                         'message': u'',
                         'end_time': REQ_END_TIME,
+                        'view_name': '',
                         'request_stats': {}
                        }],
     'error_type': '404 Not Found',
@@ -131,6 +132,7 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
                                          'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
                                          'message': u'',
                                          'end_time': REQ_END_TIME,
+                                         'view_name': '',
                                          'request_stats': {}}],
                      'error_type': u'Exception: Test Exception',
                      'server': SERVER_NAME,
@@ -162,6 +164,7 @@ PARSED_SLOW_REPORT = {
                         'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
                         'message': u'',
                         'end_time': REQ_END_TIME,
+                        'view_name': '',
                         'request_stats': {}}],
     'error_type': 'Unknown',
     'server': SERVER_NAME,
@@ -1103,6 +1106,21 @@ class WSGITests(unittest.TestCase):
         app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
         self.assertEqual(len(app.appenlight_client.report_queue), 1)
+
+
+    def test_view_name_request(self):
+        def app(environ, start_response):
+            start_response('200 OK', [('Content-Type', 'text/html')])
+            environ['appenlight.view_name'] = 'foo:app'
+            raise Exception('WTF?')
+            return ['Hello World!']
+
+        req = Request.blank('http://localhost/test')
+        app = make_appenlight_middleware(app, global_config=timing_conf)
+        app.appenlight_client.config['reraise_exceptions'] = False
+        app.appenlight_client.last_submit = datetime.datetime.now()
+        req.get_response(app)
+        self.assertEqual(app.appenlight_client.report_queue[0]['report_details'][0].get('view_name'), 'foo:app')
 
     def test_ignored_error_request(self):
         def app(environ, start_response):

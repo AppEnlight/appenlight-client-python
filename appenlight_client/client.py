@@ -531,6 +531,7 @@ class Client(object):
         detail_entry['user_agent'] = parsed_environ['HTTP_USER_AGENT']
         detail_entry['username'] = appenlight_info.pop('username')
         detail_entry['url'] = appenlight_info.pop('URL', 'unknown')
+        detail_entry['view_name'] = appenlight_info.pop('view_name', '')
         if 'request_id' in appenlight_info:
             detail_entry['request_id'] = appenlight_info.pop('request_id',
                                                              None)
