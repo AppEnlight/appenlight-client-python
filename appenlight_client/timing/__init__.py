@@ -1,4 +1,4 @@
-from decorator import decorator
+from functools import wraps
 from appenlight_client.utils import import_module, import_from_module
 import logging
 import inspect
@@ -94,27 +94,7 @@ def _e_trace(info_gatherer, min_duration, e_callable, *args, **kw):
     appenlight_storage.slow_calls.append(info)
     return result
 
-
-def trace_factory(info_gatherer, min_duration, is_template=False):
-    """ Used to auto decorate callables in deco_func_or_method for other
-        non dbapi2 modules """
-
-    def _e_trace(func_appenlight, *args, **kw):
-        start = default_timer()
-        result = func_appenlight(*args, **kw)
-        end = default_timer()
-        info = {'start': start,
-                'end': end,
-                'min_duration': min_duration}
-        info.update(info_gatherer(*args, **kw))
-        appenlight_storage = get_local_storage(local_timing)
-        appenlight_storage.slow_calls.append(info)
-        return result
-
-    return _e_trace
-
-
-def time_trace(func_appenlight=None, gatherer=None, min_duration=0.1, is_template=False, name=None):
+def time_trace(gatherer=None, min_duration=0.1, is_template=False, name=None):
     if gatherer is None:
         if not name:
             name = 'Unnamed callable'
@@ -125,13 +105,26 @@ def time_trace(func_appenlight=None, gatherer=None, min_duration=0.1, is_templat
                     'parameters': '',
                     'count': True,
                     'ignore_in': set()}
+    def decorator(func_appenlight):
+        @wraps(func_appenlight)
+        def wrapper(*args, **kwargs):
+            start = default_timer()
+            result = func_appenlight(*args, **kwargs)
+            end = default_timer()
+            info = {'start': start,
+                    'end': end,
+                    'min_duration': min_duration}
+            info.update(gatherer(*args, **kwargs))
+            appenlight_storage = get_local_storage(local_timing)
+            appenlight_storage.slow_calls.append(info)
+            return result
 
+        wrapper._e_attached_tracer = True
+        if is_template:
+            wrapper._e_is_template = True
+        return wrapper
+    return decorator
 
-    deco = decorator(trace_factory(gatherer, min_duration), func_appenlight)
-    deco._e_attached_tracer = True
-    if is_template:
-        deco._e_is_template = True
-    return deco
 
 
 def register_timing(config):

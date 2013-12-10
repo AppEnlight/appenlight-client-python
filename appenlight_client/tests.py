@@ -1064,6 +1064,33 @@ class WSGITests(unittest.TestCase):
         req.get_response(app)
         self.assertEqual(len(app.appenlight_client.report_queue), 0)
 
+    def test_normal_request_decorator(self):
+        from appenlight_client.client import decorate
+
+        @decorate(appenlight_config={'appenlight.api_key':'12345'})
+        def app(environ, start_response):
+            start_response('200 OK', [('Content-Type', 'text/html')])
+            return ['Hello World!']
+
+        req = Request.blank('http://localhost/test')
+        req.get_response(app)
+        self.assertEqual(len(app.appenlight_client.report_queue), 0)
+
+    def test_error_request_decorator(self):
+        from appenlight_client.client import decorate
+
+        @decorate(appenlight_config={'appenlight.api_key':'12345',
+                                     'appenlight.reraise_exceptions':False})
+        def app(environ, start_response):
+            start_response('200 OK', [('Content-Type', 'text/html')])
+            raise Exception('WTF?')
+            return ['Hello World!']
+
+        app.appenlight_client.last_submit = datetime.datetime.now()
+        req = Request.blank('http://localhost/test')
+        req.get_response(app)
+        self.assertEqual(len(app.appenlight_client.report_queue), 1)
+
     def test_error_request(self):
         def app(environ, start_response):
             start_response('200 OK', [('Content-Type', 'text/html')])

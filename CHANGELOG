@@ -7,6 +7,7 @@ CHANGELOG:
            Add `errormator.ignore_error` and `errormator.ignore_slow` environ keywords
            Add @time_trace decorator support for user defined function timing
            Add sending of information about executed view name for pyramid, django, flask
+           Dropped decorator package dependancy
 
 2013-11-16
     0.5.15 Minor bugfixes

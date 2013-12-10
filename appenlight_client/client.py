@@ -38,8 +38,7 @@ import time
 import socket
 import uuid
 import os
-import decorator
-
+from functools import wraps
 from appenlight_client import __version__, __protocol_version__
 from appenlight_client.ext_json import json
 from appenlight_client.utils import asbool, aslist
@@ -580,35 +579,14 @@ def get_config(config=None, path_to_config=None, section_name='appenlight'):
                         "or api key was not passed in app global config")
     return config or {}
 
+def decorate(appenlight_config=None):
+    def app_decorator(app):
+        @wraps(app)
+        def app_wrapper(*args, **kwargs):
+            return make_appenlight_middleware(app, appenlight_config)
+        return app_wrapper()
+    return app_decorator
 
-def decorate(ini_file=None, register_timing=True):
-    def make_appenlight_middleware(app, global_config=None, **kw):
-        if not global_config:
-            global_config = {}
-        config = global_config.copy()
-        config.update(kw)
-        # this shuts down all appenlight functionalities
-        if not asbool(config.get('appenlight', True)):
-            return app
-        logging.critical('APPENLIGHT MIDDLEWARE')
-        ini_path = os.environ.get('APPENLIGHT_INI',
-                                  config.get('appenlight.config_path',
-                                             ini_file))
-        if not ini_path:
-            ini_path = os.environ.get('ERRORMATOR_INI',
-                                      config.get('errormator.config_path',
-                                                 ini_file))
-        config = get_config(config=config, path_to_config=ini_path)
-        client = Client(config)
-        from appenlight_client.wsgi import AppenlightWSGIWrapper
-
-        app = AppenlightWSGIWrapper(app, client)
-        return app
-
-    def foo(f):
-        return decorator.decorator(make_appenlight_middleware, f)
-
-    return foo
 
 
 # TODO: refactor this to share the code

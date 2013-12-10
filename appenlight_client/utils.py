@@ -60,7 +60,7 @@ def deco_func_or_method(module, name, deco_f, gatherer, min_duration,
         # but very important for tests
         if hasattr(e_callable, '_e_attached_tracer'):
             return
-        e_callable = deco_f(e_callable, gatherer, min_duration, is_template)
+        e_callable = deco_f(gatherer, min_duration, is_template)(e_callable)
         setattr(module, _tmp[0], e_callable)
     # decorate and set new value for foo.Bar.baz
     elif len(_tmp) > 1 and e_callable:
@@ -69,9 +69,9 @@ def deco_func_or_method(module, name, deco_f, gatherer, min_duration,
         if e_callable:
             if hasattr(e_callable, '_e_attached_tracer'):
                 return
-            setattr(cls_to_update, _tmp[1],
-                    deco_f(getattr(e_callable, 'im_func', e_callable), gatherer,
-                           min_duration, is_template))
+            setattr(cls_to_update, _tmp[1], deco_f(gatherer,min_duration, is_template)(getattr(e_callable,
+                                                                                               'im_func',
+                                                                                               e_callable)))
     else:
         log.debug("can't decorate %s " % name)
 
