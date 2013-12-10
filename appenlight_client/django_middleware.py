@@ -6,6 +6,7 @@ from appenlight_client.exceptions import get_current_traceback
 from appenlight_client.timing import local_timing, get_local_storage
 from appenlight_client.timing import default_timer
 from appenlight_client.client import Client
+from appenlight_client.utils import fullyQualifiedName
 import logging
 import sys
 
@@ -31,10 +32,16 @@ class AppenlightMiddleware(object):
             environ['appenlight.client'] = self.appenlight_client
         environ['appenlight.post_vars'] = request.POST
         appenlight_storage = get_local_storage(local_timing)
-        environ['appenlight.view_name'] = getattr(appenlight_storage,'view_name', '')
         # clear out thread stats on request start
         appenlight_storage.clear()
         request.__start_time__ = default_timer()
+        return None
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        try:
+            request.environ['appenlight.view_name'] = fullyQualifiedName(view_func)
+        except Exception,e:
+            request.environ['appenlight.view_name'] = ''
         return None
 
     def process_exception(self, request, exception):
