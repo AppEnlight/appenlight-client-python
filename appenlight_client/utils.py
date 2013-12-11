@@ -112,8 +112,11 @@ def fullyQualifiedName(obj):
         else:
             className = fullyQualifiedName(cls)
             name = "%s.%s" % (className, name)
-    if hasattr(obj, '__func__'):
-        obj.__func__._appenlight_name = name
-    else:
-        obj._appenlight_name = name
+    try:
+        if hasattr(obj, '__func__'):
+            obj.__func__._appenlight_name = name
+        else:
+            obj._appenlight_name = name
+    except Exception,e:
+        pass
     return name

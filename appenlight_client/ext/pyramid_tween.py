@@ -15,6 +15,8 @@ def pyramid_view_name(appenlight_callable):
     def adapter_lookup(*args, **kwargs):
         view_callable = appenlight_callable(*args, **kwargs)
         appenlight_storage = get_local_storage(local_timing)
+        if not view_callable:
+            return view_callable
         try:
             view_name = fullyQualifiedName(view_callable)
         except Exception, e:
@@ -22,9 +24,6 @@ def pyramid_view_name(appenlight_callable):
         appenlight_storage.view_name = view_name
         return view_callable
     return adapter_lookup
-
-def get_view_name(lookup_func):
-    print lookup_func
 
 def appenlight_tween_factory(handler, registry):
     blacklist = (pyramid.httpexceptions.WSGIHTTPException,)
@@ -34,7 +33,6 @@ def appenlight_tween_factory(handler, registry):
             if not hasattr(request.registry.adapters.lookup, '_appenlight_traced'):
                 request.registry.adapters.lookup = pyramid_view_name(request.registry.adapters.lookup)
                 request.registry.adapters.lookup._appenlight_traced = True
-
         except Exception as e:
             raise
             log.error("Couldn't decorate pyramid adapter")
