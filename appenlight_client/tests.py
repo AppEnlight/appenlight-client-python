@@ -1118,6 +1118,20 @@ class WSGITests(unittest.TestCase):
         req.get_response(app)
         self.assertEqual(len(app.appenlight_client.report_queue), 0)
 
+    def test_view_name_request(self):
+        def app(environ, start_response):
+            start_response('200 OK', [('Content-Type', 'text/html')])
+            environ['appenlight.view_name'] = 'foo:app'
+            raise Exception('WTF?')
+            return ['Hello World!']
+
+        req = Request.blank('http://localhost/test')
+        app = make_appenlight_middleware(app, global_config=timing_conf)
+        app.appenlight_client.config['reraise_exceptions'] = False
+        app.appenlight_client.last_submit = datetime.datetime.now()
+        req.get_response(app)
+        self.assertEqual(app.appenlight_client.report_queue[0].get('view_name'), 'foo:app')
+
     def test_slow_request(self):
         def app(environ, start_response):
             start_response('200 OK', [('Content-Type', 'text/html')])
