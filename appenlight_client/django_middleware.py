@@ -39,8 +39,7 @@ class AppenlightMiddleware(object):
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         try:
-            if 'appenlight.view_name' not in request.environ:
-                request.environ['appenlight.view_name'] = fullyQualifiedName(view_func)
+            request.environ['appenlight.view_name'] = fullyQualifiedName(view_func)
         except Exception,e:
             request.environ['appenlight.view_name'] = ''
         return None
