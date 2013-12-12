@@ -3,6 +3,7 @@ from appenlight_client.timing import get_local_storage, local_timing
 from appenlight_client.utils import fullyQualifiedName, deco_func_or_method
 from pyramid.tweens import EXCVIEW
 from pyramid.static import static_view
+import pkg_resources
 import pyramid.config
 import pyramid
 import logging
@@ -10,6 +11,17 @@ import logging
 from functools import wraps
 
 log = logging.getLogger(__name__)
+
+# feature sniffing
+pyramid_version_str = pkg_resources.get_distribution('pyramid').version
+pyramid_version = float(pyramid_version_str[:3])
+test_ver = None
+can_append_decorator = False
+for vchar in ['a', 'b']:
+    if vchar in pyramid_version_str:
+        test_ver = pyramid_version_str[pyramid_version_str.index(vchar):]
+if pyramid_version > 1.4 or pyramid_version == 1.4 and test_ver not in ['a0', 'a1', 'a2', 'a3']:
+    can_append_decorator = True
 
 
 def wrap_pyramid_view_name(appenlight_callable):
@@ -33,9 +45,11 @@ def wrap_view_config(appenlight_callable):
     @wraps(appenlight_callable)
     def wrapper(*args, **kwargs):
         if not 'decorator' in kwargs:
-            kwargs['decorator'] = wrap_pyramid_view_name
+            if can_append_decorator:
+                kwargs['decorator'] = wrap_pyramid_view_name
         else:
-            kwargs['decorator'].append(wrap_pyramid_view_name)
+            if can_append_decorator:
+                kwargs['decorator'].append(wrap_pyramid_view_name)
         return appenlight_callable(*args, **kwargs)
 
     return wrapper
