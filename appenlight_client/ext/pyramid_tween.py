@@ -12,16 +12,19 @@ from functools import wraps
 log = logging.getLogger(__name__)
 
 
-def pyramid_view_name(appenlight_callable):
+def wrap_pyramid_view_name(appenlight_callable):
     @wraps(appenlight_callable)
-    def view_callable_wrapper(*args, **kwargs):
+    def view_callable_wrapper(context, request):
         appenlight_storage = get_local_storage(local_timing)
         try:
             view_name = fullyQualifiedName(appenlight_callable)
         except Exception, e:
             view_name = ''
+        if 'pyramid/static' in view_name:
+            #normalize static views
+            view_name = 'pyramid/static'
         appenlight_storage.view_name = view_name
-        return appenlight_callable(*args, **kwargs)
+        return appenlight_callable(context, request)
 
     return view_callable_wrapper
 
@@ -29,11 +32,10 @@ def pyramid_view_name(appenlight_callable):
 def wrap_view_config(appenlight_callable):
     @wraps(appenlight_callable)
     def wrapper(*args, **kwargs):
-        if 'view' in kwargs:
-            try:
-                kwargs['view'] = pyramid_view_name(kwargs['view'])
-            except Exception, e:
-                pass
+        if not 'decorator' in kwargs:
+            kwargs['decorator'] = wrap_pyramid_view_name
+        else:
+            kwargs['decorator'].append(wrap_pyramid_view_name)
         return appenlight_callable(*args, **kwargs)
 
     return wrapper
