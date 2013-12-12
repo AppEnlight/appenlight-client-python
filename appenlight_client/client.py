@@ -41,8 +41,7 @@ import os
 from functools import wraps
 from appenlight_client import __version__, __protocol_version__
 from appenlight_client.ext_json import json
-from appenlight_client.utils import asbool, aslist
-from appenlight_client.timing import local_timing, get_local_storage
+from appenlight_client.utils import asbool, aslist, import_from_module
 from webob import Request
 
 if PY3:
@@ -184,8 +183,10 @@ class Client(object):
                     except (TypeError, ValueError) as e:
                         self.config['timing'][k[18:]] = False
             import appenlight_client.timing
-
             appenlight_client.timing.register_timing(self.config)
+
+        self.hooks = ['hook_pylons']
+        self.register_hooks()
 
         self.endpoints = {
             "reports": '/api/reports',
@@ -203,6 +204,16 @@ class Client(object):
         self.uuid = uuid.uuid4()
         self.last_submit = datetime.datetime.utcnow() - datetime.timedelta(seconds=50)
         self.last_request_stats_submit = datetime.datetime.utcnow() - datetime.timedelta(seconds=50)
+
+    def register_hooks(self):
+        for hook in self.hooks:
+            try:
+                e_callable = import_from_module('appenlight_client.hooks.%s:register' % hook)
+                if e_callable:
+                    e_callable()
+            except Exception, e:
+                raise
+                log.warning("Couln't attach hook: %s" % hook)
 
     def submit_data(self):
         self.last_submit = datetime.datetime.utcnow()

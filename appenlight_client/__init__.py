@@ -1,5 +1,5 @@
-__version__ = '0.5.15'
-__protocol_version__ = '0.3.7'
+__version__ = '0.5.17'
+__protocol_version__ = '0.4'
 
 
 class AppenlightException(Exception):

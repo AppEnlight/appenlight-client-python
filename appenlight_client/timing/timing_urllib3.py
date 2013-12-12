@@ -17,7 +17,7 @@ def add_timing(min_duration=3):
                 'ignore_in': ignore_set}
 
     deco_func_or_method(module.request, 'RequestMethods.request_encode_url',
-                        time_trace, gather_args_url, min_duration)
+                        time_trace, gatherer=gather_args_url, min_duration=min_duration)
 
 
     def gather_args_body(r, m, url, *args, **kwargs):
@@ -28,4 +28,4 @@ def add_timing(min_duration=3):
                 'ignore_in': ignore_set}
 
     deco_func_or_method(module.request, 'RequestMethods.request_encode_body',
-                        time_trace, gather_args_body, min_duration)
+                        time_trace, gatherer=gather_args_body, min_duration=min_duration)

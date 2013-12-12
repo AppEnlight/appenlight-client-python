@@ -49,8 +49,7 @@ def import_from_module(name):
         log.debug('Could not import from module: %s' % e)
 
 
-def deco_func_or_method(module, name, deco_f, gatherer, min_duration,
-                        is_template=False):
+def deco_func_or_method(module, name, deco_f, single_attach_marker='_e_attached_tracer', **kwargs):
     _tmp = name.split('.')
     e_callable = getattr(module, _tmp[0], None)
     # decorate and set new value for foo.bar
@@ -58,20 +57,18 @@ def deco_func_or_method(module, name, deco_f, gatherer, min_duration,
         # _e_attached_tracer means this is already decorated
         # so don't do it twice - should not often happen in production,
         # but very important for tests
-        if hasattr(e_callable, '_e_attached_tracer'):
+        if hasattr(e_callable, single_attach_marker):
             return
-        e_callable = deco_f(gatherer, min_duration, is_template)(e_callable)
+        e_callable = deco_f(**kwargs)(e_callable)
         setattr(module, _tmp[0], e_callable)
     # decorate and set new value for foo.Bar.baz
     elif len(_tmp) > 1 and e_callable:
         cls_to_update = e_callable
         e_callable = getattr(e_callable, _tmp[1], None)
         if e_callable:
-            if hasattr(e_callable, '_e_attached_tracer'):
+            if hasattr(e_callable, single_attach_marker):
                 return
-            setattr(cls_to_update, _tmp[1], deco_f(gatherer,min_duration, is_template)(getattr(e_callable,
-                                                                                               'im_func',
-                                                                                               e_callable)))
+            setattr(cls_to_update, _tmp[1], deco_f(**kwargs)(getattr(e_callable, 'im_func', e_callable)))
     else:
         log.debug("can't decorate %s " % name)
 

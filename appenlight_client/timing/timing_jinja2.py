@@ -20,7 +20,7 @@ def add_timing(min_duration=0.15):
                 'ignore_in': ignore_set}
 
     deco_func_or_method(environment, 'Template.render', time_trace,
-                        gather_template, min_duration, is_template=True)
+                        gatherer=gather_template, min_duration=min_duration, is_template=True)
 
     environment.Environment.template_class = environment.Template
     module.Template = environment.Template

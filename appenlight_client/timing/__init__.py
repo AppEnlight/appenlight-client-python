@@ -40,7 +40,7 @@ class AppenlightLocalStorage(object):
         self.thread_stats = {'main': 0, 'sql': 0, 'nosql': 0, 'remote': 0,
                              'tmpl': 0, 'unknown': 0, 'sql_calls': 0,
                              'nosql_calls': 0, 'remote_calls': 0,
-                             'tmpl_calls': 0, 'custom':0, 'custom_calls':0}
+                             'tmpl_calls': 0, 'custom': 0, 'custom_calls': 0}
         self.slow_calls = []
         self.view_name = ''
 
@@ -56,7 +56,7 @@ class AppenlightLocalStorage(object):
             stats[row['type']] += duration
             if row.get('count'):
                 stats['%s_calls' % row['type']] += 1
-            # if this call was being made inside template - substract duration
+                # if this call was being made inside template - substract duration
             # from template timing
             if 'tmpl' in row['parents'] and row['parents'][-1] != 'tmpl':
                 self.thread_stats['tmpl'] -= duration
@@ -94,10 +94,12 @@ def _e_trace(info_gatherer, min_duration, e_callable, *args, **kw):
     appenlight_storage.slow_calls.append(info)
     return result
 
+
 def time_trace(gatherer=None, min_duration=0.1, is_template=False, name=None):
     if gatherer is None:
         if not name:
             name = 'Unnamed callable'
+
         def gatherer(*args, **kwargs):
             return {'type': 'custom',
                     'subtype': 'user_defined',
@@ -105,11 +107,12 @@ def time_trace(gatherer=None, min_duration=0.1, is_template=False, name=None):
                     'parameters': '',
                     'count': True,
                     'ignore_in': set()}
-    def decorator(func_appenlight):
-        @wraps(func_appenlight)
+
+    def decorator(appenlight_callable):
+        @wraps(appenlight_callable)
         def wrapper(*args, **kwargs):
             start = default_timer()
-            result = func_appenlight(*args, **kwargs)
+            result = appenlight_callable(*args, **kwargs)
             end = default_timer()
             info = {'start': start,
                     'end': end,
@@ -119,12 +122,13 @@ def time_trace(gatherer=None, min_duration=0.1, is_template=False, name=None):
             appenlight_storage.slow_calls.append(info)
             return result
 
+        # will prevent this wrapper being decorated again
         wrapper._e_attached_tracer = True
         if is_template:
             wrapper._e_is_template = True
         return wrapper
-    return decorator
 
+    return decorator
 
 
 def register_timing(config):

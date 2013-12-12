@@ -24,7 +24,7 @@ def add_timing(min_duration=3):
                 'ignore_in': ignore_set}
 
     deco_func_or_method(module, 'HTTPConnection.connect', time_trace,
-                        gather_args_host, min_duration)
+                        gatherer=gather_args_host, min_duration=min_duration)
 
     deco_func_or_method(module, 'HTTPSConnection.connect', time_trace,
-                        gather_args_sslhost, min_duration)
+                        gatherer=gather_args_sslhost, min_duration=min_duration)

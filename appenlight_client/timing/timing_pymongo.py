@@ -31,4 +31,4 @@ def add_timing(min_duration=0.1):
 
     for m in to_decorate:
         deco_func_or_method(module.collection, 'Collection.%s' % m, time_trace,
-                            general_factory('%s' % m), min_duration)
+                            gatherer=general_factory('%s' % m), min_duration=min_duration)

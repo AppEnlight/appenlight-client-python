@@ -16,7 +16,7 @@ def add_timing(min_duration=3):
                 'ignore_in': ignore_set}
 
     deco_func_or_method(module, 'URLopener.open', time_trace,
-                        gather_args_open, min_duration)
+                        gatherer=gather_args_open, min_duration=min_duration)
 
     def gather_args_urlretrieve(url, *args, **kwargs):
         return {'type': 'remote', 'statement': 'urllib.urlretrieve',
@@ -25,5 +25,5 @@ def add_timing(min_duration=3):
                 'ignore_in': ignore_set}
 
     deco_func_or_method(module, 'urlretrieve', time_trace,
-                        gather_args_urlretrieve, min_duration
+                        gatherer=gather_args_urlretrieve, min_duration=min_duration
     )

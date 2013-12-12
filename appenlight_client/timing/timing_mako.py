@@ -20,8 +20,8 @@ def add_timing(min_duration=0.15):
                 'ignore_in': ignore_set}
 
     deco_func_or_method(template, 'Template.render', time_trace,
-                        gather_template, min_duration, is_template=True)
+                        gatherer=gather_template, min_duration=min_duration, is_template=True)
     deco_func_or_method(template, 'Template.render_unicode', time_trace,
-                        gather_template, min_duration, is_template=True)
+                        gatherer=gather_template, min_duration=min_duration, is_template=True)
     deco_func_or_method(template, 'Template.render_context', time_trace,
-                        gather_template, min_duration, is_template=True)
+                        gatherer=gather_template, min_duration=min_duration, is_template=True)
