@@ -112,7 +112,7 @@ class AppenlightWSGIWrapper(object):
                 del traceback
                 # force log fetching
                 traceback = True
-            self.appenlight_client.save_request_stats(stats)
+            self.appenlight_client.save_request_stats(stats, view_name=environ['appenlight.view_name'])
             if self.appenlight_client.config['logging']:
                 records = self.appenlight_client.log_handler.get_records()
                 self.appenlight_client.log_handler.clear_records()

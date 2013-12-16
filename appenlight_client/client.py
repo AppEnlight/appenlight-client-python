@@ -192,7 +192,7 @@ class Client(object):
             "reports": '/api/reports',
             "slow_reports": '/api/slow_reports',
             "logs": '/api/logs',
-            "request_stats": '/api/request_stats'
+            "metrics": '/api/metrics'
         }
 
         self.report_queue = []
@@ -219,7 +219,7 @@ class Client(object):
         self.last_submit = datetime.datetime.utcnow()
         results = {'reports': False,
                    'logs': False,
-                   'request_stats': False}
+                   'metrics': False}
         with self.report_queue_lock:
             reports = self.report_queue[:250]
             self.report_queue = self.report_queue[250:]
@@ -233,15 +233,14 @@ class Client(object):
             with self.request_stats_lock:
                 request_stats = self.request_stats
                 self.request_stats = {}
-            stat_list = []
+            payload = []
             for k, v in request_stats.iteritems():
-                stat_list.append({
+                payload.append({
                     "server": self.config['server_name'],
-                    "metrics": v,
+                    "metrics": v.items(),
                     "timestamp": k.isoformat()
                 })
-            results['request_stats'] = self.api_create_submit(stat_list,
-                                                              'request_stats')
+            results['metrics'] = self.api_create_submit(payload, 'metrics')
             self.last_request_stats_submit = datetime.datetime.utcnow()
         return results
 
@@ -350,10 +349,7 @@ class Client(object):
         url = report_data['report_details'][0]['url']
         if not PY3:
             url = url.decode('utf8', 'ignore')
-        if start_time:
-            report_data['report_details'][0]['start_time'] = start_time
-        if traceback:
-            report_data['report_details'][0]['request_stats'] = request_stats
+        report_data['report_details'][0]['request_stats'] = request_stats
         with self.report_queue_lock:
             self.report_queue.append(report_data)
         if traceback:
@@ -420,12 +416,16 @@ class Client(object):
         log.debug('add %s log entries to queue' % len(records))
         return True
 
-    def save_request_stats(self, stats):
+    def save_request_stats(self, stats, view_name=None):
+        if not view_name:
+            view_name = 'unresolved_view'
         with self.request_stats_lock:
             req_time = datetime.datetime.utcnow().replace(second=0,
                                                           microsecond=0)
             if req_time not in self.request_stats:
-                self.request_stats[req_time] = {'main': 0, 'sql': 0,
+                self.request_stats[req_time] ={}
+            if view_name not in self.request_stats[req_time]:
+                self.request_stats[req_time][view_name] = {'main': 0, 'sql': 0,
                                                 'nosql': 0, 'remote': 0,
                                                 'tmpl': 0, 'unknown': 0,
                                                 'requests': 0,
@@ -435,9 +435,9 @@ class Client(object):
                                                 'remote_calls': 0,
                                                 'tmpl_calls': 0,
                                                 'custom_calls':0}
-            self.request_stats[req_time]['requests'] += 1
+            self.request_stats[req_time][view_name]['requests'] += 1
             for k, v in stats.iteritems():
-                self.request_stats[req_time][k] += v
+                self.request_stats[req_time][view_name][k] += v
 
     def process_environ(self, environ, traceback=None, include_params=False, http_status=200):
         # form friendly to json encode

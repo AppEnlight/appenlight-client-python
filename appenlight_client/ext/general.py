@@ -9,7 +9,8 @@ log = logging.getLogger(__name__)
 
 def gather_data(client, environ, gather_exception=True,
                 gather_slowness=True, gather_logs=True,
-                clear_storage=True, exc_info=None, spawn_thread=True):
+                clear_storage=True, exc_info=None, spawn_thread=True,
+                start_time=None, end_time=None):
     if client.config['enabled'] == False:
         return None
     if not environ.get('wsgi.url_scheme'):
@@ -21,36 +22,27 @@ def gather_data(client, environ, gather_exception=True,
     if gather_exception and not exc_info:
         traceback = get_current_traceback(skip=1, show_hidden_frames=True,
                                           ignore_system_exceptions=True)
+        http_status = 500
     elif exc_info:
         traceback = Traceback(*exc_info)
+        http_status = 500
     else:
+        http_status = 200
         traceback = None
     appenlight_storage = get_local_storage(local_timing)
     stats, slow_calls = appenlight_storage.get_thread_stats()
-    if traceback:
-        client.py_report(environ, traceback, http_status=500,
-                         request_stats=stats)
-        # dereference
-        del traceback
-        traceback = True
-        # report slowness
+    if traceback is not None or (slow_calls and gather_slowness):
+        client.py_report(environ, traceback, http_status=http_status, request_stats=stats, slow_calls=slow_calls)
+    # dereference
+    del traceback
     now = datetime.datetime.utcnow()
+    if client.config['logging']:
+        if gather_logs:
+            records = client.log_handler.get_records()
+            client.log_handler.clear_records()
+            client.py_log(environ, records=records, r_uuid=environ['appenlight.request_id'])
     if clear_storage:
         appenlight_storage.clear()
-    if client.config['slow_requests'] and gather_slowness:
-        # do we have slow calls ?
-        if (slow_calls):
-            client.py_slow_report(environ, now, now, slow_calls,
-                                  request_stats=stats)
-            # force log fetching
-            traceback = True
-
-    if client.config['logging'] and gather_logs:
-        records = client.log_handler.get_records()
-        client.log_handler.clear_records()
-        client.py_log(environ, records=records, traceback=traceback,
-                      r_uuid=environ['appenlight.request_id'])
-        # send all data we gathered immediately at the end of request
     client.check_if_deliver(client.config['force_send'] or
                             environ.get('appenlight.force_send'),
                             spawn_thread=spawn_thread)
