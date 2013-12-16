@@ -520,7 +520,7 @@ class Client(object):
             include_params,
             http_status)
         report_data = {'client': 'Python', 'report_details': []}
-        report_data['error_type'] = 'Unknown'
+        report_data['error_type'] = ''
         detail_entry = {}
         if traceback:
             exception_text = traceback.exception

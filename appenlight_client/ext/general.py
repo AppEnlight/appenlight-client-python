@@ -19,6 +19,8 @@ def gather_data(client, environ, gather_exception=True,
         environ['HTTP_HOST'] = 'localhost'
     if not environ.get('appenlight.request_id'):
         environ['appenlight.request_id'] = str(uuid.uuid4())
+    http_status = 200
+    traceback = None
     if gather_exception and not exc_info:
         traceback = get_current_traceback(skip=1, show_hidden_frames=True,
                                           ignore_system_exceptions=True)
@@ -27,9 +29,6 @@ def gather_data(client, environ, gather_exception=True,
     elif exc_info:
         traceback = Traceback(*exc_info)
         http_status = 500
-    else:
-        http_status = 200
-        traceback = None
     appenlight_storage = get_local_storage(local_timing)
     stats, slow_calls = appenlight_storage.get_thread_stats()
     if traceback is not None or (slow_calls and gather_slowness):
