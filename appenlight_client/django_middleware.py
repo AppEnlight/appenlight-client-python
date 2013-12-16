@@ -64,7 +64,7 @@ class AppenlightMiddleware(object):
         appenlight_storage = get_local_storage(local_timing)
         appenlight_storage.thread_stats['main'] = end_time - request.__start_time__
         stats, slow_calls = appenlight_storage.get_thread_stats()
-        self.appenlight_client.save_request_stats(stats, view_name=environ['appenlight.view_name'])
+        self.appenlight_client.save_request_stats(stats, view_name=environ.get('appenlight.view_name',''))
         self.appenlight_client.py_report(environ,
                                          traceback,
                                          message=None,
@@ -94,7 +94,7 @@ class AppenlightMiddleware(object):
                 appenlight_storage = get_local_storage(local_timing)
                 appenlight_storage.thread_stats['main'] = end_time - request.__start_time__
                 stats, slow_calls = appenlight_storage.get_thread_stats()
-                self.appenlight_client.save_request_stats(stats, view_name=environ['appenlight.view_name'])
+                self.appenlight_client.save_request_stats(stats, view_name=environ.get('appenlight.view_name',''))
                 if self.appenlight_client.config['slow_requests']:
                     if (delta >= self.appenlight_client.config['slow_request_time'] or slow_calls):
                         request._errormator_create_report = True
