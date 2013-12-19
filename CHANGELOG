@@ -1,8 +1,10 @@
 CHANGELOG:
 ==========
 
-2013-12-??
-    0.5.16 Minor bugfixes
+2013-12-?? Minor bugfixes
+
+2013-12-16
+    0.6 Minor bugfixes
            Use 0.4 api - unifiy slow and exception reports into one
            Add `errormator.ignore_error` and `errormator.ignore_slow` environ keywords
            Add @time_trace decorator support for user defined function timing

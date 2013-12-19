@@ -186,7 +186,10 @@ class Client(object):
             appenlight_client.timing.register_timing(self.config)
 
         self.hooks = ['hook_pylons']
-        self.register_hooks()
+        self.hooks_blacklist = aslist(config.get('appenlight.hooks_blacklist'), ',')
+        # register hooks
+        if self.config['enabled']:
+            self.register_hooks()
 
         self.endpoints = {
             "reports": '/api/reports',
@@ -207,6 +210,9 @@ class Client(object):
 
     def register_hooks(self):
         for hook in self.hooks:
+            if hook in self.hooks_blacklist:
+                print 'blacklisted', hook
+                continue
             try:
                 e_callable = import_from_module('appenlight_client.hooks.%s:register' % hook)
                 if e_callable:
