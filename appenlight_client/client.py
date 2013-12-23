@@ -211,7 +211,7 @@ class Client(object):
     def register_hooks(self):
         for hook in self.hooks:
             if hook in self.hooks_blacklist:
-                print 'blacklisted', hook
+                log.debug('blacklisted %s' %hook)
                 continue
             try:
                 e_callable = import_from_module('appenlight_client.hooks.%s:register' % hook)

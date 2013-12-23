@@ -163,7 +163,7 @@ PARSED_SLOW_REPORT = {
                         'message': u'',
                         'end_time': REQ_END_TIME,
                         'request_stats': {}}],
-    'error_type': 'Unknown',
+    'error_type': '',
     'server': SERVER_NAME,
     'priority': 5,
     'client': 'Python',
@@ -504,7 +504,7 @@ class TestErrorParsing(unittest.TestCase):
                               end_time=REQ_END_TIME)
         bogus_500_report = copy.deepcopy(PARSED_REPORT_500)
         bogus_500_report['http_status'] = 500
-        bogus_500_report['error_type'] = 'Unknown'
+        bogus_500_report['error_type'] = ''
         del bogus_500_report['traceback']
         del bogus_500_report['report_details'][0]['traceback']
         bogus_500_report['report_details'][0]['request_stats'] = {}
