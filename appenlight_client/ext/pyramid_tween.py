@@ -44,7 +44,10 @@ def wrap_pyramid_view_method_name(appenlight_callable):
         appenlight_storage = get_local_storage(local_timing)
         if hasattr(appenlight_storage, 'view_name'):
             try:
-                appenlight_storage.view_name = '%s.%s' % (appenlight_storage.view_name,
+                split_name = appenlight_storage.view_name.split(':')
+                # only change the name if it wasn't resolved yet
+                if len(split_name) == 2 and '.' not in split_name[1]:
+                    appenlight_storage.view_name = '%s.%s' % (appenlight_storage.view_name,
                                                           appenlight_callable.__name__)
             except Exception, e:
                 pass
@@ -65,7 +68,7 @@ def wrap_pyramid_view_name(appenlight_callable):
                 if not hasattr(original_view, '_appenlight_name') and inspect.isclass(original_view):
                     original_view._appenlight_name = view_name
                     for k, v in original_view.__dict__.items():
-                        if not k.startswith('_'):
+                        if not k.startswith('_') and inspect.isfunction(v):
                             setattr(original_view, k, wrap_pyramid_view_method_name(v))
         except Exception, e:
             raise
@@ -83,7 +86,7 @@ def wrap_view_config(appenlight_callable):
     def wrapper(*args, **kwargs):
         if kwargs.get('decorator') is None:
             if can_append_decorator:
-                kwargs['decorator'] = wrap_pyramid_view_name
+                kwargs['decorator'] = [wrap_pyramid_view_name]
         else:
             if can_append_decorator:
                 kwargs['decorator'].append(wrap_pyramid_view_name)

@@ -1,7 +1,8 @@
 CHANGELOG:
 ==========
 
-2013-12-?? Minor bugfixes
+2013-12-23 Minor bugfixes
+           Fix issues with pyramid view name resolving for class-based views
 
 2013-12-16
     0.6 Minor bugfixes
