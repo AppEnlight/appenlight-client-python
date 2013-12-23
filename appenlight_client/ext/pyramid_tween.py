@@ -81,7 +81,7 @@ def wrap_pyramid_view_name(appenlight_callable):
 def wrap_view_config(appenlight_callable):
     @wraps(appenlight_callable)
     def wrapper(*args, **kwargs):
-        if not 'decorator' in kwargs:
+        if kwargs.get('decorator') is None:
             if can_append_decorator:
                 kwargs['decorator'] = wrap_pyramid_view_name
         else:
