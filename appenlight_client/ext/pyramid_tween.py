@@ -65,11 +65,7 @@ def wrap_pyramid_view_name(appenlight_callable):
             original_view = getattr(appenlight_callable, '__original_view__')
             if original_view:
                 view_name = fullyQualifiedName(appenlight_callable)
-                if not hasattr(original_view, '_appenlight_name') and inspect.isclass(original_view):
-                    original_view._appenlight_name = view_name
-                    for k, v in original_view.__dict__.items():
-                        if not k.startswith('_') and inspect.isfunction(v):
-                            setattr(original_view, k, wrap_pyramid_view_method_name(v))
+                original_view._appenlight_name = view_name
         except Exception, e:
             raise
         if 'pyramid/static' in view_name:
@@ -78,14 +74,15 @@ def wrap_pyramid_view_name(appenlight_callable):
         appenlight_storage.view_name = view_name
         return appenlight_callable(context, request)
 
-    # do not decorate view more than once
+    # do not decorate view more than once, also decorate original class methods
     try:
         original_view = getattr(appenlight_callable, '__original_view__', None)
-        if original_view and not hasattr(original_view,'_appenlight_wrapped_view'):
+        if not hasattr(original_view,'_appenlight_wrapped_view'):
             original_view._appenlight_wrapped_view = True
-            return view_callable_wrapper
-        else:
-            return appenlight_callable
+            if original_view and inspect.isclass(original_view):
+                for k, v in original_view.__dict__.items():
+                    if not k.startswith('_') and inspect.isfunction(v):
+                        setattr(original_view, k, wrap_pyramid_view_method_name(v))
     except Exception, e:
         pass
     return view_callable_wrapper
@@ -111,7 +108,6 @@ def appenlight_tween_factory(handler, registry):
     def error_tween(request):
         try:
             response = handler(request)
-            appenlight_storage = get_local_storage(local_timing)
         except blacklist as e:
             raise
         except:
@@ -123,6 +119,9 @@ def appenlight_tween_factory(handler, registry):
                     show_hidden_frames=True,
                     ignore_system_exceptions=True)
             raise
+        # finally:
+        #     appenlight_storage = get_local_storage(local_timing)
+        #     print appenlight_storage.view_name
         return response
 
     return error_tween
