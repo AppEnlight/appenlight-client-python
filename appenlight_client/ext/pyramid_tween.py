@@ -78,6 +78,16 @@ def wrap_pyramid_view_name(appenlight_callable):
         appenlight_storage.view_name = view_name
         return appenlight_callable(context, request)
 
+    # do not decorate view more than once
+    try:
+        original_view = getattr(appenlight_callable, '__original_view__', None)
+        if original_view and not hasattr(original_view,'_appenlight_wrapped_view'):
+            original_view._appenlight_wrapped_view = True
+            return view_callable_wrapper
+        else:
+            return appenlight_callable
+    except Exception, e:
+        pass
     return view_callable_wrapper
 
 
