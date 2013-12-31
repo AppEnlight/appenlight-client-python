@@ -65,13 +65,15 @@ def wrap_pyramid_view_name(appenlight_callable):
             original_view = getattr(appenlight_callable, '__original_view__')
             if original_view:
                 view_name = fullyQualifiedName(appenlight_callable)
-                original_view._appenlight_name = view_name
+                if not hasattr(original_view, '_appenlight_name'):
+                    original_view._appenlight_name = view_name
         except Exception, e:
             raise
         if 'pyramid/static' in view_name:
             #normalize static views
             view_name = 'pyramid/static'
-        appenlight_storage.view_name = view_name
+        if not getattr(appenlight_storage, 'view_name', None):
+            appenlight_storage.view_name = view_name
         return appenlight_callable(context, request)
 
     # do not decorate view more than once, also decorate original class methods
