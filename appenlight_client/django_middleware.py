@@ -81,7 +81,7 @@ class AppenlightMiddleware(object):
             return response
         finally:
             environ = request.environ
-            if (self.appenlight_client.config.get('enabled') and not request._errormator_create_report
+            if self.appenlight_client.config.get('enabled') and (not request._errormator_create_report
                 or not environ.get('appenlight.ignore_slow')):
                 end_time = default_timer()
                 user = getattr(request, 'user', None)
