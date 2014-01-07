@@ -1171,6 +1171,11 @@ class WSGITests(unittest.TestCase):
         self.assertGreaterEqual(len(app.appenlight_client.log_queue), 2)
 
     def test_timing_request(self):
+        try:
+            import psycopg2
+        except ImportError:
+            return
+
         def app(environ, start_response):
             start_response('200 OK', [('Content-Type', 'text/html')])
 
@@ -1180,10 +1185,6 @@ class WSGITests(unittest.TestCase):
                 return arg
             foo('a')
             time.sleep(0.1)
-            try:
-                import psycopg2
-            except ImportError:
-                return
             conn = psycopg2.connect(
                 "user=test host=127.0.0.1 dbname=test password=test")
             c = conn.cursor()
