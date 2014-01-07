@@ -588,7 +588,7 @@ def get_config(config=None, path_to_config=None, section_name='appenlight'):
                 logging.warning('No section name called %s in file' % section_name)
             if not config.get('api_key') and api_key:
                 config['appenlight.api_key'] = api_key
-    if config is not None and not config.get('api_key') and api_key:
+    if not config.get('api_key') and api_key:
         config['appenlight.api_key'] = api_key
     if not config.get('appenlight.api_key'):
         logging.warning("appenlight.api_key is missing from the config, something went wrong."
