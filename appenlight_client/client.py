@@ -575,7 +575,7 @@ def get_config(config=None, path_to_config=None, section_name='appenlight'):
     if not api_key:
         api_key = os.environ.get('ERRORMATOR_KEY')
     if path_to_config:
-        config = {}
+        file_config = {}
         if not os.path.exists(path_to_config):
             logging.warning("Couldn't locate %s " % path_to_config)
             return config
@@ -583,9 +583,10 @@ def get_config(config=None, path_to_config=None, section_name='appenlight'):
             parser = ConfigParser.SafeConfigParser()
             parser.readfp(f)
             try:
-                config = dict(parser.items(section_name))
+                file_config = dict(parser.items(section_name))
             except ConfigParser.NoSectionError as exc:
                 logging.warning('No section name called %s in file' % section_name)
+            config.update(file_config)
             if not config.get('api_key') and api_key:
                 config['appenlight.api_key'] = api_key
     if not config.get('api_key') and api_key:
