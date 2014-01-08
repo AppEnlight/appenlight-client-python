@@ -1,8 +1,8 @@
 CHANGELOG:
 ==========
 
-2014-01-07 Config file handling
-           Allow combining of a separate config file and direct settings.
+2014-01-08 Config file handling
+     0.6.3 Allow combining of a separate config file and direct settings.
 
 2014-01-05 Minor bugfixes
 
