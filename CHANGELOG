@@ -5,6 +5,7 @@ CHANGELOG:
      0.6.3 Allow combining of a separate config file and direct settings.
 
 2014-01-05 Minor bugfixes
+           Fix django 404 reporting
 
 2013-12-23 Minor bugfixes
            Fix issues with pyramid view name resolving for class-based views

@@ -56,24 +56,27 @@ class AppenlightMiddleware(object):
         end_time = default_timer()
         if user and user.is_authenticated():
             environ['appenlight.username'] = unicode(user.pk)
-        http_status = 500
-        request._errormator_create_report = True
-        traceback = get_current_traceback(skip=1,
-                                          show_hidden_frames=True,
-                                          ignore_system_exceptions=True)
-        appenlight_storage = get_local_storage(local_timing)
-        appenlight_storage.thread_stats['main'] = end_time - request.__start_time__
-        stats, slow_calls = appenlight_storage.get_thread_stats()
-        self.appenlight_client.save_request_stats(stats, view_name=environ.get('appenlight.view_name',''))
-        self.appenlight_client.py_report(environ,
-                                         traceback,
-                                         message=None,
-                                         http_status=http_status,
-                                         start_time=datetime.utcfromtimestamp(request.__start_time__),
-                                         end_time=datetime.utcfromtimestamp(end_time),
-                                         request_stats=stats,
-                                         slow_calls=slow_calls)
-        del traceback
+        if isinstance(exception, Http404):
+            http_status = 404
+        else:
+            http_status = 500
+            request._errormator_create_report = True
+            traceback = get_current_traceback(skip=1,
+                                              show_hidden_frames=True,
+                                              ignore_system_exceptions=True)
+            appenlight_storage = get_local_storage(local_timing)
+            appenlight_storage.thread_stats['main'] = end_time - request.__start_time__
+            stats, slow_calls = appenlight_storage.get_thread_stats()
+            self.appenlight_client.save_request_stats(stats, view_name=environ.get('appenlight.view_name',''))
+            self.appenlight_client.py_report(environ,
+                                             traceback,
+                                             message=None,
+                                             http_status=http_status,
+                                             start_time=datetime.utcfromtimestamp(request.__start_time__),
+                                             end_time=datetime.utcfromtimestamp(end_time),
+                                             request_stats=stats,
+                                             slow_calls=slow_calls)
+            del traceback
 
 
     def process_response(self, request, response):
