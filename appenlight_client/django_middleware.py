@@ -20,7 +20,7 @@ class AppenlightMiddleware(object):
     def __init__(self):
         log.debug('setting appenlight middleware')
         if not hasattr(AppenlightMiddleware, 'client'):
-            base_config = getattr(settings, 'APPENLIGHT', {})
+            base_config = getattr(settings, 'APPENLIGHT') or {}
             AppenlightMiddleware.appenlight_client = Client(config=base_config)
 
     def process_request(self, request):
@@ -84,8 +84,8 @@ class AppenlightMiddleware(object):
             return response
         finally:
             environ = request.environ
-            if self.appenlight_client.config.get('enabled') and (not request._errormator_create_report
-                or not environ.get('appenlight.ignore_slow')):
+            enabled = self.appenlight_client.config.get('enabled')
+            if enabled and not request._errormator_create_report and not environ.get('appenlight.ignore_slow'):
                 end_time = default_timer()
                 user = getattr(request, 'user', None)
                 http_status = response.status_code
