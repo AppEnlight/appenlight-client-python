@@ -40,16 +40,12 @@ import uuid
 import os
 from functools import wraps
 from appenlight_client import __version__, __protocol_version__
-from appenlight_client.ext_json import json
 from appenlight_client.utils import asbool, aslist, import_from_module
 from webob import Request
 
 if PY3:
-    import urllib
     import configparser
 else:
-    import urllib
-    import urllib2
     import ConfigParser
 
 DATE_FRMT = '%Y-%m-%dT%H:%M:%S'
@@ -70,8 +66,6 @@ class Client(object):
         """
         at minimum client expects following keys to be present::
 
-            appenlight = true
-            appenlight.server_url = https://api.appenlight.com
             appenlight.api_key = YOUR_API_KEY
 
         """
@@ -89,10 +83,11 @@ class Client(object):
         if not self.config['api_key']:
             self.config['enabled'] = False
             logging.warning("Disabling appenlight client, no api key")
+        self.config['transport'] = config.get('appenlight.transport',
+            'appenlight_client.transports.http:HTTPTransport')
 
-        self.config['server_url'] = config.get('appenlight.server_url',
-                                               'https://api.appenlight.com')
-        self.config['timeout'] = int(config.get('appenlight.timeout', 10))
+        self.config['transport_config'] = config.get(
+            'appenlight.transport_config', 'https://api.appenlight.com?threaded=1&timeout=5')
         self.config['reraise_exceptions'] = asbool(
             config.get('appenlight.reraise_exceptions', True))
         self.config['slow_requests'] = asbool(
@@ -139,7 +134,8 @@ class Client(object):
             config.get('appenlight.environ_keys_whitelist'), ',')
         self.config['environ_keys_whitelist'].extend(
             filter(lambda x: x, environ_whitelist))
-        self.config['log_namespace_blacklist'] = ['appenlight_client.client']
+        self.config['log_namespace_blacklist'] = ['appenlight_client.client',
+                                        'appenlight_client.transports.http']
 
         log_blacklist = aslist(
             config.get('appenlight.log_namespace_blacklist'), ',')
@@ -183,17 +179,18 @@ class Client(object):
                     except (TypeError, ValueError) as e:
                         self.config['timing'][k[18:]] = False
             import appenlight_client.timing
+
             appenlight_client.timing.register_timing(self.config)
 
         self.hooks = ['hook_pylons']
-        self.hooks_blacklist = aslist(config.get('appenlight.hooks_blacklist'), ',')
+        self.hooks_blacklist = aslist(config.get('appenlight.hooks_blacklist'),
+                                      ',')
         # register hooks
         if self.config['enabled']:
             self.register_hooks()
 
-        self.endpoints = {
+        self.config['endpoints'] = {
             "reports": '/api/reports',
-            "slow_reports": '/api/slow_reports',
             "logs": '/api/logs',
             "metrics": '/api/metrics'
         }
@@ -205,103 +202,71 @@ class Client(object):
         self.request_stats = {}
         self.request_stats_lock = threading.RLock()
         self.uuid = uuid.uuid4()
-        self.last_submit = datetime.datetime.utcnow() - datetime.timedelta(seconds=50)
-        self.last_request_stats_submit = datetime.datetime.utcnow() - datetime.timedelta(seconds=50)
+        self.last_submit = datetime.datetime.utcnow() - datetime.timedelta(
+            seconds=50)
+        self.last_request_stats_submit = datetime.datetime.utcnow() - datetime.timedelta(
+            seconds=50)
+
+        try:
+            parts = self.config['transport'].split(':')
+            _tmp = __import__(parts[0], globals(), locals(),
+                              [parts[1], ], 0)
+            selected_transport = getattr(_tmp, parts[1])
+        except ImportError as e:
+            from appenlight_client.transports.http import HTTPTransport as selected_transport
+
+            msg = 'Could not import transport %s, using default, %s' % (
+            self.config['transport'], e)
+            log.error(msg)
+
+        self.transport = selected_transport(self.config['transport_config'],
+                                            self.config,
+                                            self.__protocol_version__)
 
     def register_hooks(self):
         for hook in self.hooks:
             if hook in self.hooks_blacklist:
-                log.debug('blacklisted %s' %hook)
+                log.debug('blacklisted %s' % hook)
                 continue
             try:
-                e_callable = import_from_module('appenlight_client.hooks.%s:register' % hook)
+                e_callable = import_from_module(
+                    'appenlight_client.hooks.%s:register' % hook)
                 if e_callable:
                     e_callable()
             except Exception, e:
                 raise
                 log.warning("Couln't attach hook: %s" % hook)
 
-    def submit_data(self):
-        self.last_submit = datetime.datetime.utcnow()
-        results = {'reports': False,
-                   'logs': False,
-                   'metrics': False}
-        with self.report_queue_lock:
-            reports = self.report_queue[:250]
-            self.report_queue = self.report_queue[250:]
-        with self.log_queue_lock:
-            logs = self.log_queue[:2000]
-            self.log_queue = self.log_queue[2000:]
-        results['reports'] = self.api_create_submit(reports, 'reports')
-        results['logs'] = self.api_create_submit(logs, 'logs')
-        delta = datetime.datetime.utcnow() - self.last_request_stats_submit
-        if delta >= datetime.timedelta(seconds=60):
-            with self.request_stats_lock:
-                request_stats = self.request_stats
-                self.request_stats = {}
-            payload = []
-            for k, v in request_stats.iteritems():
-                payload.append({
-                    "server": self.config['server_name'],
-                    "metrics": v.items(),
-                    "timestamp": k.isoformat()
-                })
-            results['metrics'] = self.api_create_submit(payload, 'metrics')
-            self.last_request_stats_submit = datetime.datetime.utcnow()
-        return results
-
-    def api_create_submit(self, to_send_items, endpoint):
-        if to_send_items:
-            try:
-                self.remote_call(to_send_items, self.endpoints[endpoint])
-            except KeyboardInterrupt as exc:
-                raise KeyboardInterrupt()
-            except Exception as exc:
-                log.warning('%s: connection issue: %s' % (endpoint, exc))
-                return False
-        return True
-
-    def check_if_deliver(self, force_send=False, spawn_thread=True):
+    def check_if_deliver(self, force_send=False):
         delta = datetime.datetime.utcnow() - self.last_submit
+        # should we send
         if delta > self.config['buffer_flush_interval'] or force_send:
-            if spawn_thread:
-                submit_data_t = threading.Thread(target=self.submit_data)
-                submit_data_t.start()
-            else:
-                self.submit_data()
+            # build data to feed the transport
+            with self.report_queue_lock:
+                reports = self.report_queue[:250]
+                self.report_queue = self.report_queue[250:]
+
+            with self.log_queue_lock:
+                logs = self.log_queue[:2000]
+                self.log_queue = self.log_queue[2000:]
+            # metrics we should send every 60s
+            metrics = []
+            if delta >= datetime.timedelta(seconds=60):
+                with self.request_stats_lock:
+                    request_stats = self.request_stats
+                    self.request_stats = {}
+                for k, v in request_stats.iteritems():
+                    metrics.append({
+                        "server": self.config['server_name'],
+                        "metrics": v.items(),
+                        "timestamp": k.isoformat()
+                    })
+                self.last_request_stats_submit = datetime.datetime.utcnow()
+            self.last_submit = datetime.datetime.utcnow()
+            # submit times are marked so we can now send the report
+            self.transport.feed(reports=reports, logs=logs, metrics=metrics)
             return True
         return False
-
-    def remote_call(self, data, endpoint):
-        if not self.config['api_key']:
-            log.warning('no api key set - dropping payload')
-            return False
-        GET_vars = urllib.urlencode({
-            'protocol_version': self.__protocol_version__})
-        server_url = '%s%s?%s' % (self.config['server_url'], endpoint,
-                                  GET_vars,)
-        headers = {'content-type': 'application/json',
-                   'x-appenlight-api-key': self.config['api_key']}
-        log.info('sending out %s entries to %s' % (len(data), endpoint,))
-        try:
-            req = urllib2.Request(server_url,
-                                  json.dumps(data).encode('utf8'),
-                                  headers=headers)
-        except IOError as e:
-            message = 'APPENLIGHT: problem: %s' % e
-            log.error(message)
-            return False
-        try:
-            conn = urllib2.urlopen(req, timeout=self.config['timeout'])
-            conn.close()
-            return True
-        except TypeError as exc:
-            conn = urllib2.urlopen(req)
-            conn.close()
-            return True
-        if conn.getcode() != 200:
-            message = 'APPENLIGHT: response code: %s' % conn.getcode()
-            log.error(message)
 
     def data_filter(self, structure, section=None):
         def filter_dict(f_input, dict_method):
@@ -340,7 +305,8 @@ class Client(object):
         return structure
 
     def py_report(self, environ, traceback=None, message=None, http_status=200,
-                  start_time=None, end_time=None, request_stats=None, slow_calls=None):
+                  start_time=None, end_time=None, request_stats=None,
+                  slow_calls=None):
         if not request_stats:
             request_stats = {}
         report_data, appenlight_info = self.create_report_structure(
@@ -360,9 +326,10 @@ class Client(object):
             self.report_queue.append(report_data)
         if traceback:
             log.warning('%s code: %s @%s' % (http_status,
-                                          report_data.get('error_type').encode('utf8','ignore'),
-                                          url.encode('utf8','ignore'),))
-            log.error(report_data.get('error_type','').encode('utf8','ignore'))
+                    report_data.get('error_type').encode('utf8','ignore'),
+                    url.encode('utf8', 'ignore'),))
+            log.error(
+                report_data.get('error_type', '').encode('utf8', 'ignore'))
             log.error(traceback.plaintext)
         del traceback
         report_data['report_details'][0]['start_time'] = start_time
@@ -378,7 +345,8 @@ class Client(object):
                 r.pop('parents', None)
                 r.pop('count', None)
                 report_data['report_details'][0]['slow_calls'].append(r)
-            log.info('slow request/queries detected: %s' % url.encode('utf8','ignore'))
+            log.info('slow request/queries detected: %s' % url.encode('utf8',
+                                                                      'ignore'))
         return True
 
     def py_log(self, environ, records=None, r_uuid=None, created_report=None):
@@ -429,23 +397,27 @@ class Client(object):
             req_time = datetime.datetime.utcnow().replace(second=0,
                                                           microsecond=0)
             if req_time not in self.request_stats:
-                self.request_stats[req_time] ={}
+                self.request_stats[req_time] = {}
             if view_name not in self.request_stats[req_time]:
-                self.request_stats[req_time][view_name] = {'main': 0, 'sql': 0,
-                                                'nosql': 0, 'remote': 0,
-                                                'tmpl': 0, 'unknown': 0,
-                                                'requests': 0,
-                                                'custom': 0,
-                                                'sql_calls': 0,
-                                                'nosql_calls': 0,
-                                                'remote_calls': 0,
-                                                'tmpl_calls': 0,
-                                                'custom_calls':0}
+                self.request_stats[req_time][view_name] = {'main': 0,
+                                                           'sql': 0,
+                                                           'nosql': 0,
+                                                           'remote': 0,
+                                                           'tmpl': 0,
+                                                           'unknown': 0,
+                                                           'requests': 0,
+                                                           'custom': 0,
+                                                           'sql_calls': 0,
+                                                           'nosql_calls': 0,
+                                                           'remote_calls': 0,
+                                                           'tmpl_calls': 0,
+                                                           'custom_calls': 0}
             self.request_stats[req_time][view_name]['requests'] += 1
             for k, v in stats.iteritems():
                 self.request_stats[req_time][view_name][k] += v
 
-    def process_environ(self, environ, traceback=None, include_params=False, http_status=200):
+    def process_environ(self, environ, traceback=None, include_params=False,
+                        http_status=200):
         # form friendly to json encode
         parsed_environ = {}
         appenlight_info = {}
@@ -502,13 +474,17 @@ class Client(object):
 
         # figure out real ip
         if environ.get("HTTP_X_FORWARDED_FOR"):
-            remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[0].strip()
+            remote_addr = environ.get("HTTP_X_FORWARDED_FOR").split(',')[
+                0].strip()
         else:
-            remote_addr = (environ.get("HTTP_X_REAL_IP") or environ.get('REMOTE_ADDR'))
+            remote_addr = (
+                environ.get("HTTP_X_REAL_IP") or environ.get('REMOTE_ADDR'))
         parsed_environ['HTTP_USER_AGENT'] = environ.get("HTTP_USER_AGENT", '')
         parsed_environ['REMOTE_ADDR'] = remote_addr
         try:
-            appenlight_info['username'] = u'%s' % environ.get('REMOTE_USER', appenlight_info.get('username', u''))
+            username = environ.get('REMOTE_USER',
+                                   appenlight_info.get('username', u''))
+            appenlight_info['username'] = u'%s' % username
         except (UnicodeEncodeError, UnicodeDecodeError) as exc:
             appenlight_info['username'] = "undecodable"
         try:
@@ -585,26 +561,31 @@ def get_config(config=None, path_to_config=None, section_name='appenlight'):
             try:
                 file_config = dict(parser.items(section_name))
             except ConfigParser.NoSectionError as exc:
-                logging.warning('No section name called %s in file' % section_name)
+                logging.warning('No section name '
+                                'called %s in file' % section_name)
             config.update(file_config)
             if not config.get('api_key') and api_key:
                 config['appenlight.api_key'] = api_key
     if not config.get('api_key') and api_key:
         config['appenlight.api_key'] = api_key
     if not config.get('appenlight.api_key'):
-        logging.warning("appenlight.api_key is missing from the config, something went wrong."
-                        "hint: APPENLIGHT_INI/APPENLIGHT_KEY config variable is missing from environment "
-                        "or api key was not passed in app global config")
+        logging.warning(
+            "appenlight.api_key is missing from the config, "
+            "something went wrong." "hint: APPENLIGHT_INI/APPENLIGHT_KEY "
+            "config variable is missing from environment or api key was "
+            "not passed in app global config")
     return config or {}
+
 
 def decorate(appenlight_config=None):
     def app_decorator(app):
         @wraps(app)
         def app_wrapper(*args, **kwargs):
             return make_appenlight_middleware(app, appenlight_config)
-        return app_wrapper()
-    return app_decorator
 
+        return app_wrapper()
+
+    return app_decorator
 
 
 # TODO: refactor this to share the code
@@ -614,9 +595,11 @@ def make_appenlight_middleware(app, global_config=None, **kw):
     else:
         config = {}
     config.update(kw)
-    ini_path = os.environ.get('APPENLIGHT_INI', config.get('appenlight.config_path'))
+    ini_path = os.environ.get('APPENLIGHT_INI',
+                              config.get('appenlight.config_path'))
     if not ini_path:
-        ini_path = os.environ.get('ERRORMATOR_INI', config.get('errormator.config_path'))
+        ini_path = os.environ.get('ERRORMATOR_INI',
+                                  config.get('errormator.config_path'))
     config = get_config(config=config, path_to_config=ini_path)
     client = Client(config)
     from appenlight_client.wsgi import AppenlightWSGIWrapper

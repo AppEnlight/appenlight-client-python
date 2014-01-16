@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 
 def gather_data(client, environ, gather_exception=True,
                 gather_slowness=True, gather_logs=True,
-                clear_storage=True, exc_info=None, spawn_thread=True,
+                clear_storage=True, exc_info=None,
                 start_time=None, end_time=None):
     if client.config['enabled'] == False:
         return None
@@ -44,5 +44,4 @@ def gather_data(client, environ, gather_exception=True,
     if clear_storage:
         appenlight_storage.clear()
     client.check_if_deliver(client.config['force_send'] or
-                            environ.get('appenlight.force_send'),
-                            spawn_thread=spawn_thread)
+                            environ.get('appenlight.force_send'))

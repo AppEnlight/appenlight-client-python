@@ -12,6 +12,7 @@ from appenlight_client.exceptions import get_current_traceback
 from appenlight_client.logger import register_logging
 from appenlight_client.wsgi import AppenlightWSGIWrapper
 from appenlight_client.utils import fullyQualifiedName
+from appenlight_client.transports.http import HTTPTransport
 from webob import Request
 
 fname = pkg_resources.resource_filename('appenlight_client',
@@ -189,16 +190,17 @@ class TestClientConfig(unittest.TestCase):
         self.assertEqual(self.client.config['api_key'],
                          config['appenlight.api_key'])
 
-    def test_default_server(self):
+    def test_default_transport(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['server_url'],
-                         'https://api.appenlight.com')
+        self.assertEqual(self.client.config['transport'],
+                         'appenlight_client.transports.http:HTTPTransport')
 
-    def test_custom_server(self):
-        config = {'appenlight.server_url': "http://foo.bar.com"}
+    def test_transport_config(self):
+        config = {'appenlight.transport_config': 'https://api.appenlight.com?threaded=0&timeout=10'}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['server_url'],
-                         config['appenlight.server_url'])
+        self.assertDictContainsSubset({'url': 'https://api.appenlight.com',
+                           'timeout': 10, 'threaded': 0},
+                            self.client.transport.transport_config)
 
     def test_enabled_client(self):
         self.setUpClient()
@@ -234,15 +236,6 @@ class TestClientConfig(unittest.TestCase):
 
         self.assertEqual(self.client.config['client'], 'python3' if client.PY3 \
             else 'python')
-
-    def test_default_timeout(self):
-        self.setUpClient()
-        self.assertEqual(self.client.config['timeout'], 10)
-
-    def test_timeout(self):
-        config = {'appenlight.timeout': "5"}
-        self.setUpClient(config)
-        self.assertEqual(self.client.config['timeout'], 5)
 
     def test_reraise_exceptions(self):
         config = {'appenlight.reraise_exceptions': "false"}
@@ -374,13 +367,16 @@ class TestClientConfig(unittest.TestCase):
     def test_default_log_namespace_blacklist(self):
         self.setUpClient()
         self.assertEqual(self.client.config['log_namespace_blacklist'],
-                         ['appenlight_client.client'])
+                         ['appenlight_client.client',
+                          'appenlight_client.transports.http'])
 
     def test_custom_log_namespace_blacklist(self):
         config = {'appenlight.log_namespace_blacklist': "aa,bb,cc.dd"}
         self.setUpClient(config)
         self.assertEqual(self.client.config['log_namespace_blacklist'],
-                         ['appenlight_client.client', 'aa', 'bb', 'cc.dd'])
+                         ['appenlight_client.client',
+                          'appenlight_client.transports.http',
+                          'aa', 'bb', 'cc.dd'])
 
     def test_default_filter_callable(self):
         self.setUpClient()
@@ -449,7 +445,7 @@ def generate_error():
     pass
 
 
-class TestClientSending(unittest.TestCase):
+class TestClientTransport(unittest.TestCase):
     def setUpClient(self, config={'appenlight.api_key': 'blargh!'}):
         self.client = client.Client(config)
 
@@ -468,23 +464,25 @@ class TestClientSending(unittest.TestCase):
     def test_send_error_failure_queue(self):
         self.setUpClient()
         self.client.py_report(TEST_ENVIRON, http_status=404)
-        self.client.submit_data()
+        self.client.check_if_deliver(force_send=True)
         get_local_storage(local_timing).clear()
         self.assertEqual(self.client.report_queue, [])
 
-    def test_send_error_failure(self):
+    def test_http_transport_failure(self):
         self.setUpClient()
         self.client.py_report(TEST_ENVIRON, http_status=404)
-        result = self.client.submit_data()
+        result = self.client.transport.send(self.client.report_queue, 'reports')
         get_local_storage(local_timing).clear()
-        self.assertEqual(result['reports'], False)
+        self.assertEqual(result, False)
 
-    def test_send_error_io(self):
-        self.setUpClient()
+    def test_http_transport_success(self):
+        # requires valid key for test
+        return True
+        self.setUpClient({'appenlight.api_key': 'XXX'})
         self.client.py_report(TEST_ENVIRON, http_status=404)
-        result = self.client.submit_data()
+        result = self.client.transport.send(self.client.report_queue, 'reports')
         get_local_storage(local_timing).clear()
-        self.assertEqual(result['reports'], False)
+        self.assertEqual(result, True)
 
 
 class TestErrorParsing(unittest.TestCase):

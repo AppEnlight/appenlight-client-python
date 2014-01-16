@@ -1,8 +1,9 @@
 CHANGELOG:
 ==========
 
-2014-01-16 Small bugfixes
-     0.6.4
+2014-01-??  Added support for replacable client transports
+            Fixed case when exception generated slow request
+     0.6.4S mall bugfixes
 
 2014-01-08 Config file handling
      0.6.3 Allow combining of a separate config file and direct settings.
