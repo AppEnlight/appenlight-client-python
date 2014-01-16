@@ -359,10 +359,10 @@ class Client(object):
         with self.report_queue_lock:
             self.report_queue.append(report_data)
         if traceback:
-            log.warning(u'%s code: %s @%s' % (http_status,
-                                          report_data.get('error_type'),
-                                          url,))
-            log.error(report_data.get('error_type'))
+            log.warning('%s code: %s @%s' % (http_status,
+                                          report_data.get('error_type').encode('utf8','ignore'),
+                                          url.encode('utf8','ignore'),))
+            log.error(report_data.get('error_type','').encode('utf8','ignore'))
             log.error(traceback.plaintext)
         del traceback
         report_data['report_details'][0]['start_time'] = start_time
@@ -378,7 +378,7 @@ class Client(object):
                 r.pop('parents', None)
                 r.pop('count', None)
                 report_data['report_details'][0]['slow_calls'].append(r)
-            log.info('slow request/queries detected: %s' % url)
+            log.info('slow request/queries detected: %s' % url.encode('utf8','ignore'))
         return True
 
     def py_log(self, environ, records=None, r_uuid=None, created_report=None):
