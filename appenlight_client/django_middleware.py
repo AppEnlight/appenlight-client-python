@@ -56,9 +56,7 @@ class AppenlightMiddleware(object):
         end_time = default_timer()
         if user and user.is_authenticated():
             environ['appenlight.username'] = unicode(user.pk)
-        if isinstance(exception, Http404):
-            http_status = 404
-        else:
+        if not isinstance(exception, Http404):
             http_status = 500
             request._errormator_create_report = True
             traceback = get_current_traceback(skip=1,
