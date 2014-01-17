@@ -239,6 +239,9 @@ class Client(object):
 
     def check_if_deliver(self, force_send=False):
         delta = datetime.datetime.utcnow() - self.last_submit
+        metrics = []
+        reports = []
+        logs = []
         # should we send
         if delta > self.config['buffer_flush_interval'] or force_send:
             # build data to feed the transport
@@ -249,21 +252,25 @@ class Client(object):
             with self.log_queue_lock:
                 logs = self.log_queue[:2000]
                 self.log_queue = self.log_queue[2000:]
-            # metrics we should send every 60s
-            metrics = []
-            if delta >= datetime.timedelta(seconds=60):
-                with self.request_stats_lock:
-                    request_stats = self.request_stats
-                    self.request_stats = {}
-                for k, v in request_stats.iteritems():
-                    metrics.append({
-                        "server": self.config['server_name'],
-                        "metrics": v.items(),
-                        "timestamp": k.isoformat()
-                    })
-                self.last_request_stats_submit = datetime.datetime.utcnow()
+            # mark times
             self.last_submit = datetime.datetime.utcnow()
-            # submit times are marked so we can now send the report
+
+        # metrics we should send every 60s
+        if delta >= datetime.timedelta(seconds=60):
+            with self.request_stats_lock:
+                request_stats = self.request_stats
+                self.request_stats = {}
+            for k, v in request_stats.iteritems():
+                metrics.append({
+                    "server": self.config['server_name'],
+                    "metrics": v.items(),
+                    "timestamp": k.isoformat()
+                })
+            # mark times
+            self.last_request_stats_submit = datetime.datetime.utcnow()
+
+
+        if reports or logs or metrics:
             self.transport.feed(reports=reports, logs=logs, metrics=metrics)
             return True
         return False
