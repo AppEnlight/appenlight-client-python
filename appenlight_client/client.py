@@ -256,6 +256,7 @@ class Client(object):
             self.last_submit = datetime.datetime.utcnow()
 
         # metrics we should send every 60s
+        delta = datetime.datetime.utcnow() - self.last_request_stats_submit
         if delta >= datetime.timedelta(seconds=60):
             with self.request_stats_lock:
                 request_stats = self.request_stats
