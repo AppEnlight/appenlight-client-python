@@ -105,7 +105,10 @@ def wrap_view_config(appenlight_callable):
 
 
 def appenlight_tween_factory(handler, registry):
-    blacklist = (pyramid.httpexceptions.WSGIHTTPException,)
+    try:
+        blacklist = (pyramid.httpexceptions.HTTPException, pyramid.httpexceptions.WSGIHTTPException,)
+    except Exception, e:
+        blacklist = (pyramid.httpexceptions.WSGIHTTPException,)
 
     def error_tween(request):
         try:

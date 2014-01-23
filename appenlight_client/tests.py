@@ -459,6 +459,7 @@ class TestClientTransport(unittest.TestCase):
 
     def test_check_if_deliver_forced(self):
         self.setUpClient()
+        self.client.log_queue = ['dummy']
         self.assertEqual(self.client.check_if_deliver(force_send=True), True)
 
     def test_send_error_failure_queue(self):
@@ -1101,6 +1102,22 @@ class WSGITests(unittest.TestCase):
         app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
         self.assertEqual(len(app.appenlight_client.report_queue), 1)
+        self.assertEqual(app.appenlight_client.report_queue[0]['http_status'], 500)
+
+
+    def test_not_found_request(self):
+        def app(environ, start_response):
+            start_response('404 Not Found', [('Content-Type', 'text/html')])
+            return ['Hello World!']
+
+        req = Request.blank('http://localhost/test')
+        app = make_appenlight_middleware(app, global_config=timing_conf)
+        app.appenlight_client.config['report_404'] = True
+        app.appenlight_client.config['reraise_exceptions'] = False
+        app.appenlight_client.last_submit = datetime.datetime.now()
+        req.get_response(app)
+        self.assertEqual(len(app.appenlight_client.report_queue), 1)
+        self.assertEqual(app.appenlight_client.report_queue[0]['http_status'], 404)
 
     def test_ignored_error_request(self):
         def app(environ, start_response):
