@@ -429,8 +429,11 @@ class Client(object):
         # form friendly to json encode
         parsed_environ = {}
         appenlight_info = {}
-        req = Request(environ)
-        for key, value in req.environ.items():
+        if 'PATH_INFO' in environ:
+            req = Request(environ)
+        else:
+            req = None
+        for key, value in environ.items():
             if key.startswith('appenlight.') \
                 and key not in ('appenlight.client',
                                 'appenlight.force_send',
@@ -456,9 +459,9 @@ class Client(object):
                         # provide better details for 500's
         try:
             parsed_environ['HTTP_METHOD'] = req.method
-        except:
+        except Exception, e:
             pass
-        if include_params:
+        if include_params and req:
             try:
                 parsed_environ['COOKIES'] = dict(req.cookies)
             except Exception as exc:
@@ -499,11 +502,15 @@ class Client(object):
             appenlight_info['URL'] = req.url
         except (UnicodeEncodeError, UnicodeDecodeError) as exc:
             appenlight_info['URL'] = '/invalid-encoded-url'
+        except Exception, e:
+            appenlight_info['URL'] = 'unknown'
         return parsed_environ, appenlight_info
 
     def create_report_structure(self, environ, traceback=None, message=None,
                                 http_status=200, server='unknown server',
                                 include_params=False):
+        if environ is None:
+            environ = {}
         (parsed_environ, appenlight_info) = self.process_environ(
             environ,
             traceback,

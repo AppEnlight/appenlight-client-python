@@ -7,16 +7,14 @@ import uuid
 log = logging.getLogger(__name__)
 
 
-def gather_data(client, environ, gather_exception=True,
+def gather_data(client, environ=None, gather_exception=True,
                 gather_slowness=True, gather_logs=True,
                 clear_storage=True, exc_info=None,
                 start_time=None, end_time=None):
     if client.config['enabled'] == False:
         return None
-    if not environ.get('wsgi.url_scheme'):
-        environ['wsgi.url_scheme'] = ''
-    if not environ.get('HTTP_HOST'):
-        environ['HTTP_HOST'] = 'localhost'
+    if environ is None:
+        environ = {}
     if not environ.get('appenlight.request_id'):
         environ['appenlight.request_id'] = str(uuid.uuid4())
     http_status = 200
