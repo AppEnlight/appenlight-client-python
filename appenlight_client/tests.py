@@ -1108,6 +1108,10 @@ class WSGITests(unittest.TestCase):
     def test_not_found_request(self):
         def app(environ, start_response):
             start_response('404 Not Found', [('Content-Type', 'text/html')])
+            try:
+                raise Exception('something wrong')
+            except Exception, e:
+                pass
             return ['Hello World!']
 
         req = Request.blank('http://localhost/test')
