@@ -430,7 +430,10 @@ class Client(object):
         parsed_environ = {}
         appenlight_info = {}
         if 'PATH_INFO' in environ or 'SERVER_NAME' in environ or 'wsgi.url_scheme' in environ:
-            req = Request(environ)
+            try:
+                req = Request(environ)
+            except Exception, e:
+                req = None
         else:
             req = None
         for key, value in environ.items():
