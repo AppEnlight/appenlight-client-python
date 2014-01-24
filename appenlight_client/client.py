@@ -429,7 +429,7 @@ class Client(object):
         # form friendly to json encode
         parsed_environ = {}
         appenlight_info = {}
-        if 'PATH_INFO' in environ:
+        if 'PATH_INFO' in environ or 'SERVER_NAME' in environ or 'wsgi.url_scheme' in environ:
             req = Request(environ)
         else:
             req = None
