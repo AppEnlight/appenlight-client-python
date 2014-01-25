@@ -333,12 +333,15 @@ class Client(object):
         with self.report_queue_lock:
             self.report_queue.append(report_data)
         if traceback:
-            log.warning('%s code: %s @%s' % (http_status,
-                    report_data.get('error_type').encode('utf8','ignore'),
-                    url.encode('utf8', 'ignore'),))
-            log.error(
-                report_data.get('error_type', '').encode('utf8', 'ignore'))
-            log.error(traceback.plaintext)
+            try:
+                log.warning('%s code: %s @%s' % (http_status,
+                        report_data.get('error_type').encode('utf8','ignore'),
+                        url.encode('utf8', 'ignore'),))
+                log.error(
+                    report_data.get('error_type', '').encode('utf8', 'ignore'))
+                log.error(traceback.plaintext.encode('utf8', 'ignore'))
+            except Exception, e:
+                pass
         del traceback
         report_data['report_details'][0]['start_time'] = start_time
         report_data['report_details'][0]['end_time'] = end_time
@@ -353,8 +356,11 @@ class Client(object):
                 r.pop('parents', None)
                 r.pop('count', None)
                 report_data['report_details'][0]['slow_calls'].append(r)
-            log.info('slow request/queries detected: %s' % url.encode('utf8',
+            try:
+                log.info('slow request/queries detected: %s' % url.encode('utf8',
                                                                       'ignore'))
+            except Exception,e:
+                pass
         return True
 
     def py_log(self, environ, records=None, r_uuid=None, created_report=None):
