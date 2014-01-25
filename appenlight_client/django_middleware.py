@@ -58,7 +58,6 @@ class AppenlightMiddleware(object):
             environ['appenlight.username'] = unicode(user.pk)
         if not isinstance(exception, Http404):
             http_status = 500
-            request._errormator_create_report = True
             traceback = get_current_traceback(skip=1,
                                               show_hidden_frames=True,
                                               ignore_system_exceptions=True)
@@ -75,6 +74,7 @@ class AppenlightMiddleware(object):
                                              request_stats=stats,
                                              slow_calls=slow_calls)
             del traceback
+            request._errormator_create_report = True
 
 
     def process_response(self, request, response):
