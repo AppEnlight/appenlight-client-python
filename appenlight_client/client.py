@@ -536,7 +536,7 @@ class Client(object):
             detail_entry['traceback'] = traceback.frameinfo(
                 include_vars=local_vars)
 
-        report_data['http_status'] = 500 if traceback else http_status
+        report_data['http_status'] = http_status
         if http_status == 404:
             report_data['error_type'] = '404 Not Found'
         report_data['priority'] = 5
