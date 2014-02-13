@@ -11,6 +11,7 @@ def gather_data(client, environ=None, gather_exception=True,
                 gather_slowness=True, gather_logs=True,
                 clear_storage=True, exc_info=None,
                 start_time=None, end_time=None):
+    """ exc_info is supposed to be (exc_type, exc_value, tb) - what sys.exc_info() returns """
     if client.config['enabled'] == False:
         return None
     if environ is None:
