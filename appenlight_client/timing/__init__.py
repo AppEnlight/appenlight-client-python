@@ -53,13 +53,14 @@ class AppenlightLocalStorage(object):
             if row['ignore_in'].intersection(row['parents']):
                 # this means that it is used internally in other lib
                 continue
-            stats[row['type']] += duration
             if row.get('count'):
                 stats['%s_calls' % row['type']] += 1
                 # if this call was being made inside template - substract duration
             # from template timing
-            if 'tmpl' in row['parents'] and row['parents'][-1] != 'tmpl':
-                self.thread_stats['tmpl'] -= duration
+            is_nested_template = 'tmpl' in row['parents']
+            is_nested_custom = 'custom' in row['parents']
+            if not is_nested_template and not is_nested_custom:
+                stats[row['type']] += duration
             if duration >= row['min_duration']:
                 slow_calls.append(row)
                 # round stats to 5 digits

@@ -614,6 +614,46 @@ class TestMakeMiddleware(unittest.TestCase):
         self.assertFalse(isinstance(app, AppenlightWSGIWrapper))
 
 
+class TestCustomTiming(unittest.TestCase):
+    def setUpClient(self, config={}):
+        self.client = client.Client(config)
+
+    def setUp(self):
+        self.setUpClient(timing_conf)
+
+    def tearDown(self):
+        get_local_storage(local_timing).clear()
+
+    def test_custom_time_trace(self):
+
+        @time_trace(name='foo_func', min_duration=0.1)
+        def foo(arg):
+            time.sleep(0.2)
+            return arg
+        foo('a')
+        stats, result = get_local_storage(local_timing).get_thread_stats()
+        self.assertEqual(len(result), 1)
+
+    def test_custom_nested_timimg(self):
+
+        @time_trace(name='baz_func', min_duration=0.1)
+        def baz(arg):
+            time.sleep(0.12)
+            return arg
+
+        @time_trace(name='foo_func', min_duration=0.1)
+        def foo(arg):
+            time.sleep(0.12)
+            return baz(arg)
+
+        @time_trace(name='bar_func', min_duration=0.1)
+        def bar(arg):
+           return foo(arg)
+        bar('a')
+        stats, result = get_local_storage(local_timing).get_thread_stats()
+        self.assertEqual(len(result), 3)
+
+
 class TestTimingHTTPLibs(unittest.TestCase):
     def setUpClient(self, config={}):
         self.client = client.Client(config)
@@ -960,9 +1000,16 @@ class TestMako(unittest.TestCase):
         lookup.put_string("base.html", '''
         <%
         import time
-        time.sleep(0.01)
+        time.sleep(0.02)
         %>
-            <html><body></body></html>
+            <html><body><%include file="subtemplate.html"/></body></html>
+        ''')
+        lookup.put_string("subtemplate.html", '''
+        <%
+        import time
+        time.sleep(0.02)
+        %>
+            SUBTEPLATE
         ''')
         template = lookup.get_template("base.html")
         template.render_unicode()
