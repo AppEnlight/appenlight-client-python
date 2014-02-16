@@ -3,6 +3,7 @@ import sys
 import urlparse
 import threading
 from appenlight_client.ext_json import json
+from appenlight_client import __protocol_version__, __version__
 
 # are we running python 3.x ?
 PY3 = sys.version_info[0] == 3
@@ -17,9 +18,8 @@ log = logging.getLogger(__name__)
 
 
 class HTTPTransport(object):
-    def __init__(self, config_string, client_config, protocol_version):
+    def __init__(self, config_string, client_config):
         self.client_config = client_config
-        self.protocol_version = protocol_version
         self.transport_config = {'endpoints': {"reports": '/api/reports',
                                                "logs": '/api/logs',
                                                "metrics": '/api/metrics'}
@@ -62,11 +62,12 @@ class HTTPTransport(object):
             log.warning('no api key set - dropping payload')
             return False
         GET_vars = urllib.urlencode({
-            'protocol_version': self.protocol_version})
+            'protocol_version': __protocol_version__})
         server_url = '%s%s?%s' % (self.transport_config['url'], endpoint,
                                   GET_vars,)
         headers = {'content-type': 'application/json',
-                   'x-appenlight-api-key': self.client_config['api_key']}
+                   'x-appenlight-api-key': self.client_config['api_key'],
+                   'User-Agent':'appenlight-python/%s' % __version__}
         log.info('sending out %s entries to %s' % (len(data), endpoint,))
         try:
             req = urllib2.Request(server_url,

@@ -220,8 +220,7 @@ class Client(object):
             log.error(msg)
 
         self.transport = selected_transport(self.config['transport_config'],
-                                            self.config,
-                                            self.__protocol_version__)
+                                            self.config)
 
     def register_hooks(self):
         for hook in self.hooks:
