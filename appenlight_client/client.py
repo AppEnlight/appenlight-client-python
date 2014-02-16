@@ -354,6 +354,10 @@ class Client(object):
                 r.pop('ignore_in', None)
                 r.pop('parents', None)
                 r.pop('count', None)
+                r.pop('min_duration', None)
+                # convert to datetime before json payload gets created
+                r['start'] = datetime.datetime.utcfromtimestamp(r['start'])
+                r['end'] = datetime.datetime.utcfromtimestamp(r['end'])
                 report_data['report_details'][0]['slow_calls'].append(r)
             try:
                 log.info('slow request/queries detected: %s' % url.encode('utf8',

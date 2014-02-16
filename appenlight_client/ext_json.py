@@ -37,8 +37,9 @@ def _obj_dump(obj):
     # some code borrowed from django 1.4
     elif isinstance(obj, datetime.datetime):
         r = obj.isoformat()
-        if obj.microsecond:
-            r = r[:23] + r[26:]
+        # increase precision
+        # if obj.microsecond:
+        #     r = r[:23] + r[26:]
         if r.endswith('+00:00'):
             r = r[:-6] + 'Z'
         return r
