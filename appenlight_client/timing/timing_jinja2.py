@@ -12,10 +12,14 @@ def add_timing(min_duration=0.15):
     from jinja2 import environment
 
     def gather_template(template, *args, **kwargs):
+        try:
+            tmpl_name = str(template.name)
+        except Exception as e:
+            tmpl_name = ''
         return {'type': 'tmpl',
                 'subtype': 'jinja2',
                 'statement': 'render',
-                'parameters': '',
+                'parameters': tmpl_name,
                 'count': True,
                 'ignore_in': ignore_set}
 
