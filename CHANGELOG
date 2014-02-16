@@ -1,9 +1,13 @@
 CHANGELOG:
 ==========
 
+2014-02-??  Fixed nested timing stats
+     0.6.5  Removed some http_status rewriting logic
+            small improvements
+
 2014-01-18  Added support for replacable client transports
             Fixed case when exception generated slow request
-     0.6.4 mall bugfixes
+     0.6.4 small bugfixes
 
 2014-01-08 Config file handling
      0.6.3 Allow combining of a separate config file and direct settings.
