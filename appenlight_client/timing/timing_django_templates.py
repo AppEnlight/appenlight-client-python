@@ -12,11 +12,15 @@ def add_timing(min_duration=0.15):
     from django import template
 
     def gather_template(template, *args, **kwargs):
+        try:
+            tmpl_name = str(template.name)
+        except Exception as e:
+            tmpl_name = ''
         return {'type': 'tmpl',
                 'subtype': 'django',
                 'statement': 'render',
                 'count': True,
-                'parameters': '',
+                'parameters': tmpl_name,
                 'ignore_in': ignore_set}
 
     if hasattr(template.Template, 'render'):
