@@ -31,7 +31,8 @@ def gather_data(client, environ=None, gather_exception=True,
     appenlight_storage = get_local_storage(local_timing)
     stats, slow_calls = appenlight_storage.get_thread_stats()
     if traceback is not None or (slow_calls and gather_slowness):
-        client.py_report(environ, traceback, http_status=http_status, request_stats=stats, slow_calls=slow_calls)
+        client.py_report(environ, traceback, http_status=http_status, request_stats=stats, slow_calls=slow_calls,
+                         start_time=start_time, end_time=end_time)
     # dereference
     del traceback
     now = datetime.datetime.utcnow()
