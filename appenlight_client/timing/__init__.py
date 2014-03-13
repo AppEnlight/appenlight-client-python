@@ -92,7 +92,8 @@ def _e_trace(info_gatherer, min_duration, e_callable, *args, **kw):
             'min_duration': min_duration}
     info.update(info_gatherer(*args, **kw))
     appenlight_storage = get_local_storage(local_timing)
-    appenlight_storage.slow_calls.append(info)
+    if len(appenlight_storage.slow_calls) < 500:
+        appenlight_storage.slow_calls.append(info)
     return result
 
 
@@ -120,7 +121,8 @@ def time_trace(gatherer=None, min_duration=0.1, is_template=False, name=None):
                     'min_duration': min_duration}
             info.update(gatherer(*args, **kwargs))
             appenlight_storage = get_local_storage(local_timing)
-            appenlight_storage.slow_calls.append(info)
+            if len(appenlight_storage.slow_calls) < 500:
+                appenlight_storage.slow_calls.append(info)
             return result
 
         # will prevent this wrapper being decorated again
