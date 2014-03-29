@@ -84,7 +84,7 @@ class Client(object):
             self.config['enabled'] = False
             logging.warning("Disabling appenlight client, no api key")
         self.config['transport'] = config.get('appenlight.transport',
-            'appenlight_client.transports.http:HTTPTransport')
+            'appenlight_client.transports.requests:HTTPTransport')
 
         self.config['transport_config'] = config.get(
             'appenlight.transport_config', 'https://api.appenlight.com?threaded=1&timeout=5')
@@ -135,7 +135,7 @@ class Client(object):
         self.config['environ_keys_whitelist'].extend(
             filter(lambda x: x, environ_whitelist))
         self.config['log_namespace_blacklist'] = ['appenlight_client.client',
-                                        'appenlight_client.transports.http']
+                                        'appenlight_client.transports.requests']
 
         log_blacklist = aslist(
             config.get('appenlight.log_namespace_blacklist'), ',')
@@ -213,7 +213,7 @@ class Client(object):
                               [parts[1], ], 0)
             selected_transport = getattr(_tmp, parts[1])
         except ImportError as e:
-            from appenlight_client.transports.http import HTTPTransport as selected_transport
+            from appenlight_client.transports.requests import HTTPTransport as selected_transport
 
             msg = 'Could not import transport %s, using default, %s' % (
             self.config['transport'], e)

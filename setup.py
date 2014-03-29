@@ -27,7 +27,8 @@ setup(name='appenlight_client',
           'appenlight_client': ['templates/*.ini'],
       },
       install_requires=[
-          "webob"
+          "webob",
+          "requests"
       ],
       entry_points="""
       [paste.filter_app_factory]

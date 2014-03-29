@@ -1,6 +1,9 @@
 CHANGELOG:
 ==========
 
+2014-03-??  Use requests as default transport with SSL validation
+     0.6.6  Save memory when building query maps - store up to 500 calls only
+
 2014-02-16  Fixed nested timing stats
      0.6.5  Removed some http_status rewriting logic
             Dont parse environ if we're not dealing with real app data
