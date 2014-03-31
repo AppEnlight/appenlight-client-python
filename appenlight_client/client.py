@@ -439,6 +439,10 @@ class Client(object):
         parsed_environ = {}
         appenlight_info = {}
         if 'PATH_INFO' in environ or 'SERVER_NAME' in environ or 'wsgi.url_scheme' in environ:
+            # dummy data for Request to work
+            if not 'wsgi.url_scheme' in environ:
+                environ['wsgi.url_scheme'] = 'http'
+                environ['HTTP_HOST'] = ""
             try:
                 req = Request(environ)
             except Exception, e:
