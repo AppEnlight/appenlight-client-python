@@ -509,7 +509,6 @@ class TestClientTransport(unittest.TestCase):
             {'appenlight.api_key': 'XXX',
              'appenlight.transport_config': 'http://foo.bar.baz.com:6543?threaded=1&timeout=5'})
         self.client.py_report(TEST_ENVIRON, http_status=404)
-        print self.client.transport
         result = self.client.transport.send(self.client.report_queue, 'reports')
         get_local_storage(local_timing).clear()
         self.assertEqual(result, False)
