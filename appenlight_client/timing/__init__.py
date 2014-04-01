@@ -92,7 +92,7 @@ def _e_trace(info_gatherer, min_duration, e_callable, *args, **kw):
             'min_duration': min_duration}
     info.update(info_gatherer(*args, **kw))
     appenlight_storage = get_local_storage(local_timing)
-    if len(appenlight_storage.slow_calls) < 500:
+    if len(appenlight_storage.slow_calls) < 1000:
         appenlight_storage.slow_calls.append(info)
     return result
 
