@@ -55,8 +55,8 @@ class CommandRouter(object):
                                         'message': 'Test entry'})
 
         appenlight_client.py_log({}, [record])
-        result = appenlight_client.submit_data()
-        if not result['logs']:
+        result = appenlight_client.transport.send(appenlight_client.log_queue[:], 'logs')
+        if not result:
             print 'something went wrong, please check your API key'
             return False
         else:
