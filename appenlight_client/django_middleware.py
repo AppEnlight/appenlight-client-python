@@ -8,8 +8,7 @@ from appenlight_client.timing import default_timer
 from appenlight_client.client import Client
 from appenlight_client.utils import fullyQualifiedName
 import logging
-import sys
-import inspect
+
 
 log = logging.getLogger(__name__)
 
@@ -42,7 +41,7 @@ class AppenlightMiddleware(object):
         try:
             if 'appenlight.view_name' not in request.environ:
                 request.environ['appenlight.view_name'] = '%s.%s' % (fullyQualifiedName(view_func), request.method)
-        except Exception,e:
+        except Exception:
             request.environ['appenlight.view_name'] = ''
         return None
 
@@ -64,7 +63,7 @@ class AppenlightMiddleware(object):
             appenlight_storage = get_local_storage(local_timing)
             appenlight_storage.thread_stats['main'] = end_time - request.__start_time__
             stats, slow_calls = appenlight_storage.get_thread_stats()
-            self.appenlight_client.save_request_stats(stats, view_name=environ.get('appenlight.view_name',''))
+            self.appenlight_client.save_request_stats(stats, view_name=environ.get('appenlight.view_name', ''))
             self.appenlight_client.py_report(environ,
                                              traceback,
                                              message=None,
@@ -75,7 +74,6 @@ class AppenlightMiddleware(object):
                                              slow_calls=slow_calls)
             del traceback
             request._errormator_create_report = True
-
 
     def process_response(self, request, response):
         try:
@@ -95,7 +93,7 @@ class AppenlightMiddleware(object):
                 appenlight_storage = get_local_storage(local_timing)
                 appenlight_storage.thread_stats['main'] = end_time - request.__start_time__
                 stats, slow_calls = appenlight_storage.get_thread_stats()
-                self.appenlight_client.save_request_stats(stats, view_name=environ.get('appenlight.view_name',''))
+                self.appenlight_client.save_request_stats(stats, view_name=environ.get('appenlight.view_name', ''))
                 if self.appenlight_client.config['slow_requests']:
                     if (delta >= self.appenlight_client.config['slow_request_time'] or slow_calls):
                         request._errormator_create_report = True

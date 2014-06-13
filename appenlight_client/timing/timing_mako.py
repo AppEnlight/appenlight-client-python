@@ -1,5 +1,5 @@
 from appenlight_client.utils import import_module, deco_func_or_method
-from appenlight_client.timing import time_trace, import_from_module, _e_trace
+from appenlight_client.timing import time_trace
 
 ignore_set = frozenset()
 

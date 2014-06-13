@@ -23,7 +23,7 @@ class HTTPTransport(object):
         self.transport_config = {'endpoints': {"reports": '/api/reports',
                                                "logs": '/api/logs',
                                                "metrics": '/api/metrics'}
-        }
+                                 }
         parsed_url = urlparse.urlsplit(config_string)
 
         self.transport_config['url'] = parsed_url.geturl().split('?')[0]
@@ -34,8 +34,7 @@ class HTTPTransport(object):
 
     def feed(self, *args, **kwargs):
         if self.transport_config['threaded']:
-            submit_data_t = threading.Thread(target=self.submit,
-                                        args=args,kwargs=kwargs)
+            submit_data_t = threading.Thread(target=self.submit, args=args, kwargs=kwargs)
             submit_data_t.start()
         else:
             self.submit_data(*args, **kwargs)
@@ -49,9 +48,8 @@ class HTTPTransport(object):
     def send(self, to_send_items, endpoint):
         if to_send_items:
             try:
-                return self.remote_call(to_send_items,
-                                 self.client_config['endpoints'][endpoint])
-            except KeyboardInterrupt as exc:
+                return self.remote_call(to_send_items, self.client_config['endpoints'][endpoint])
+            except KeyboardInterrupt:
                 raise KeyboardInterrupt()
             except Exception as exc:
                 log.warning('%s: connection issue: %s' % (endpoint, exc))
@@ -67,14 +65,14 @@ class HTTPTransport(object):
                                   GET_vars,)
         headers = {'content-type': 'application/json',
                    'x-appenlight-api-key': self.client_config['api_key'],
-                   'User-Agent':'appenlight-python/%s' % __version__}
+                   'User-Agent': 'appenlight-python/%s' % __version__}
         log.info('sending out %s entries to %s' % (len(data), endpoint,))
         try:
             req = urllib2.Request(server_url,
                                   json.dumps(data).encode('utf8'),
                                   headers=headers)
-        except IOError as e:
-            message = 'APPENLIGHT: problem: %s' % e
+        except IOError as exc:
+            message = 'APPENLIGHT: problem: %s' % exc
             log.error(message)
             return False
         try:
@@ -82,7 +80,7 @@ class HTTPTransport(object):
                                    timeout=self.transport_config['timeout'])
             conn.close()
             return True
-        except TypeError as exc:
+        except TypeError:
             conn = urllib2.urlopen(req)
             conn.close()
             return True

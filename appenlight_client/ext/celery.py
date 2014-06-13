@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import logging
-from celery.signals import task_failure, task_postrun, task_success, task_prerun
+from celery.signals import task_failure, task_postrun, task_prerun
 from appenlight_client.ext.general import gather_data
 from datetime import datetime
 
@@ -10,12 +10,10 @@ logging.basicConfig()
 
 def register_signals(APPENLIGHT_CLIENT):
 
-    def prerun_signal(sender, task_id, task, args, kwargs, *aargs,
-                       **kwds):
+    def prerun_signal(sender, task_id, task, args, kwargs, *aargs, **kwds):
         task._appenlight_start_time = datetime.utcnow()
 
-    def postrun_signal(sender, task_id, task, args, kwargs, retval, *aargs,
-                       **kwds):
+    def postrun_signal(sender, task_id, task, args, kwargs, retval, *aargs, **kwds):
         end_time = datetime.utcnow()
         start_time = getattr(task, '_appenlight_start_time')
         fake_environ = {'appenlight.view_name': 'celery:' + sender.name}

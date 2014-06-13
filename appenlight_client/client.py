@@ -84,10 +84,9 @@ class Client(object):
             self.config['enabled'] = False
             logging.warning("Disabling appenlight client, no api key")
         self.config['transport'] = config.get('appenlight.transport',
-            'appenlight_client.transports.requests:HTTPTransport')
+                                              'appenlight_client.transports.requests:HTTPTransport')
 
-        self.config['transport_config'] = config.get(
-            'appenlight.transport_config', 'https://api.appenlight.com?threaded=1&timeout=5')
+        self.config['transport_config'] = config.get('appenlight.transport_config', 'https://api.appenlight.com?threaded=1&timeout=5')
         self.config['reraise_exceptions'] = asbool(
             config.get('appenlight.reraise_exceptions', True))
         self.config['slow_requests'] = asbool(
@@ -134,8 +133,7 @@ class Client(object):
             config.get('appenlight.environ_keys_whitelist'), ',')
         self.config['environ_keys_whitelist'].extend(
             filter(lambda x: x, environ_whitelist))
-        self.config['log_namespace_blacklist'] = ['appenlight_client.client',
-                                        'appenlight_client.transports.requests']
+        self.config['log_namespace_blacklist'] = ['appenlight_client.client', 'appenlight_client.transports.requests']
 
         log_blacklist = aslist(
             config.get('appenlight.log_namespace_blacklist'), ',')
@@ -215,8 +213,7 @@ class Client(object):
         except ImportError as e:
             from appenlight_client.transports.requests import HTTPTransport as selected_transport
 
-            msg = 'Could not import transport %s, using default, %s' % (
-            self.config['transport'], e)
+            msg = 'Could not import transport %s, using default, %s' % (self.config['transport'], e)
             log.error(msg)
 
         self.transport = selected_transport(self.config['transport_config'],
@@ -232,7 +229,7 @@ class Client(object):
                     'appenlight_client.hooks.%s:register' % hook)
                 if e_callable:
                     e_callable()
-            except Exception, e:
+            except Exception:
                 raise
                 log.warning("Couln't attach hook: %s" % hook)
 
@@ -268,7 +265,6 @@ class Client(object):
                 })
             # mark times
             self.last_request_stats_submit = datetime.datetime.utcnow()
-
 
         if reports or logs or metrics:
             self.transport.feed(reports=reports, logs=logs, metrics=metrics)
@@ -316,14 +312,11 @@ class Client(object):
                   slow_calls=None):
         if not request_stats:
             request_stats = {}
-        report_data, appenlight_info = self.create_report_structure(
-            environ,
-            traceback,
-            server=
-            self.config[
-                'server_name'],
-            http_status=http_status,
-            include_params=True)
+        report_data, appenlight_info = self.create_report_structure(environ,
+                                                                    traceback,
+                                                                    server=self.config['server_name'],
+                                                                    http_status=http_status,
+                                                                    include_params=True)
         report_data = self.filter_callable(report_data, 'error_report')
         url = report_data['report_details'][0]['url']
         if not PY3:
@@ -334,12 +327,12 @@ class Client(object):
         if traceback:
             try:
                 log.warning('%s code: %s @%s' % (http_status,
-                        report_data.get('error_type').encode('utf8','ignore'),
-                        url.encode('utf8', 'ignore'),))
+                                                 report_data.get('error_type').encode('utf8', 'ignore'),
+                                                 url.encode('utf8', 'ignore'),))
                 log.error(
                     report_data.get('error_type', '').encode('utf8', 'ignore'))
                 log.error(traceback.plaintext.encode('utf8', 'ignore'))
-            except Exception, e:
+            except Exception:
                 pass
         del traceback
         report_data['report_details'][0]['start_time'] = start_time
@@ -360,9 +353,8 @@ class Client(object):
                 r['end'] = datetime.datetime.utcfromtimestamp(r['end'])
                 report_data['report_details'][0]['slow_calls'].append(r)
             try:
-                log.info('slow request/queries detected: %s' % url.encode('utf8',
-                                                                      'ignore'))
-            except Exception,e:
+                log.info('slow request/queries detected: %s' % url.encode('utf8', 'ignore'))
+            except Exception:
                 pass
         return True
 
@@ -440,12 +432,12 @@ class Client(object):
         appenlight_info = {}
         if 'PATH_INFO' in environ or 'SERVER_NAME' in environ or 'wsgi.url_scheme' in environ:
             # dummy data for Request to work
-            if not 'wsgi.url_scheme' in environ:
+            if 'wsgi.url_scheme' not in environ:
                 environ['wsgi.url_scheme'] = 'http'
                 environ['HTTP_HOST'] = ""
             try:
                 req = Request(environ)
-            except Exception, e:
+            except Exception:
                 req = None
         else:
             req = None
@@ -470,22 +462,21 @@ class Client(object):
                                 parsed_environ[key] = value.decode('utf8')
                         else:
                             parsed_environ[key] = unicode(value)
-                    except Exception as exc:
+                    except Exception:
                         pass
                         # provide better details for 500's
         try:
             parsed_environ['HTTP_METHOD'] = req.method
-        except Exception, e:
+        except Exception:
             pass
         if include_params and req:
             try:
                 parsed_environ['COOKIES'] = dict(req.cookies)
-            except Exception as exc:
+            except Exception:
                 parsed_environ['COOKIES'] = {}
             try:
-                parsed_environ['GET'] = dict([(k, req.GET.getall(k),) \
-                                              for k in req.GET])
-            except Exception as exc:
+                parsed_environ['GET'] = dict([(k, req.GET.getall(k),) for k in req.GET])
+            except Exception:
                 parsed_environ['GET'] = {}
             try:
                 # handle werkzeug and django
@@ -496,7 +487,7 @@ class Client(object):
                     # webob uses _parsed_post_vars - so this will not fail
                     parsed_environ['POST'] = dict([(k, req.POST.getall(k))
                                                    for k in req.POST])
-            except Exception as exc:
+            except Exception:
                 parsed_environ['POST'] = {}
 
         # figure out real ip
@@ -512,13 +503,13 @@ class Client(object):
             username = environ.get('REMOTE_USER',
                                    appenlight_info.get('username', u''))
             appenlight_info['username'] = u'%s' % username
-        except (UnicodeEncodeError, UnicodeDecodeError) as exc:
+        except (UnicodeEncodeError, UnicodeDecodeError):
             appenlight_info['username'] = "undecodable"
         try:
             appenlight_info['URL'] = req.url
-        except (UnicodeEncodeError, UnicodeDecodeError) as exc:
+        except (UnicodeEncodeError, UnicodeDecodeError):
             appenlight_info['URL'] = '/invalid-encoded-url'
-        except Exception, e:
+        except Exception:
             appenlight_info['URL'] = 'unknown'
         return parsed_environ, appenlight_info
 
@@ -591,7 +582,7 @@ def get_config(config=None, path_to_config=None, section_name='appenlight'):
             parser.readfp(f)
             try:
                 file_config = dict(parser.items(section_name))
-            except ConfigParser.NoSectionError as exc:
+            except ConfigParser.NoSectionError:
                 logging.warning('No section name '
                                 'called %s in file' % section_name)
             config.update(file_config)

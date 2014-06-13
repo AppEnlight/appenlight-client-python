@@ -25,5 +25,4 @@ def add_timing(min_duration=3):
                 'ignore_in': ignore_set}
 
     deco_func_or_method(module, 'urlretrieve', time_trace,
-                        gatherer=gather_args_urlretrieve, min_duration=min_duration
-    )
+                        gatherer=gather_args_urlretrieve, min_duration=min_duration)

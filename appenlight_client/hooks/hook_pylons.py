@@ -1,4 +1,4 @@
-from appenlight_client.utils import import_module, deco_func_or_method, fullyQualifiedName
+from appenlight_client.utils import deco_func_or_method, fullyQualifiedName
 from functools import wraps
 
 
@@ -10,7 +10,7 @@ def wrap_pylons_view_method_name():
                 action = environ['pylons.routes_dict'].get('action', '')
                 controller = fullyQualifiedName(self.__class__)
                 environ['appenlight.view_name'] = "%s.%s" % (controller, action)
-            except Exception, e:
+            except Exception:
                 pass
             return appenlight_callable(self, environ, start_response)
 
@@ -24,7 +24,7 @@ def register():
         import pylons.controllers.core
 
         module = pylons.controllers.core
-    except ImportError, e:
+    except ImportError:
         module = None
     if not module:
         return

@@ -1,17 +1,16 @@
 from appenlight_client.exceptions import get_current_traceback
 from appenlight_client.timing import get_local_storage, local_timing
-from appenlight_client.utils import fullyQualifiedName, deco_func_or_method
+from appenlight_client.utils import fullyQualifiedName
 from pyramid.tweens import EXCVIEW
-from pyramid.static import static_view
 import pkg_resources
 import pyramid.config
-import pyramid
 import logging
 import inspect
 
 from functools import wraps
 
 log = logging.getLogger(__name__)
+
 
 # stolen from pyramid 1.4
 def combine(*decorators):
@@ -48,8 +47,8 @@ def wrap_pyramid_view_method_name(appenlight_callable):
                 # only change the name if it wasn't resolved yet
                 if len(split_name) == 2 and '.' not in split_name[1]:
                     appenlight_storage.view_name = '%s.%s' % (appenlight_storage.view_name,
-                                                          appenlight_callable.__name__)
-            except Exception, e:
+                                                              appenlight_callable.__name__)
+            except Exception:
                 pass
         return appenlight_callable(*args, **kwargs)
 
@@ -67,10 +66,10 @@ def wrap_pyramid_view_name(appenlight_callable):
                 view_name = fullyQualifiedName(appenlight_callable)
                 if not hasattr(original_view, '_appenlight_name'):
                     original_view._appenlight_name = view_name
-        except Exception, e:
+        except Exception:
             raise
         if 'pyramid/static' in view_name:
-            #normalize static views
+            # normalize static views
             view_name = 'pyramid/static'
         if not getattr(appenlight_storage, 'view_name', None):
             appenlight_storage.view_name = view_name
@@ -79,13 +78,13 @@ def wrap_pyramid_view_name(appenlight_callable):
     # do not decorate view more than once, also decorate original class methods
     try:
         original_view = getattr(appenlight_callable, '__original_view__', None)
-        if not hasattr(original_view,'_appenlight_wrapped_view'):
+        if not hasattr(original_view, '_appenlight_wrapped_view'):
             original_view._appenlight_wrapped_view = True
             if original_view and inspect.isclass(original_view):
                 for k, v in original_view.__dict__.items():
                     if not k.startswith('_') and inspect.isfunction(v):
                         setattr(original_view, k, wrap_pyramid_view_method_name(v))
-    except Exception, e:
+    except Exception:
         pass
     return view_callable_wrapper
 
@@ -110,7 +109,7 @@ def appenlight_tween_factory(handler, registry):
     def error_tween(request):
         try:
             response = handler(request)
-        except blacklist as e:
+        except blacklist:
             raise
         except:
             if 'appenlight.client' in request.environ:
@@ -134,5 +133,4 @@ def includeme(config):
         'appenlight_client.ext.pyramid_tween.appenlight_tween_factory',
         under=EXCVIEW)
     setattr(pyramid.config.Configurator, 'add_view',
-            wrap_view_config(pyramid.config.Configurator.add_view)
-    )
+            wrap_view_config(pyramid.config.Configurator.add_view))

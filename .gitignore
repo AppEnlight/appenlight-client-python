@@ -1,0 +1,7 @@
+/appenlight_client.egg-info/
+/build/
+/dist/
+*.pyc
+/.coverage
+/.project
+/.pydevproject

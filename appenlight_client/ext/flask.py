@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from flask import request
 from flask.signals import got_request_exception, request_started
-from appenlight_client.client import make_appenlight_middleware, get_config
+from appenlight_client.client import make_appenlight_middleware
 from appenlight_client.ext.general import gather_data
 from appenlight_client.utils import fullyQualifiedName
 
@@ -18,13 +18,13 @@ def log_exception(sender, exception, **extra):
 
 def populate_post_vars(sender, **extra):
     """
-    This is to handle iterated wsgi.input by werkzeug when we create webob obj 
+    This is to handle iterated wsgi.input by werkzeug when we create webob obj
     parsing environ
     """
     try:
         view_callable = sender.view_functions[request.endpoint]
         request.environ['appenlight.view_name'] = fullyQualifiedName(view_callable)
-    except Exception, e:
+    except Exception:
         pass
     if request.method in ['POST', 'PUT']:
         request.environ['appenlight.post_vars'] = request.form

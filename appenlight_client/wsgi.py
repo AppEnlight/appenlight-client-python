@@ -5,7 +5,6 @@ from appenlight_client.timing import local_timing, get_local_storage
 from appenlight_client.timing import default_timer
 from appenlight_client.client import PY3
 import logging
-import sys
 
 log = logging.getLogger(__name__)
 
@@ -41,8 +40,7 @@ class AppenlightWSGIWrapper(object):
             environ['appenlight.client'] = self.appenlight_client
             # some bw. compat stubs
 
-            def local_report(message, include_traceback=True,
-                             http_status=200):
+            def local_report(message, include_traceback=True, http_status=200):
                 environ['appenlight.force_send'] = True
 
             def local_log(level, message):
@@ -54,7 +52,7 @@ class AppenlightWSGIWrapper(object):
         try:
             app_iter = self.app(environ, detect_headers)
             return app_iter
-        except Exception as exc:
+        except Exception:
             if hasattr(app_iter, 'close'):
                 app_iter.close()
                 # we need that here
@@ -67,7 +65,7 @@ class AppenlightWSGIWrapper(object):
             try:
                 start_response('500 INTERNAL SERVER ERROR',
                                [('Content-Type', 'text/html; charset=utf-8')])
-            except Exception as exc:
+            except Exception:
                 environ['wsgi.errors'].write(
                     'AppenlightWSGIWrapper middleware catched exception '
                     'in streamed response at a point where response headers '
@@ -82,7 +80,7 @@ class AppenlightWSGIWrapper(object):
             delta = datetime.timedelta(seconds=(end_time - start_time))
             stats, slow_calls = appenlight_storage.get_thread_stats()
             if 'appenlight.view_name' not in environ:
-                environ['appenlight.view_name'] = getattr(appenlight_storage,'view_name', '')
+                environ['appenlight.view_name'] = getattr(appenlight_storage, 'view_name', '')
             if detected_data and detected_data[0]:
                 http_status = int(detected_data[0])
             if self.appenlight_client.config['slow_requests'] and not environ.get('appenlight.ignore_slow'):
@@ -110,9 +108,7 @@ class AppenlightWSGIWrapper(object):
                                                  slow_calls=slow_calls)
                 # dereference
                 del traceback
-                # force log fetching
-                traceback = True
-            self.appenlight_client.save_request_stats(stats, view_name=environ.get('appenlight.view_name',''))
+            self.appenlight_client.save_request_stats(stats, view_name=environ.get('appenlight.view_name', ''))
             if self.appenlight_client.config['logging']:
                 records = self.appenlight_client.log_handler.get_records()
                 self.appenlight_client.log_handler.clear_records()

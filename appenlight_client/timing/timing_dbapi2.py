@@ -150,7 +150,7 @@ def add_timing(module_name, min_duration=0.1):
             return getattr(self._e_object, name)
 
         def __call__(self, *args, **kwargs):
-            return TimerWrapper(_e_trace(self._e_db_connect, min_duration/2.0,
+            return TimerWrapper(_e_trace(self._e_db_connect, min_duration / 2.0,
                                          self._e_object, *args, **kwargs),
                                 self._e_module_name)
 

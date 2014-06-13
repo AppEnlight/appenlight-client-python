@@ -72,6 +72,7 @@ def deco_func_or_method(module, name, deco_f, single_attach_marker='_e_attached_
     else:
         log.debug("can't decorate %s " % name)
 
+
 def resolveModule(module_name):
     module = sys.modules.get(module_name, None)
     if module:
@@ -82,6 +83,7 @@ def resolveModule(module_name):
 
 # from http://twistedmatrix.com/trac/browser/trunk/twisted/python/deprecate.py
 # License MIT: http://twistedmatrix.com/trac/browser/trunk/LICENSE
+
 
 def fullyQualifiedName(obj):
     if hasattr(obj, '_appenlight_name'):
@@ -96,7 +98,7 @@ def fullyQualifiedName(obj):
         moduleName = obj.__module__
         try:
             moduleName = resolveModule(moduleName)
-        except Exception, e:
+        except Exception:
             pass
         name = "%s:%s" % (moduleName, name)
     elif inspect.ismethod(obj):
@@ -114,6 +116,6 @@ def fullyQualifiedName(obj):
             obj.__func__._appenlight_name = name
         else:
             obj._appenlight_name = name
-    except Exception,e:
+    except Exception:
         pass
     return name

@@ -1,19 +1,11 @@
 from functools import wraps
-from appenlight_client.utils import import_module, import_from_module
+from appenlight_client.utils import import_from_module
 import logging
-import inspect
-import datetime
-import sys
 import time
 import threading
 from operator import itemgetter
 
-# if sys.platform == "win32":
-#     # On Windows, the best timer is time.clock()
-#     default_timer = time.clock
-# else:
-#     # On most other platforms the best timer is time.time()
-#     default_timer = time.time
+
 default_timer = time.time
 
 

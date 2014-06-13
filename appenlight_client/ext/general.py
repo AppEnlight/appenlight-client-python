@@ -1,6 +1,5 @@
 from appenlight_client.exceptions import get_current_traceback, Traceback
 from appenlight_client.timing import local_timing, get_local_storage
-import datetime
 import logging
 import uuid
 
@@ -12,7 +11,7 @@ def gather_data(client, environ=None, gather_exception=True,
                 clear_storage=True, exc_info=None,
                 start_time=None, end_time=None):
     """ exc_info is supposed to be (exc_type, exc_value, tb) - what sys.exc_info() returns """
-    if client.config['enabled'] == False:
+    if not client.config['enabled']:
         return None
     if environ is None:
         environ = {}
@@ -35,7 +34,6 @@ def gather_data(client, environ=None, gather_exception=True,
                          start_time=start_time, end_time=end_time)
     # dereference
     del traceback
-    now = datetime.datetime.utcnow()
     if client.config['logging']:
         if gather_logs:
             records = client.log_handler.get_records()

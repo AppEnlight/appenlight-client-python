@@ -14,7 +14,7 @@ def add_timing(min_duration=0.15):
     def gather_template(template, *args, **kwargs):
         try:
             tmpl_name = str(template.name)
-        except Exception as e:
+        except Exception:
             tmpl_name = ''
         return {'type': 'tmpl',
                 'subtype': 'django',

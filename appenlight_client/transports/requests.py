@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 import logging
-import sys
 import requests
 import urlparse
 import threading
@@ -17,7 +16,7 @@ class HTTPTransport(object):
         self.transport_config = {'endpoints': {"reports": '/api/reports',
                                                "logs": '/api/logs',
                                                "metrics": '/api/metrics'}
-        }
+                                 }
         parsed_url = urlparse.urlsplit(config_string)
 
         self.transport_config['url'] = parsed_url.geturl().split('?')[0]
