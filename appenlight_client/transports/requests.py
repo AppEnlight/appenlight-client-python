@@ -31,7 +31,7 @@ class HTTPTransport(object):
                                              args=args, kwargs=kwargs)
             submit_data_t.start()
         else:
-            self.submit_data(*args, **kwargs)
+            self.submit(*args, **kwargs)
         return True
 
     def submit(self, *args, **kwargs):
