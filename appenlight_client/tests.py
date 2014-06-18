@@ -25,7 +25,7 @@ for k, v in timing_conf.iteritems():
     if 'appenlight.timing' in k:
         timing_conf[k] = 0.0000001
 
-#this sets up timing decoration for us
+# this sets up timing decoration for us
 client.Client(config=timing_conf)
 from appenlight_client.timing import local_timing, get_local_storage, time_trace
 
@@ -198,7 +198,7 @@ class TestClientConfig(unittest.TestCase):
 
     def test_transport_config(self):
         config = {
-        'appenlight.transport_config': 'https://api.appenlight.com?threaded=0&timeout=10'}
+            'appenlight.transport_config': 'https://api.appenlight.com?threaded=0&timeout=10'}
         self.setUpClient(config)
         self.assertDictContainsSubset({'url': 'https://api.appenlight.com',
                                        'timeout': 10, 'threaded': 0},
@@ -326,6 +326,17 @@ class TestClientConfig(unittest.TestCase):
         self.setUpClient(config)
         self.assertEqual(self.client.config['buffer_flush_interval'],
                          datetime.timedelta(seconds=1))
+
+    def test_default_buffer_clear_on_send(self):
+        self.setUpClient()
+        self.assertEqual(self.client.config['buffer_clear_on_send'],
+                         False)
+
+    def test_custom_buffer_clear_on_send(self):
+        config = {'appenlight.buffer_clear_on_send': "true"}
+        self.setUpClient(config)
+        self.assertEqual(self.client.config['buffer_clear_on_send'],
+                         True)
 
     def test_default_force_send(self):
         self.setUpClient()
@@ -513,6 +524,38 @@ class TestClientTransport(unittest.TestCase):
         get_local_storage(local_timing).clear()
         self.assertEqual(result, False)
 
+    def test_default_buffer_clear(self):
+        self.setUpClient(
+            {'appenlight.api_key': 'XXX',
+             'appenlight.transport_config': 'http://foo.bar.baz.com:6543?threaded=1&timeout=5'})
+        for x in xrange(10):
+            self.client.py_report(TEST_ENVIRON, http_status=404)
+        result = self.client.check_if_deliver(force_send=True)
+        get_local_storage(local_timing).clear()
+        assert len(self.client.report_queue) == 0
+
+    def test_default_buffer_non_empty(self):
+        self.setUpClient(
+            {'appenlight.api_key': 'XXX',
+             'appenlight.transport_config': 'http://foo.bar.baz.com:6543?threaded=1&timeout=5'})
+        for x in xrange(255):
+            self.client.py_report(TEST_ENVIRON, http_status=404)
+        result = self.client.check_if_deliver(force_send=True)
+        get_local_storage(local_timing).clear()
+        assert len(self.client.report_queue) > 0
+
+    def test_custom_buffer_clear(self):
+        self.setUpClient(
+            {'appenlight.api_key': 'XXX',
+             'appenlight.transport_config': 'http://foo.bar.baz.com:6543?threaded=1&timeout=5',
+             'appenlight.buffer_clear_on_send': "true"
+            })
+        for x in xrange(255):
+            self.client.py_report(TEST_ENVIRON, http_status=404)
+        result = self.client.check_if_deliver(force_send=True)
+        get_local_storage(local_timing).clear()
+        assert len(self.client.report_queue) == 0
+
 
 class TestErrorParsing(unittest.TestCase):
     def setUpClient(self, config={}):
@@ -554,7 +597,7 @@ class TestErrorParsing(unittest.TestCase):
         self.client.report_queue[0]['traceback'] = \
             'Traceback (most recent call last):'
         line_no = \
-        self.client.report_queue[0]['report_details'][0]['traceback'][0]['line']
+            self.client.report_queue[0]['report_details'][0]['traceback'][0]['line']
         assert int(line_no) > 0
         # set line number to match as this will change over time
         PARSED_REPORT_500['report_details'][0]['traceback'][0]['line'] = line_no

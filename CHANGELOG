@@ -1,6 +1,7 @@
 CHANGELOG:
 ==========
 2014-06-18  Small bugfixes
+            Allow to force full buffer clearing for corner case situations
 
 2014-04-01  Use requests as default transport with SSL validation
      0.6.6  Save memory when building query maps - store up to 500 calls only

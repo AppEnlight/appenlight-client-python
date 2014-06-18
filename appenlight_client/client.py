@@ -108,6 +108,8 @@ class Client(object):
             config.get('appenlight.report_errors', True))
         self.config['buffer_flush_interval'] = int(
             config.get('appenlight.buffer_flush_interval', 5))
+        self.config['buffer_clear_on_send'] = asbool(
+            config.get('appenlight.buffer_clear_on_send', False))
         self.config['force_send'] = asbool(config.get('appenlight.force_send',
                                                       False))
         self.config['request_keys_blacklist'] = ['password', 'passwd', 'pwd',
@@ -243,11 +245,17 @@ class Client(object):
             # build data to feed the transport
             with self.report_queue_lock:
                 reports = self.report_queue[:250]
-                self.report_queue = self.report_queue[250:]
+                if self.config['buffer_clear_on_send']:
+                    self.report_queue = []
+                else:
+                    self.report_queue = self.report_queue[250:]
 
             with self.log_queue_lock:
                 logs = self.log_queue[:2000]
-                self.log_queue = self.log_queue[2000:]
+                if self.config['buffer_clear_on_send']:
+                    self.log_queue = []
+                else:
+                    self.log_queue = self.log_queue[2000:]
             # mark times
             self.last_submit = datetime.datetime.utcnow()
 
