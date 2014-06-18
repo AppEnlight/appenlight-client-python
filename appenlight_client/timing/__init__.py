@@ -149,7 +149,7 @@ def register_timing(config):
 
     db_modules = ['pg8000', 'psycopg2', 'MySQLdb', 'sqlite3', 'oursql',
                   'pyodbc', 'pypyodbc',
-                  'cx_Oracle', 'kinterbasdb', 'postgresql', 'pymysql']
+                  'cx_Oracle', 'kinterbasdb', 'postgresql', 'pymysql', 'pymssql']
     import appenlight_client.timing.timing_dbapi2 as dbapi2
 
     for mod in db_modules:

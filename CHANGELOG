@@ -1,5 +1,6 @@
 CHANGELOG:
 ==========
+2014-06-18  Small bugfixes
 
 2014-04-01  Use requests as default transport with SSL validation
      0.6.6  Save memory when building query maps - store up to 500 calls only
