@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='appenlight_client',
-      version='0.6.7',
+      version='0.6.8',
       description='Client for Appenlight reporting - supporting WSGI and django (http://appenlight.com)',
       classifiers=[
           'Intended Audience :: Developers',

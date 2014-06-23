@@ -1,5 +1,7 @@
 CHANGELOG:
 ==========
+2014-06-23  Fixes an issue with view decorator in pyramid
+
 2014-06-18  Small bugfixes
             Allow to force full buffer clearing for corner case situations
 
