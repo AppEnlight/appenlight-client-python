@@ -97,7 +97,11 @@ def wrap_view_config(appenlight_callable):
                 kwargs['decorator'] = [wrap_pyramid_view_name]
         else:
             if can_append_decorator:
-                kwargs['decorator'].append(wrap_pyramid_view_name)
+                current = kwargs['decorator']
+                if isinstance(current, (list, tuple)):
+                    kwargs['decorator'] = list(current) + [wrap_pyramid_view_name]
+                else:
+                    kwargs['decorator'] = (current, wrap_pyramid_view_name)
         return appenlight_callable(*args, **kwargs)
 
     return wrapper
