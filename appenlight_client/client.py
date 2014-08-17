@@ -335,10 +335,10 @@ class Client(object):
         if traceback:
             try:
                 log.warning('%s code: %s @%s' % (http_status,
-                                                 report_data.get('error_type').encode('utf8', 'ignore'),
+                                                 report_data.get('error').encode('utf8', 'ignore'),
                                                  url.encode('utf8', 'ignore'),))
                 log.error(
-                    report_data.get('error_type', '').encode('utf8', 'ignore'))
+                    report_data.get('error', '').encode('utf8', 'ignore'))
                 log.error(traceback.plaintext.encode('utf8', 'ignore'))
             except Exception:
                 pass
@@ -508,8 +508,7 @@ class Client(object):
         parsed_environ['HTTP_USER_AGENT'] = environ.get("HTTP_USER_AGENT", '')
         parsed_environ['REMOTE_ADDR'] = remote_addr
         try:
-            username = environ.get('REMOTE_USER',
-                                   appenlight_info.get('username', u''))
+            username = appenlight_info.get('username', environ.get('REMOTE_USER', u''))
             appenlight_info['username'] = u'%s' % username
         except (UnicodeEncodeError, UnicodeDecodeError):
             appenlight_info['username'] = "undecodable"
@@ -532,11 +531,11 @@ class Client(object):
             include_params,
             http_status)
         report_data = {'client': 'Python', 'report_details': []}
-        report_data['error_type'] = ''
+        report_data['error'] = ''
         detail_entry = {}
         if traceback:
             exception_text = traceback.exception
-            report_data['error_type'] = exception_text
+            report_data['error'] = exception_text
             local_vars = (self.config['report_local_vars'] or
                           environ.get('appenlight.report_local_vars'))
             detail_entry['traceback'] = traceback.frameinfo(
@@ -544,7 +543,7 @@ class Client(object):
 
         report_data['http_status'] = http_status
         if http_status == 404:
-            report_data['error_type'] = '404 Not Found'
+            report_data['error'] = '404 Not Found'
         report_data['priority'] = 5
         report_data['server'] = (server or
                                  environ.get('SERVER_NAME', 'unknown server'))

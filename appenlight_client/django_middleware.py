@@ -54,7 +54,8 @@ class AppenlightMiddleware(object):
         user = getattr(request, 'user', None)
         end_time = default_timer()
         if user and user.is_authenticated():
-            environ['appenlight.username'] = unicode(user.pk)
+            if 'appenlight.username' not in environ:
+                environ['appenlight.username'] = unicode(user.pk)
         if not isinstance(exception, Http404):
             http_status = 500
             traceback = get_current_traceback(skip=1,

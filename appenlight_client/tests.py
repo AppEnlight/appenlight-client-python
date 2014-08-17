@@ -2,19 +2,19 @@
 import copy
 import datetime
 import logging
-import pkg_resources
 import socket
 import time
 import unittest
-import pprint
+
+import pkg_resources
+from webob import Request
+
 from appenlight_client import client, make_appenlight_middleware
 from appenlight_client.exceptions import get_current_traceback
 from appenlight_client.logger import register_logging
 from appenlight_client.wsgi import AppenlightWSGIWrapper
 from appenlight_client.utils import fullyQualifiedName
-from appenlight_client.transports.urllib import HTTPTransport
-from appenlight_client.transports.requests import HTTPTransport
-from webob import Request
+
 
 fname = pkg_resources.resource_filename('appenlight_client',
                                         'templates/default_template.ini')
@@ -24,6 +24,8 @@ timing_conf = client.get_config(path_to_config=fname)
 for k, v in timing_conf.iteritems():
     if 'appenlight.timing' in k:
         timing_conf[k] = 0.0000001
+
+timing_conf.pop('appenlight.timing.dbapi2_sqlite3', None)
 
 # this sets up timing decoration for us
 client.Client(config=timing_conf)
@@ -62,8 +64,8 @@ TEST_ENVIRON = {
     'REMOTE_USER': 'foo'
 }
 
-REQ_START_TIME = datetime.datetime(2012, 9, 26, 18, 17, 54, 461254)
-REQ_END_TIME = datetime.datetime(2012, 9, 26, 18, 18, 4, 461259)
+REQ_START_TIME = datetime.datetime.utcnow()
+REQ_END_TIME = datetime.datetime.utcnow() + datetime.timedelta(seconds=1)
 SERVER_NAME = socket.getfqdn()  # different on every machine
 
 PARSED_REPORT_404 = {
@@ -85,7 +87,7 @@ PARSED_REPORT_404 = {
                         'end_time': REQ_END_TIME,
                         'request_stats': {}
                        }],
-    'error_type': '404 Not Found',
+    'error': '404 Not Found',
     'server': SERVER_NAME,
     'priority': 5,
     'client': 'Python',
@@ -134,7 +136,7 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
                                          'message': u'',
                                          'end_time': REQ_END_TIME,
                                          'request_stats': {}}],
-                     'error_type': u'Exception: Test Exception',
+                     'error': u'Exception: Test Exception',
                      'server': SERVER_NAME,
                      'priority': 5,
                      'client': 'Python',
@@ -165,7 +167,7 @@ PARSED_SLOW_REPORT = {
                         'message': u'',
                         'end_time': REQ_END_TIME,
                         'request_stats': {}}],
-    'error_type': '',
+    'error': '',
     'server': SERVER_NAME,
     'priority': 5,
     'client': 'Python',
@@ -576,7 +578,7 @@ class TestErrorParsing(unittest.TestCase):
                               end_time=REQ_END_TIME)
         bogus_500_report = copy.deepcopy(PARSED_REPORT_500)
         bogus_500_report['http_status'] = 500
-        bogus_500_report['error_type'] = ''
+        bogus_500_report['error'] = ''
         del bogus_500_report['traceback']
         del bogus_500_report['report_details'][0]['traceback']
         bogus_500_report['report_details'][0]['request_stats'] = {}
@@ -621,9 +623,7 @@ class TestErrorParsing(unittest.TestCase):
                                               ignore_system_exceptions=True)
         self.client.py_report(TEST_ENVIRON, traceback=traceback,
                               http_status=500)
-        assert len(
-            self.client.report_queue[0]['report_details'][0]['traceback'][0][
-                'vars']) == 9
+        assert len(self.client.report_queue[0]['report_details'][0]['traceback'][0]['vars']) == 9
 
 
 class TestLogs(unittest.TestCase):
@@ -864,6 +864,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         self.client = client.Client(config)
 
     def setUp(self):
+        timing_conf['appenlight.timing.dbapi2_sqlite3'] = 0.0000000001
         self.setUpClient(timing_conf)
         self.stmt = '''SELECT 1+2+3 as result'''
 

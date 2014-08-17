@@ -156,7 +156,9 @@ def register_timing(config):
         min_time = config['timing'].get('dbapi2_%s' % mod.lower())
         log.debug('%s dbapi query time:%s' % (mod, min_time or 'default'))
         if min_time is not False:
-            if min_time:
+            if mod == 'sqlite3' and not min_time:
+                continue
+            elif min_time:
                 dbapi2.add_timing(mod, min_time)
             else:
                 dbapi2.add_timing(mod)

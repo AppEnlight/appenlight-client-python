@@ -1,5 +1,10 @@
 CHANGELOG:
 ==========
+2014-08-??  First try honor appenlight.username for django middleware
+     0.6.9  Sqlite3 timing is disabled by default
+            Small refactoring
+
+
 2014-06-23  Fixes an issue with view decorator in pyramid
 
 2014-06-18  Small bugfixes
