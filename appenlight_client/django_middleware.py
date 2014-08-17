@@ -87,7 +87,8 @@ class AppenlightMiddleware(object):
                 user = getattr(request, 'user', None)
                 http_status = response.status_code
                 if user and user.is_authenticated():
-                    environ['appenlight.username'] = unicode(user.pk)
+                    if 'appenlight.username' not in environ:
+                        environ['appenlight.username'] = unicode(user.pk)
                 if (http_status == 404 and self.appenlight_client.config['report_404']):
                     request._errormator_create_report = True
                 delta = timedelta(seconds=(end_time - request.__start_time__))
