@@ -1,6 +1,6 @@
 CHANGELOG:
 ==========
-2014-08-??  First try honor appenlight.username for django middleware
+2014-08-19  First try honor appenlight.username for django middleware
      0.6.9  Sqlite3 timing is disabled by default
             Small refactoring
 
