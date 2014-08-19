@@ -90,7 +90,8 @@ PARSED_REPORT_404 = {
     'error': '404 Not Found',
     'server': SERVER_NAME,
     'priority': 5,
-    'client': 'Python',
+    'client': 'appenlight-python',
+    'language':'python',
     'http_status': 404}
 
 PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
@@ -139,7 +140,8 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
                      'error': u'Exception: Test Exception',
                      'server': SERVER_NAME,
                      'priority': 5,
-                     'client': 'Python',
+                     'client': 'appenlight-python',
+                     'language':'python',
                      'http_status': 500}
 
 PARSED_SLOW_REPORT = {
@@ -170,7 +172,8 @@ PARSED_SLOW_REPORT = {
     'error': '',
     'server': SERVER_NAME,
     'priority': 5,
-    'client': 'Python',
+    'client': 'appenlight-python',
+    'language':'python',
     'http_status': 200}
 
 

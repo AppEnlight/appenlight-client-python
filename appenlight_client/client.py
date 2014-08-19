@@ -530,7 +530,7 @@ class Client(object):
             traceback,
             include_params,
             http_status)
-        report_data = {'client': 'Python', 'report_details': []}
+        report_data = {'client': 'appenlight-python', 'language':'python', 'report_details': []}
         report_data['error'] = ''
         detail_entry = {}
         if traceback:
