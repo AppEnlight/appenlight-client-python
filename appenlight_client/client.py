@@ -106,7 +106,6 @@ class Client(object):
             config.get('appenlight.report_local_vars', True))
         self.config['report_local_vars_skip_existing'] = asbool(
             config.get('appenlight.report_local_vars_skip_existing', True))
-        self.config['report_local_vars_skip_existing'] = True
         self.config['report_errors'] = asbool(
             config.get('appenlight.report_errors', True))
         self.config['buffer_flush_interval'] = int(
