@@ -288,7 +288,7 @@ class Traceback(object):
 
     id = property(lambda x: id(x))
 
-    def frameinfo(self, include_vars=False):
+    def frameinfo(self, include_vars=False, skip_existing=True):
         """Dict representing frame and variables"""
         result = []
         id_list = []
@@ -310,7 +310,8 @@ class Traceback(object):
                     if id(v) not in id_list:
                         id_list.append(id(v))
                     else:
-                        continue
+                        if skip_existing:
+                            continue
                     try:
                         if k == 'self':
                             entry['vars'].append(['self.' + v.__class__.__name__,

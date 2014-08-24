@@ -104,6 +104,9 @@ class Client(object):
                                                       False))
         self.config['report_local_vars'] = asbool(
             config.get('appenlight.report_local_vars', True))
+        self.config['report_local_vars_skip_existing'] = asbool(
+            config.get('appenlight.report_local_vars_skip_existing', True))
+        self.config['report_local_vars_skip_existing'] = True
         self.config['report_errors'] = asbool(
             config.get('appenlight.report_errors', True))
         self.config['buffer_flush_interval'] = int(
@@ -546,8 +549,9 @@ class Client(object):
             report_data['error'] = exception_text
             local_vars = (self.config['report_local_vars'] or
                           environ.get('appenlight.report_local_vars'))
+            skip_existing = self.config['report_local_vars_skip_existing']
             detail_entry['traceback'] = traceback.frameinfo(
-                include_vars=local_vars)
+                include_vars=local_vars, skip_existing=skip_existing)
 
         report_data['http_status'] = http_status
         if http_status == 404:

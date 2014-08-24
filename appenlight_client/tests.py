@@ -563,7 +563,7 @@ class TestClientTransport(unittest.TestCase):
 
 
 class TestErrorParsing(unittest.TestCase):
-    def setUpClient(self, config={}):
+    def setUpClient(self, config={'appenlight.report_local_vars': False}):
         self.client = client.Client(config)
         self.maxDiff = None
 
@@ -606,8 +606,7 @@ class TestErrorParsing(unittest.TestCase):
         assert int(line_no) > 0
         # set line number to match as this will change over time
         PARSED_REPORT_500['report_details'][0]['traceback'][0]['line'] = line_no
-        self.assertDictContainsSubset(PARSED_REPORT_500,
-                                      self.client.report_queue[0])
+        self.assertDictContainsSubset(PARSED_REPORT_500, self.client.report_queue[0])
 
     def test_frameinfo(self):
         self.setUpClient(config={'appenlight.report_local_vars': 'true'})
