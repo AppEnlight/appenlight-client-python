@@ -103,7 +103,7 @@ class Client(object):
         self.config['report_404'] = asbool(config.get('appenlight.report_404',
                                                       False))
         self.config['report_local_vars'] = asbool(
-            config.get('appenlight.report_local_vars', False))
+            config.get('appenlight.report_local_vars', True))
         self.config['report_errors'] = asbool(
             config.get('appenlight.report_errors', True))
         self.config['buffer_flush_interval'] = int(
