@@ -494,7 +494,12 @@ class Client(object):
                 post_vars = req.environ.get('appenlight.post_vars', None)
                 if post_vars is None:
                     post_vars = req.POST.mixed()
-                for k, v in post_vars.items():
+                # handle werkzeug and multiple post values
+                elif hasattr(post_vars, 'to_dict'):
+                    post_vars = post_vars.to_dict(flat=False)
+
+                # if django request object use "lists()" to get multiple values
+                for k, v in post_vars.items() if not hasattr(post_vars, 'lists') else post_vars.lists():
                     try:
                         if isinstance(v, basestring):
                             parsed_environ['POST'][k] = v
@@ -505,7 +510,7 @@ class Client(object):
                                 parsed_environ['POST'][k] = unicode(v)
                     except Exception as e:
                         pass
-            except Exception:
+            except Exception as e:
                 parsed_environ['POST'] = {}
 
         # figure out real ip
