@@ -1356,6 +1356,20 @@ class WSGITests(unittest.TestCase):
         self.assertGreater(stats['main'], 0)
         self.assertGreater(stats['sql'], 0)
 
+    def test_multiple_post_request(self):
+        def app(environ, start_response):
+            start_response('200 OK', [('Content-Type', 'text/html')])
+            raise Exception('WTF?')
+            return ['Hello World!']
+
+        req = Request.blank('http://localhost/test', POST=[("a","a"), ("b","2"), ("b","1")])
+        app = make_appenlight_middleware(app, global_config=timing_conf)
+        app.appenlight_client.config['reraise_exceptions'] = False
+        app.appenlight_client.last_submit = datetime.datetime.now()
+        req.get_response(app)
+        self.assertDictEqual({'a': u'a', 'b': [u'2', u'1']},
+                             app.appenlight_client.report_queue[0]['report_details'][0]['request']['POST'])
+
 
 class CallableNameTests(unittest.TestCase):
     def setUpClient(self, config={}):

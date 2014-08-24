@@ -487,14 +487,22 @@ class Client(object):
             except Exception:
                 parsed_environ['GET'] = {}
             try:
-                # handle werkzeug and django
-                wz_post_vars = req.environ.get('appenlight.post_vars', None)
-                if wz_post_vars is not None:
-                    parsed_environ['POST'] = dict(wz_post_vars)
-                else:
-                    # webob uses _parsed_post_vars - so this will not fail
-                    parsed_environ['POST'] = dict([(k, req.POST.getall(k))
-                                                   for k in req.POST])
+                # handle situation where something already did seek() on wsgi.input
+                parsed_environ['POST'] = {}
+                post_vars = req.environ.get('appenlight.post_vars', None)
+                if post_vars is None:
+                    post_vars = req.POST.mixed()
+                for k, v in post_vars.items():
+                    try:
+                        if isinstance(v, basestring):
+                            parsed_environ['POST'][k] = v
+                        else:
+                            try:
+                                parsed_environ['POST'][k] = [unicode(val) for val in v]
+                            except Exception:
+                                parsed_environ['POST'][k] = unicode(v)
+                    except Exception as e:
+                        pass
             except Exception:
                 parsed_environ['POST'] = {}
 
