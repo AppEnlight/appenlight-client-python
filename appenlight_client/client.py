@@ -495,11 +495,18 @@ class Client(object):
                 if post_vars is None:
                     post_vars = req.POST.mixed()
                 # handle werkzeug and multiple post values
-                elif hasattr(post_vars, 'to_dict'):
-                    post_vars = post_vars.to_dict(flat=False)
+                if hasattr(post_vars, 'to_dict'):
+                    post_vars = post_vars.to_dict(flat=False).items()
+                # handle django request object
+                elif hasattr(post_vars, 'lists'):
+                    post_vars = post_vars.lists()
+                # handle everything else that should be dict-like
+                else:
+                    post_vars = post_vars.items()
+
 
                 # if django request object use "lists()" to get multiple values
-                for k, v in post_vars.items() if not hasattr(post_vars, 'lists') else post_vars.lists():
+                for k, v in post_vars:
                     try:
                         if isinstance(v, basestring):
                             parsed_environ['POST'][k] = v
