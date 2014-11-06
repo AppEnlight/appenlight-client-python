@@ -400,6 +400,14 @@ class Client(object):
                     msg = message.encode('utf8') if isinstance(message,
                                                                unicode) else message
                     log_dict['message'] = '%s' % msg
+
+                # TODO: Based on docs, that attribute exists if a formatter
+                # already formatted the traceback, not sure if it is always
+                # there.
+                exc_text = getattr(record, 'exc_text', '')
+                if exc_text:
+                    log_dict['message'] += '\n%s' % exc_text
+
                 log_entries.append(log_dict)
             except (TypeError, UnicodeDecodeError, UnicodeEncodeError) as e:
                 # handle some weird case where record.getMessage() fails
