@@ -98,6 +98,7 @@ class Client(object):
         self.config['slow_request_time'] = datetime.timedelta(
             seconds=self.config['slow_request_time'])
         self.config['logging'] = asbool(config.get('appenlight.logging', True))
+        self.config['logging_attach_exc_text'] = asbool(config.get('appenlight.logging_attach_exc_text', True))
         self.config['logging_on_error'] = asbool(
             config.get('appenlight.logging_on_error', False))
         self.config['report_404'] = asbool(config.get('appenlight.report_404',
@@ -404,9 +405,10 @@ class Client(object):
                 # TODO: Based on docs, that attribute exists if a formatter
                 # already formatted the traceback, not sure if it is always
                 # there.
-                exc_text = getattr(record, 'exc_text', '')
-                if exc_text:
-                    log_dict['message'] += '\n%s' % exc_text
+                if self.config['logging_attach_exc_text']:
+                    exc_text = getattr(record, 'exc_text', '')
+                    if exc_text:
+                        log_dict['message'] += '\n%s' % exc_text
 
                 log_entries.append(log_dict)
             except (TypeError, UnicodeDecodeError, UnicodeEncodeError) as e:

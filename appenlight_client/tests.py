@@ -16,6 +16,8 @@ from appenlight_client.wsgi import AppenlightWSGIWrapper
 from appenlight_client.utils import fullyQualifiedName
 
 
+logging.basicConfig()
+
 fname = pkg_resources.resource_filename('appenlight_client',
                                         'templates/default_template.ini')
 timing_conf = client.get_config(path_to_config=fname)
@@ -629,9 +631,10 @@ class TestErrorParsing(unittest.TestCase):
 
 
 class TestLogs(unittest.TestCase):
-    def setUpClient(self, config={}):
+    def setUpClient(self, config=None):
         timing_conf['appenlight.api_key'] = '12345'
-        config = {'appenlight.api_key': '12345'}
+        if not config:
+            config = {'appenlight.api_key': '12345'}
         self.client = client.Client(config)
         self.maxDiff = None
 
@@ -651,6 +654,47 @@ class TestLogs(unittest.TestCase):
         self.client.log_queue[0]['date'] = fake_log['date']
         self.client.log_queue[0]['server'] = fake_log['server']
         self.assertEqual(self.client.log_queue[0], fake_log)
+
+    def test_errors_attached_to_logs(self):
+        self.setUpClient()
+        handler = register_logging()
+        logger = logging.getLogger('testing')
+        try:
+            raise Exception('This is a test')
+        except Exception as e:
+            logger.exception('Exception happened')
+        self.client.py_log(TEST_ENVIRON, records=handler.get_records())
+        fake_log = {'log_level': 'ERROR',
+                    'namespace': 'testing',
+                    'server': 'test-foo',  # this will be different everywhere
+                    'request_id': None,
+                    'date': '2012-08-13T21:20:37.418.307066',
+                    'message': 'Exception happened\nTraceback (most recent call last):'}
+        # update fields depenand on machine
+        self.client.log_queue[0]['date'] = fake_log['date']
+        self.client.log_queue[0]['server'] = fake_log['server']
+        assert self.client.log_queue[0]['message'].startswith(fake_log['message'])
+
+    def test_errors_not_attached_to_logs(self):
+        self.setUpClient({'appenlight.logging_attach_exc_text': 'false',
+                          'appenlight.api_key': '12345'})
+        handler = register_logging()
+        logger = logging.getLogger('testing')
+        try:
+            raise Exception('This is a test')
+        except Exception as e:
+            logger.exception('Exception happened')
+        self.client.py_log(TEST_ENVIRON, records=handler.get_records())
+        fake_log = {'log_level': 'ERROR',
+                    'namespace': 'testing',
+                    'server': 'test-foo',  # this will be different everywhere
+                    'request_id': None,
+                    'date': '2012-08-13T21:20:37.418.307066',
+                    'message': 'Exception happened'}
+        # update fields depenand on machine
+        self.client.log_queue[0]['date'] = fake_log['date']
+        self.client.log_queue[0]['server'] = fake_log['server']
+        assert self.client.log_queue[0]['message'] == fake_log['message']
 
     def test_ignore_self_logs(self):
         self.setUpClient()
