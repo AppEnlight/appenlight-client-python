@@ -93,7 +93,7 @@ PARSED_REPORT_404 = {
     'server': SERVER_NAME,
     'priority': 5,
     'client': 'appenlight-python',
-    'language':'python',
+    'language': 'python',
     'http_status': 404}
 
 PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
@@ -143,7 +143,7 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
                      'server': SERVER_NAME,
                      'priority': 5,
                      'client': 'appenlight-python',
-                     'language':'python',
+                     'language': 'python',
                      'http_status': 500}
 
 PARSED_SLOW_REPORT = {
@@ -175,7 +175,7 @@ PARSED_SLOW_REPORT = {
     'server': SERVER_NAME,
     'priority': 5,
     'client': 'appenlight-python',
-    'language':'python',
+    'language': 'python',
     'http_status': 200}
 
 
@@ -695,6 +695,52 @@ class TestLogs(unittest.TestCase):
         self.client.log_queue[0]['date'] = fake_log['date']
         self.client.log_queue[0]['server'] = fake_log['server']
         assert self.client.log_queue[0]['message'] == fake_log['message']
+
+    def test_tags_attached_to_logs(self):
+        self.setUpClient()
+        handler = register_logging()
+        logger = logging.getLogger('testing')
+        utcnow = datetime.datetime.utcnow()
+
+        class StrTestObj(object):
+            def __repr__(self):
+                return "<StrTestObj>"
+
+        logger.critical('test entry',
+                        extra={"foobar": "baz",
+                               "count": 15,
+                               "price": 5.5,
+                               "date": utcnow,
+                               "obj": StrTestObj(),
+                               "dictionary": {"a": "5"}
+                        }
+        )
+        self.client.py_log(TEST_ENVIRON, records=handler.get_records())
+        fake_log = {'log_level': 'CRITICAL',
+                    'namespace': 'testing',
+                    'server': 'test-foo',  # this will be different everywhere
+                    'request_id': None,
+                    'date': utcnow.isoformat(),
+                    'message': 'test entry',
+                    'tags': [("foobar", "baz"),
+                             ("count", 15),
+                             ("price", 5.5),
+                             ("date", utcnow),
+                             ("obj", u'<StrTestObj>'),
+                             ("dictionary", u"{'a': '5'}")
+                    ]}
+        # update fields depenand on machine
+        self.client.log_queue[0]['server'] = fake_log['server']
+        self.client.log_queue[0]['date'] = fake_log['date']
+        new_log = self.client.log_queue[0]
+        assert new_log['log_level'] == fake_log['log_level']
+        assert new_log['namespace'] == fake_log['namespace']
+        assert new_log['server'] == fake_log['server']
+        assert new_log['request_id'] == fake_log['request_id']
+        assert new_log['date'] == fake_log['date']
+        assert new_log['message'] == fake_log['message']
+        assert sorted(new_log['tags']) == sorted(fake_log['tags'])
+
 
     def test_ignore_self_logs(self):
         self.setUpClient()
@@ -1405,7 +1451,7 @@ class WSGITests(unittest.TestCase):
             raise Exception('WTF?')
             return ['Hello World!']
 
-        req = Request.blank('http://localhost/test', POST=[("a","a"), ("b","2"), ("b","1")])
+        req = Request.blank('http://localhost/test', POST=[("a", "a"), ("b", "2"), ("b", "1")])
         app = make_appenlight_middleware(app, global_config=timing_conf)
         app.appenlight_client.config['reraise_exceptions'] = False
         app.appenlight_client.last_submit = datetime.datetime.now()
