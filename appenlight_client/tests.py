@@ -1265,7 +1265,7 @@ class TestDjangoTemplates(unittest.TestCase):
         self.assertEqual(len(result), 1)
 
 
-class WSGITests(unittest.TestCase):
+class TestWSGI(unittest.TestCase):
     def setUpClient(self, config={}):
         self.client = client.Client(timing_conf)
 
@@ -1460,7 +1460,7 @@ class WSGITests(unittest.TestCase):
                              app.appenlight_client.report_queue[0]['report_details'][0]['request']['POST'])
 
 
-class CallableNameTests(unittest.TestCase):
+class TestCallableName(unittest.TestCase):
     def setUpClient(self, config={}):
         self.client = client.Client(timing_conf)
 
