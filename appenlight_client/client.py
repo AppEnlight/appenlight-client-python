@@ -48,7 +48,6 @@ if PY3:
 else:
     import ConfigParser
 
-DATE_FRMT = '%Y-%m-%dT%H:%M:%S'
 LEVELS = {'debug': logging.DEBUG,
           'info': logging.INFO,
           'warning': logging.WARNING,
@@ -390,8 +389,8 @@ class Client(object):
                 time_string = datetime.datetime.utcnow().isoformat()
             else:
                 time_string = time.strftime(
-                    DATE_FRMT,
-                    time.gmtime(record.created)) + ('.%f' % record.msecs)
+                    '%Y-%m-%dT%H:%M:%S.',
+                    time.gmtime(record.created)) + ('%0.3f' % record.msecs).replace('.','').zfill(6)
             try:
                 message = record.getMessage()
                 tags_list = []
