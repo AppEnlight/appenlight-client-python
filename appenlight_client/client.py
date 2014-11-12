@@ -55,6 +55,10 @@ LEVELS = {'debug': logging.DEBUG,
           'error': logging.ERROR,
           'critical': logging.CRITICAL}
 
+EXCLUDED_LOG_VARS = ['threadName', 'name', 'thread', 'created', 'process', 'processName', 'args', 'module', 'filename',
+                     'levelno', 'exc_text', 'pathname', 'lineno', 'msg', 'exc_info', 'message', 'funcName',
+                     'relativeCreated', 'levelname', 'msecs']
+
 log = logging.getLogger(__name__)
 
 
@@ -390,6 +394,7 @@ class Client(object):
                     time.gmtime(record.created)) + ('.%f' % record.msecs)
             try:
                 message = record.getMessage()
+                tags_list = []
                 log_dict = {'log_level': record.levelname,
                             "namespace": record.name,
                             'server': self.config['server_name'],
@@ -409,7 +414,18 @@ class Client(object):
                     exc_text = getattr(record, 'exc_text', '')
                     if exc_text:
                         log_dict['message'] += '\n%s' % exc_text
-
+                # populate tags from extra
+                for k, v in vars(record).iteritems():
+                    if k not in EXCLUDED_LOG_VARS:
+                        try:
+                            if isinstance(v, (basestring,datetime.datetime, datetime.date, float, int,)):
+                                tags_list.append((k, v,))
+                            else:
+                                tags_list.append((k, unicode(v),))
+                        except Exception as e:
+                            log.info(u'Couldn\'t convert attached tag %s' % e)
+                if tags_list:
+                    log_dict['tags'] = tags_list
                 log_entries.append(log_dict)
             except (TypeError, UnicodeDecodeError, UnicodeEncodeError) as e:
                 # handle some weird case where record.getMessage() fails
