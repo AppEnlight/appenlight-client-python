@@ -56,7 +56,7 @@ LEVELS = {'debug': logging.DEBUG,
 
 EXCLUDED_LOG_VARS = ['threadName', 'name', 'thread', 'created', 'process', 'processName', 'args', 'module', 'filename',
                      'levelno', 'exc_text', 'pathname', 'lineno', 'msg', 'exc_info', 'message', 'funcName',
-                     'relativeCreated', 'levelname', 'msecs']
+                     'relativeCreated', 'levelname', 'msecs', 'asctime']
 
 log = logging.getLogger(__name__)
 
@@ -417,7 +417,7 @@ class Client(object):
                 for k, v in vars(record).iteritems():
                     if k not in EXCLUDED_LOG_VARS:
                         try:
-                            if isinstance(v, (basestring,datetime.datetime, datetime.date, float, int,)):
+                            if isinstance(v, (basestring, datetime.datetime, datetime.date, float, int,)):
                                 tags_list.append((k, v,))
                             else:
                                 tags_list.append((k, unicode(v),))
