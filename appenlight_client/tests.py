@@ -739,7 +739,7 @@ class TestLogs(unittest.TestCase):
         assert new_log['request_id'] == fake_log['request_id']
         assert new_log['date'] == fake_log['date']
         assert new_log['message'] == fake_log['message']
-        assert sorted(new_log['tags']) == sorted(fake_log['tags'])
+        assert set(new_log['tags']) == set(fake_log['tags'])
 
 
     def test_ignore_self_logs(self):
