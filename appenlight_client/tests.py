@@ -205,9 +205,11 @@ class TestClientConfig(object):
         config = {
             'appenlight.transport_config': 'https://api.appenlight.com?threaded=0&timeout=10'}
         self.setUpClient(config)
-        self.assertDictContainsSubset({'url': 'https://api.appenlight.com',
-                                       'timeout': 10, 'threaded': 0},
-                                      self.client.transport.transport_config)
+        superset = self.client.transport.transport_config.items()
+        subset = {'url': 'https://api.appenlight.com', 'timeout': 10, 'threaded': 0}
+        for i in subset.iteritems():
+            assert i in superset
+
 
     def test_enabled_client(self):
         self.setUpClient()
@@ -343,8 +345,7 @@ class TestClientConfig(object):
 
     def test_default_request_keys_blacklist(self):
         self.setUpClient()
-        self.assertItemsEqual(self.client.config['request_keys_blacklist'],
-                              ['password', 'passwd', 'pwd', 'auth_tkt',
+        assert set(self.client.config['request_keys_blacklist']) == set(['password', 'passwd', 'pwd', 'auth_tkt',
                                'secret',
                                'csrf', 'xsrf', 'auth',
                                'session', 'pass', 'config', 'settings',
@@ -353,8 +354,7 @@ class TestClientConfig(object):
     def test_custom_request_keys_blacklist(self):
         config = {'appenlight.request_keys_blacklist': "aa,bb,cc"}
         self.setUpClient(config)
-        self.assertItemsEqual(self.client.config['request_keys_blacklist'],
-                              ['password', 'passwd', 'pwd', 'auth_tkt',
+        assert set(self.client.config['request_keys_blacklist']) == set(['password', 'passwd', 'pwd', 'auth_tkt',
                                'secret',
                                'csrf', 'xsrf', 'auth', 'session', 'pass',
                                'config', 'settings',
@@ -554,8 +554,10 @@ class TestErrorParsing(object):
         self.setUpClient()
         self.client.py_report(TEST_ENVIRON, http_status=404,
                               start_time=REQ_START_TIME, end_time=REQ_END_TIME)
-        self.assertDictContainsSubset(PARSED_REPORT_404,
-                                      self.client.report_queue[0])
+        subset = PARSED_REPORT_404
+        superset = self.client.report_queue[0].items()
+        for i in subset.iteritems():
+            assert i in superset
 
     def test_py_report_500_no_traceback(self):
         self.setUpClient()
@@ -568,11 +570,15 @@ class TestErrorParsing(object):
         del bogus_500_report['traceback']
         del bogus_500_report['report_details'][0]['traceback']
         bogus_500_report['report_details'][0]['request_stats'] = {}
-        self.assertDictContainsSubset(bogus_500_report,
-                                      self.client.report_queue[0])
+        subset = bogus_500_report
+        superset = self.client.report_queue[0].items()
+        for i in subset.iteritems():
+            assert i in superset
+
 
     def test_py_report_500_traceback(self):
         self.setUpClient()
+        bogus_report = copy.deepcopy(PARSED_REPORT_500)
         try:
             raise Exception('Test Exception')
         except:
@@ -588,8 +594,11 @@ class TestErrorParsing(object):
             self.client.report_queue[0]['report_details'][0]['traceback'][0]['line']
         assert int(line_no) > 0
         # set line number to match as this will change over time
-        PARSED_REPORT_500['report_details'][0]['traceback'][0]['line'] = line_no
-        self.assertDictContainsSubset(PARSED_REPORT_500, self.client.report_queue[0])
+        bogus_report['report_details'][0]['traceback'][0]['line'] = line_no
+        subset = bogus_report
+        superset = self.client.report_queue[0].items()
+        for i in subset.iteritems():
+            assert i in superset
 
     def test_frameinfo(self):
         self.setUpClient(config={'appenlight.report_local_vars': 'true'})
@@ -747,8 +756,10 @@ class TestSlowReportParsing(object):
         self.maxDiff = None
         self.client.py_report(TEST_ENVIRON, start_time=REQ_START_TIME,
                               end_time=REQ_END_TIME)
-        self.assertDictContainsSubset(PARSED_SLOW_REPORT,
-                                      self.client.report_queue[0])
+        subset = PARSED_SLOW_REPORT
+        superset = self.client.report_queue[0].items()
+        for i in subset.iteritems():
+            assert i in superset
 
 
 class TestMakeMiddleware(object):
@@ -1443,8 +1454,7 @@ class TestWSGI(object):
         app.appenlight_client.config['reraise_exceptions'] = False
         app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
-        self.assertDictEqual({'a': u'a', 'b': [u'2', u'1']},
-                             app.appenlight_client.report_queue[0]['report_details'][0]['request']['POST'])
+        assert {'a': u'a', 'b': [u'2', u'1']} == app.appenlight_client.report_queue[0]['report_details'][0]['request']['POST']
 
 
 class TestCallableName(object):
