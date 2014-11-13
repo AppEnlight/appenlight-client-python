@@ -4,7 +4,6 @@ import datetime
 import logging
 import socket
 import time
-import unittest
 
 import pkg_resources
 from webob import Request
@@ -179,7 +178,7 @@ PARSED_SLOW_REPORT = {
     'http_status': 200}
 
 
-class TestClientConfig(unittest.TestCase):
+class TestClientConfig(object):
     def setUpClient(self, config=None):
         if config is None:
             config = {'appenlight.api_key': '12345'}
@@ -190,18 +189,16 @@ class TestClientConfig(unittest.TestCase):
 
     def test_empty_init(self):
         self.setUpClient()
-        self.assertIsInstance(self.client, client.Client)
+        assert isinstance(self.client, client.Client)
 
     def test_api_key(self):
         config = {'appenlight.api_key': '12345AAAAA'}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['api_key'],
-                         config['appenlight.api_key'])
+        assert self.client.config['api_key'] == config['appenlight.api_key']
 
     def test_default_transport(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['transport'],
-                         'appenlight_client.transports.requests:HTTPTransport')
+        assert self.client.config['transport'] == 'appenlight_client.transports.requests:HTTPTransport'
 
     def test_transport_config(self):
         config = {
@@ -213,146 +210,135 @@ class TestClientConfig(unittest.TestCase):
 
     def test_enabled_client(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['enabled'], True)
+        assert self.client.config['enabled'] is True
 
     def test_disabled_client(self):
         config = {'appenlight': "false"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['enabled'], False)
+        assert self.client.config['enabled'] is False
 
     def test_disabled_client_no_key(self):
         self.setUpClient({})
-        self.assertEqual(self.client.config['enabled'], False)
+        assert self.client.config['enabled'] is False
 
     def test_server_name(self):
         config = {'appenlight.server_name': "some_name"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['server_name'],
-                         config['appenlight.server_name'])
+        assert self.client.config['server_name'] == config['appenlight.server_name']
 
     def test_default_server_name(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['server_name'], socket.getfqdn())
+        assert self.client.config['server_name'] == socket.getfqdn()
 
     def test_client_name(self):
         config = {'appenlight.client': "pythonX"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['client'],
-                         config['appenlight.client'])
+        assert self.client.config['client'] == config['appenlight.client']
 
     def test_default_client_name(self):
         self.setUpClient()
 
-        self.assertEqual(self.client.config['client'], 'python3' if client.PY3 \
-            else 'python')
+        assert self.client.config['client'] == 'python3' if client.PY3 else 'python'
 
     def test_reraise_exceptions(self):
         config = {'appenlight.reraise_exceptions': "false"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['reraise_exceptions'], False)
+        assert self.client.config['reraise_exceptions'] is False
 
     def test_default_reraise_exceptions(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['reraise_exceptions'], True)
+        assert self.client.config['reraise_exceptions'] is True
 
     def test_default_slow_requests(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['slow_requests'], True)
+        assert self.client.config['slow_requests'] is True
 
     def test_disabled_slow_requests(self):
         config = {'appenlight.reraise_exceptions': "false"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['reraise_exceptions'], False)
+        assert self.client.config['reraise_exceptions'] is False
 
     def test_default_slow_request_time(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['slow_request_time'],
-                         datetime.timedelta(seconds=1))
+        assert self.client.config['slow_request_time'] == datetime.timedelta(seconds=1)
 
     def test_custom_slow_request_time(self):
         config = {'appenlight.slow_request_time': "2"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['slow_request_time'],
-                         datetime.timedelta(seconds=2))
+        assert self.client.config['slow_request_time'] == datetime.timedelta(seconds=2)
 
     def test_too_low_custom_slow_request_time(self):
         config = {'appenlight.slow_request_time': "0.001"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['slow_request_time'],
-                         datetime.timedelta(seconds=0.01))
+        assert self.client.config['slow_request_time'] == datetime.timedelta(seconds=0.01)
 
     def test_default_logging(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['logging'], True)
+        assert self.client.config['logging'] is True
 
     def test_custom_logging(self):
         config = {'appenlight.logging': "false"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['logging'], False)
+        assert self.client.config['logging'] is False
 
     def test_default_logging_on_error(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['logging_on_error'], False)
+        assert self.client.config['logging_on_error'] is False
 
     def test_custom_logging_on_error(self):
         config = {'appenlight.logging_on_error': "true"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['logging_on_error'], True)
+        assert self.client.config['logging_on_error'] is True
 
     def test_default_report_404(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['report_404'], False)
+        assert self.client.config['report_404'] is False
 
     def test_custom_report_404r(self):
         config = {'appenlight.report_404': "true"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['report_404'], True)
+        assert self.client.config['report_404'] is True
 
     def test_default_report_errors(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['report_errors'], True)
+        assert self.client.config['report_errors'] is True
 
     def test_custom_report_errors(self):
         config = {'appenlight.report_errors': "false"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['report_errors'], False)
+        assert self.client.config['report_errors'] is False
 
     def test_default_buffer_flush_interval(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['buffer_flush_interval'],
-                         datetime.timedelta(seconds=5))
+        assert self.client.config['buffer_flush_interval'] == datetime.timedelta(seconds=5)
 
     def test_custom_buffer_flush_interval(self):
         config = {'appenlight.buffer_flush_interval': "10"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['buffer_flush_interval'],
-                         datetime.timedelta(seconds=10))
+        assert self.client.config['buffer_flush_interval'] == datetime.timedelta(seconds=10)
 
     def test_custom_small_buffer_flush_interval(self):
         config = {'appenlight.buffer_flush_interval': "0"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['buffer_flush_interval'],
-                         datetime.timedelta(seconds=1))
+        assert self.client.config['buffer_flush_interval'] == datetime.timedelta(seconds=1)
 
     def test_default_buffer_clear_on_send(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['buffer_clear_on_send'],
-                         False)
+        assert self.client.config['buffer_clear_on_send'] is False
 
     def test_custom_buffer_clear_on_send(self):
         config = {'appenlight.buffer_clear_on_send': "true"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['buffer_clear_on_send'],
-                         True)
+        assert self.client.config['buffer_clear_on_send'] is True
 
     def test_default_force_send(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['force_send'], False)
+        assert self.client.config['force_send'] is False
 
     def test_custom_force_send(self):
         config = {'appenlight.force_send': "1"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['force_send'], True)
+        assert self.client.config['force_send'] is True
 
     def test_default_request_keys_blacklist(self):
         self.setUpClient()
@@ -375,84 +361,76 @@ class TestClientConfig(unittest.TestCase):
 
     def test_default_environ_keys_whitelist(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['environ_keys_whitelist'],
-                         ['REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME',
-                          'CONTENT_TYPE',
-                          'HTTP_REFERER'])
+        assert self.client.config['environ_keys_whitelist'] == ['REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME',
+                                                                'CONTENT_TYPE', 'HTTP_REFERER']
 
     def test_custom_environ_keys_whitelist(self):
         config = {'appenlight.environ_keys_whitelist': "aa,bb,cc"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['environ_keys_whitelist'],
-                         ['REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME',
-                          'CONTENT_TYPE',
-                          'HTTP_REFERER', 'aa', 'bb', 'cc'])
+        assert self.client.config['environ_keys_whitelist'] == ['REMOTE_USER', 'REMOTE_ADDR', 'SERVER_NAME',
+                                                                'CONTENT_TYPE','HTTP_REFERER', 'aa', 'bb', 'cc']
 
     def test_default_log_namespace_blacklist(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['log_namespace_blacklist'],
-                         ['appenlight_client.client',
-                          'appenlight_client.transports.requests'])
+        assert self.client.config['log_namespace_blacklist'] == ['appenlight_client.client',
+                                                                 'appenlight_client.transports.requests']
 
     def test_custom_log_namespace_blacklist(self):
         config = {'appenlight.log_namespace_blacklist': "aa,bb,cc.dd"}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['log_namespace_blacklist'],
-                         ['appenlight_client.client',
-                          'appenlight_client.transports.requests',
-                          'aa', 'bb', 'cc.dd'])
+        assert self.client.config['log_namespace_blacklist'] == ['appenlight_client.client',
+                                                                 'appenlight_client.transports.requests',
+                                                                 'aa', 'bb', 'cc.dd']
 
     def test_default_filter_callable(self):
         self.setUpClient()
-        self.assertEqual(self.client.filter_callable, self.client.data_filter)
+        assert self.client.filter_callable == self.client.data_filter
 
     def test_bad_filter_callable(self):
         config = {'appenlight.filter_callable': "foo.bar.baz:callable_name"}
         self.setUpClient(config)
-        self.assertEqual(self.client.filter_callable, self.client.data_filter)
+        assert self.client.filter_callable == self.client.data_filter
 
     def test_custom_filter_callable(self):
         config = {'appenlight.filter_callable':
                       "appenlight_client.tests:example_filter_callable"}
         self.setUpClient(config)
-        self.assertEqual(self.client.filter_callable.__name__,
-                         example_filter_callable.__name__)
+        assert self.client.filter_callable.__name__ == example_filter_callable.__name__
 
     def test_default_logging_handler_present(self):
         self.setUpClient()
-        self.assertEqual(hasattr(self.client, 'log_handler'), True)
+        assert hasattr(self.client, 'log_handler') is True
 
     def test_custom_logging_handler_present(self):
         config = {'appenlight.logging': "false"}
         self.setUpClient(config)
-        self.assertEqual(hasattr(self.client, 'log_handler'), False)
+        assert hasattr(self.client, 'log_handler') is False
 
     def test_default_logging_handler_level(self):
         self.setUpClient()
-        self.assertEqual(self.client.log_handler.level, logging.WARNING)
+        assert self.client.log_handler.level == logging.WARNING
 
     def test_custom_logging_handler_level(self):
         config = {'appenlight.logging.level': "CRITICAL",
                   'appenlight.api_key': '12345'}
         self.setUpClient(config)
-        self.assertEqual(self.client.log_handler.level, logging.CRITICAL)
+        assert self.client.log_handler.level == logging.CRITICAL
 
     def test_default_timing_config(self):
         self.setUpClient()
-        self.assertEqual(self.client.config['timing'], {})
+        assert self.client.config['timing'] == {}
 
     def test_timing_config_disable(self):
         config = {'appenlight.timing.dbapi2_psycopg2': 'false',
                   'appenlight.api_key': '12345'}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'],
-                         False)
+        assert self.client.config['timing']['dbapi2_psycopg2'] is False
 
     def test_timing_config_custom(self):
         config = {'appenlight.timing.dbapi2_psycopg2': '5',
                   'appenlight.api_key': '12345'}
         self.setUpClient(config)
-        self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'], 5)
+        assert self.client.config['timing']['dbapi2_psycopg2'] == 5
 
     def test_timing_config_mixed(self):
         config = {'appenlight.timing.dbapi2_psycopg2': '5',
@@ -460,16 +438,16 @@ class TestClientConfig(unittest.TestCase):
                   'appenlight.api_key': '12345'
         }
         self.setUpClient(config)
-        self.assertEqual(self.client.config['timing']['dbapi2_psycopg2'], 5)
-        self.assertEqual(self.client.config['timing']['dbapi2_oursql'], 6)
-        self.assertEqual(self.client.config['timing']['urllib'], 11)
+        assert self.client.config['timing']['dbapi2_psycopg2'] == 5
+        assert self.client.config['timing']['dbapi2_oursql'] == 6
+        assert self.client.config['timing']['urllib'] == 11
 
 
 def generate_error():
     pass
 
 
-class TestClientTransport(unittest.TestCase):
+class TestClientTransport(object):
     def setUpClient(self, config={'appenlight.api_key': 'blargh!'}):
         self.client = client.Client(config)
 
@@ -479,26 +457,26 @@ class TestClientTransport(unittest.TestCase):
     def test_check_if_deliver_false(self):
         self.setUpClient()
         self.client.last_submit = datetime.datetime.now()
-        self.assertEqual(self.client.check_if_deliver(), False)
+        assert self.client.check_if_deliver() is False
 
     def test_check_if_deliver_forced(self):
         self.setUpClient()
         self.client.log_queue = ['dummy']
-        self.assertEqual(self.client.check_if_deliver(force_send=True), True)
+        assert self.client.check_if_deliver(force_send=True) is True
 
     def test_send_error_failure_queue(self):
         self.setUpClient()
         self.client.py_report(TEST_ENVIRON, http_status=404)
         self.client.check_if_deliver(force_send=True)
         get_local_storage(local_timing).clear()
-        self.assertEqual(self.client.report_queue, [])
+        assert self.client.report_queue == []
 
     def test_http_transport_failure(self):
         self.setUpClient()
         self.client.py_report(TEST_ENVIRON, http_status=404)
         result = self.client.transport.send(self.client.report_queue, 'reports')
         get_local_storage(local_timing).clear()
-        self.assertEqual(result, False)
+        assert result is False
 
     def test_http_transport_success(self):
         # requires valid key for test
@@ -509,7 +487,7 @@ class TestClientTransport(unittest.TestCase):
         self.client.py_report(TEST_ENVIRON, http_status=404)
         result = self.client.transport.send(self.client.report_queue, 'reports')
         get_local_storage(local_timing).clear()
-        self.assertEqual(result, True)
+        assert result is True
 
     def test_http_transport_timeout(self):
         # requires valid key for test
@@ -519,7 +497,7 @@ class TestClientTransport(unittest.TestCase):
         self.client.py_report(TEST_ENVIRON, http_status=404)
         result = self.client.transport.send(self.client.report_queue, 'reports')
         get_local_storage(local_timing).clear()
-        self.assertEqual(result, False)
+        assert result is False
 
     def test_wrong_server_failure(self):
         # requires valid key for test
@@ -529,7 +507,7 @@ class TestClientTransport(unittest.TestCase):
         self.client.py_report(TEST_ENVIRON, http_status=404)
         result = self.client.transport.send(self.client.report_queue, 'reports')
         get_local_storage(local_timing).clear()
-        self.assertEqual(result, False)
+        assert result is False
 
     def test_default_buffer_clear(self):
         self.setUpClient(
@@ -564,10 +542,9 @@ class TestClientTransport(unittest.TestCase):
         assert len(self.client.report_queue) == 0
 
 
-class TestErrorParsing(unittest.TestCase):
+class TestErrorParsing(object):
     def setUpClient(self, config={'appenlight.report_local_vars': False}):
         self.client = client.Client(config)
-        self.maxDiff = None
 
     def test_py_report_404(self):
         self.setUpClient()
@@ -630,13 +607,12 @@ class TestErrorParsing(unittest.TestCase):
         assert len(self.client.report_queue[0]['report_details'][0]['traceback'][0]['vars']) == 9
 
 
-class TestLogs(unittest.TestCase):
+class TestLogs(object):
     def setUpClient(self, config=None):
         timing_conf['appenlight.api_key'] = '12345'
         if not config:
             config = {'appenlight.api_key': '12345'}
         self.client = client.Client(config)
-        self.maxDiff = None
 
     def test_py_log(self):
         self.setUpClient()
@@ -653,7 +629,7 @@ class TestLogs(unittest.TestCase):
         # update fields depenand on machine
         self.client.log_queue[0]['date'] = fake_log['date']
         self.client.log_queue[0]['server'] = fake_log['server']
-        self.assertEqual(self.client.log_queue[0], fake_log)
+        assert self.client.log_queue[0] == fake_log
 
     def test_errors_attached_to_logs(self):
         self.setUpClient()
@@ -749,10 +725,10 @@ class TestLogs(unittest.TestCase):
         self.client.py_report(TEST_ENVIRON, start_time=REQ_START_TIME,
                               end_time=REQ_END_TIME)
         self.client.py_log(TEST_ENVIRON, records=handler.get_records())
-        self.assertEqual(len(self.client.log_queue), 0)
+        assert len(self.client.log_queue) == 0
 
 
-class TestSlowReportParsing(unittest.TestCase):
+class TestSlowReportParsing(object):
     def setUpClient(self, config={}):
         self.client = client.Client(config)
 
@@ -765,14 +741,14 @@ class TestSlowReportParsing(unittest.TestCase):
                                       self.client.report_queue[0])
 
 
-class TestMakeMiddleware(unittest.TestCase):
+class TestMakeMiddleware(object):
     def test_make_middleware(self):
         def app(environ, start_response):
             start_response('200 OK', [('content-type', 'text/html')])
             return ['Hello world!']
 
         app = make_appenlight_middleware(app, {'appenlight.api_key': '12345'})
-        self.assertTrue(isinstance(app, AppenlightWSGIWrapper))
+        assert isinstance(app, AppenlightWSGIWrapper) is True
 
     def test_make_middleware_disabled(self):
         def app(environ, start_response):
@@ -780,10 +756,10 @@ class TestMakeMiddleware(unittest.TestCase):
             return ['Hello world!']
 
         app = make_appenlight_middleware(app, {'appenlight': 'false'})
-        self.assertFalse(isinstance(app, AppenlightWSGIWrapper))
+        assert isinstance(app, AppenlightWSGIWrapper) is False
 
 
-class TestCustomTiming(unittest.TestCase):
+class TestCustomTiming(object):
     def setUpClient(self, config={}):
         self.client = client.Client(config)
 
@@ -801,7 +777,7 @@ class TestCustomTiming(unittest.TestCase):
 
         foo('a')
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        assert len(result) == 1
 
     def test_custom_nested_timimg(self):
         @time_trace(name='baz_func', min_duration=0.1)
@@ -820,10 +796,10 @@ class TestCustomTiming(unittest.TestCase):
 
         bar('a')
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 3)
+        assert len(result) == 3
 
 
-class TestTimingHTTPLibs(unittest.TestCase):
+class TestTimingHTTPLibs(object):
     def setUpClient(self, config={}):
         self.client = client.Client(config)
 
@@ -839,21 +815,21 @@ class TestTimingHTTPLibs(unittest.TestCase):
         opener = urllib.URLopener()
         opener.open("http://www.ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        assert len(result) == 1
 
     def test_urllib_urlretrieve(self):
         import urllib
 
         urllib.urlretrieve("http://www.ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        assert len(result) == 1
 
     def test_urllib2(self):
         import urllib2
 
         urllib2.urlopen("http://www.ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        assert len(result) == 1
 
     def test_urllib3(self):
         try:
@@ -863,7 +839,7 @@ class TestTimingHTTPLibs(unittest.TestCase):
         http = urllib3.PoolManager()
         http.request('GET', "http://www.ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        assert len(result) == 1
 
     def test_requests(self):
         try:
@@ -872,7 +848,7 @@ class TestTimingHTTPLibs(unittest.TestCase):
             return
         requests.get("http://www.ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        assert len(result) == 1
 
     def test_httplib(self):
         import httplib
@@ -880,10 +856,10 @@ class TestTimingHTTPLibs(unittest.TestCase):
         h2 = httplib.HTTPConnection("www.ubuntu.com")
         h2.request("GET", "/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        assert len(result) == 1
 
 
-class TestRedisPY(unittest.TestCase):
+class TestRedisPY(object):
     def setUpClient(self, config={}):
         self.client = client.Client(config)
 
@@ -902,10 +878,10 @@ class TestRedisPY(unittest.TestCase):
         client = redis.StrictRedis()
         client.setex('testval', 10, 'foo')
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        assert len(result) == 1
 
 
-class TestMemcache(unittest.TestCase):
+class TestMemcache(object):
     def setUpClient(self, config={}):
         self.client = client.Client(config)
 
@@ -924,10 +900,10 @@ class TestMemcache(unittest.TestCase):
         mc.set("some_key", "Some value")
         value = mc.get("some_key")
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 2)
+        assert len(result) == 2
 
 
-class TestPylibMc(unittest.TestCase):
+class TestPylibMc(object):
     def setUpClient(self, config={}):
         self.client = client.Client(config)
 
@@ -948,10 +924,10 @@ class TestPylibMc(unittest.TestCase):
         mc.set("some_key", "Some value")
         value = mc.get("some_key")
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 2)
+        assert len(result) == 2
 
 
-class TestDBApi2Drivers(unittest.TestCase):
+class TestDBApi2Drivers(object):
     def setUpClient(self, config={}):
         self.client = client.Client(config)
 
@@ -975,7 +951,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 2)
+        assert len(result) == 2
 
     def test_sqlite_call_number(self):
         try:
@@ -995,7 +971,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(int(stats['sql_calls']), 4)
+        assert int(stats['sql_calls']) == 4
 
     def test_psycopg2(self):
         try:
@@ -1011,7 +987,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 2)
+        assert len(result) == 2
 
     def test_pg8000(self):
         try:
@@ -1026,7 +1002,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 2)
+        assert len(result) == 2
 
     def test_postgresql(self):
         try:
@@ -1040,7 +1016,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 2)
+        assert len(result) == 2
 
     def test_mysqldb(self):
         try:
@@ -1055,7 +1031,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 2)
+        assert len(result) == 2
 
     def test_oursql(self):
         try:
@@ -1069,7 +1045,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 2)
+        assert len(result) == 2
 
     def test_odbc(self):
         try:
@@ -1084,7 +1060,7 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 2)
+        assert len(result) == 2
 
     def test_pymysql(self):
         try:
@@ -1098,10 +1074,10 @@ class TestDBApi2Drivers(unittest.TestCase):
         c.close()
         conn.close()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 2)
+        assert len(result) == 2
 
 
-class TestMako(unittest.TestCase):
+class TestMako(object):
     def setUpClient(self, config={}):
         self.client = client.Client(timing_conf)
 
@@ -1125,7 +1101,7 @@ class TestMako(unittest.TestCase):
         ''')
         template.render()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        assert len(result) == 1
 
     def test_render_call_number(self):
         try:
@@ -1143,7 +1119,7 @@ class TestMako(unittest.TestCase):
         template.render()
         template.render()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(stats['tmpl_calls'], 3)
+        assert stats['tmpl_calls'] == 3
 
     def test_render_unicode(self):
         try:
@@ -1159,7 +1135,7 @@ class TestMako(unittest.TestCase):
         ''')
         template.render_unicode()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        assert len(result) == 1
 
     def test_template_lookup(self):
         try:
@@ -1184,10 +1160,10 @@ class TestMako(unittest.TestCase):
         template = lookup.get_template("base.html")
         template.render_unicode()
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        assert len(result) == 1
 
 
-class TestChameleon(unittest.TestCase):
+class TestChameleon(object):
     def setUpClient(self, config={}):
         self.client = client.Client(timing_conf)
 
@@ -1209,10 +1185,10 @@ class TestChameleon(unittest.TestCase):
         ''')
         template.render(sleep=time.sleep)
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        assert len(result) == 1
 
 
-class TestJinja2(unittest.TestCase):
+class TestJinja2(object):
     def setUpClient(self, config={}):
         self.client = client.Client(timing_conf)
 
@@ -1232,10 +1208,10 @@ class TestJinja2(unittest.TestCase):
         ''')
         template.render(sleep=time.sleep)
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        assert len(result) == 1
 
 
-class TestDjangoTemplates(unittest.TestCase):
+class TestDjangoTemplates(object):
     def setUpClient(self, config={}):
         self.client = client.Client(config)
 
@@ -1262,10 +1238,10 @@ class TestDjangoTemplates(unittest.TestCase):
         ''')
         template.render(ctx)
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertEqual(len(result), 1)
+        assert len(result) == 1
 
 
-class TestWSGI(unittest.TestCase):
+class TestWSGI(object):
     def setUpClient(self, config={}):
         self.client = client.Client(timing_conf)
 
@@ -1280,7 +1256,7 @@ class TestWSGI(unittest.TestCase):
         req = Request.blank('http://localhost/test')
         app = make_appenlight_middleware(app, global_config=timing_conf)
         req.get_response(app)
-        self.assertEqual(len(app.appenlight_client.report_queue), 0)
+        assert len(app.appenlight_client.report_queue) == 0
 
     def test_normal_request_decorator(self):
         from appenlight_client.client import decorate
@@ -1292,7 +1268,7 @@ class TestWSGI(unittest.TestCase):
 
         req = Request.blank('http://localhost/test')
         req.get_response(app)
-        self.assertEqual(len(app.appenlight_client.report_queue), 0)
+        assert len(app.appenlight_client.report_queue) == 0
 
     def test_error_request_decorator(self):
         from appenlight_client.client import decorate
@@ -1307,7 +1283,7 @@ class TestWSGI(unittest.TestCase):
         app.appenlight_client.last_submit = datetime.datetime.now()
         req = Request.blank('http://localhost/test')
         req.get_response(app)
-        self.assertEqual(len(app.appenlight_client.report_queue), 1)
+        assert len(app.appenlight_client.report_queue) == 1
 
     def test_error_request(self):
         def app(environ, start_response):
@@ -1320,9 +1296,8 @@ class TestWSGI(unittest.TestCase):
         app.appenlight_client.config['reraise_exceptions'] = False
         app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
-        self.assertEqual(len(app.appenlight_client.report_queue), 1)
-        self.assertEqual(app.appenlight_client.report_queue[0]['http_status'],
-                         500)
+        assert len(app.appenlight_client.report_queue) == 1
+        assert app.appenlight_client.report_queue[0]['http_status'] == 500
 
 
     def test_not_found_request(self):
@@ -1340,9 +1315,8 @@ class TestWSGI(unittest.TestCase):
         app.appenlight_client.config['reraise_exceptions'] = False
         app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
-        self.assertEqual(len(app.appenlight_client.report_queue), 1)
-        self.assertEqual(app.appenlight_client.report_queue[0]['http_status'],
-                         404)
+        assert len(app.appenlight_client.report_queue) == 1
+        assert app.appenlight_client.report_queue[0]['http_status'] == 404
 
     def test_ignored_error_request(self):
         def app(environ, start_response):
@@ -1356,7 +1330,7 @@ class TestWSGI(unittest.TestCase):
         app.appenlight_client.config['reraise_exceptions'] = False
         app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
-        self.assertEqual(len(app.appenlight_client.report_queue), 0)
+        assert len(app.appenlight_client.report_queue) == 0
 
     def test_view_name_request(self):
         def app(environ, start_response):
@@ -1370,8 +1344,7 @@ class TestWSGI(unittest.TestCase):
         app.appenlight_client.config['reraise_exceptions'] = False
         app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
-        self.assertEqual(app.appenlight_client.report_queue[0].get('view_name'),
-                         'foo:app')
+        assert app.appenlight_client.report_queue[0].get('view_name') == 'foo:app'
 
     def test_slow_request(self):
         def app(environ, start_response):
@@ -1383,7 +1356,7 @@ class TestWSGI(unittest.TestCase):
         app = make_appenlight_middleware(app, global_config=timing_conf)
         app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
-        self.assertEqual(len(app.appenlight_client.report_queue), 1)
+        assert len(app.appenlight_client.report_queue) == 1
 
     def test_ignored_slow_request(self):
         def app(environ, start_response):
@@ -1396,7 +1369,7 @@ class TestWSGI(unittest.TestCase):
         app = make_appenlight_middleware(app, global_config=timing_conf)
         app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
-        self.assertEqual(len(app.appenlight_client.report_queue), 0)
+        assert len(app.appenlight_client.report_queue) == 0
 
     def test_logging_request(self):
         def app(environ, start_response):
@@ -1409,7 +1382,7 @@ class TestWSGI(unittest.TestCase):
         app = make_appenlight_middleware(app, global_config=timing_conf)
         app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
-        self.assertGreaterEqual(len(app.appenlight_client.log_queue), 2)
+        assert len(app.appenlight_client.log_queue) >= 2
 
     def test_timing_request(self):
         try:
@@ -1442,8 +1415,8 @@ class TestWSGI(unittest.TestCase):
         app = make_appenlight_middleware(app, global_config=timing_conf)
         req.get_response(app)
         stats, result = get_local_storage(local_timing).get_thread_stats()
-        self.assertGreater(stats['main'], 0)
-        self.assertGreater(stats['sql'], 0)
+        assert stats['main'] > 0
+        assert stats['sql'] > 0
 
     def test_multiple_post_request(self):
         def app(environ, start_response):
@@ -1460,7 +1433,7 @@ class TestWSGI(unittest.TestCase):
                              app.appenlight_client.report_queue[0]['report_details'][0]['request']['POST'])
 
 
-class TestCallableName(unittest.TestCase):
+class TestCallableName(object):
     def setUpClient(self, config={}):
         self.client = client.Client(timing_conf)
 
@@ -1473,8 +1446,7 @@ class TestCallableName(unittest.TestCase):
 
         fullyQualifiedName(some_call)
         some_call()
-        self.assertEqual(some_call._appenlight_name,
-                         'appenlight_client/tests:some_call')
+        assert some_call._appenlight_name == 'appenlight_client/tests:some_call'
 
     def test_newstyle_class(self):
         class Foo(object):
@@ -1486,9 +1458,8 @@ class TestCallableName(unittest.TestCase):
 
         fullyQualifiedName(Foo)
         fullyQualifiedName(Foo.test)
-        self.assertEqual(Foo._appenlight_name, 'appenlight_client/tests:Foo')
-        self.assertEqual(Foo.test._appenlight_name,
-                         'appenlight_client/tests:Foo.test')
+        assert Foo._appenlight_name == 'appenlight_client/tests:Foo'
+        assert Foo.test._appenlight_name == 'appenlight_client/tests:Foo.test'
 
     def test_oldstyle_class(self):
         class Bar():
@@ -1500,9 +1471,8 @@ class TestCallableName(unittest.TestCase):
 
         fullyQualifiedName(Bar)
         fullyQualifiedName(Bar.test)
-        self.assertEqual(Bar._appenlight_name, 'appenlight_client/tests:Bar')
-        self.assertEqual(Bar.test._appenlight_name,
-                         'appenlight_client/tests:Bar.test')
+        assert Bar._appenlight_name == 'appenlight_client/tests:Bar'
+        assert Bar.test._appenlight_name == 'appenlight_client/tests:Bar.test'
 
 
 if __name__ == '__main__':
