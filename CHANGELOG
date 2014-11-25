@@ -1,5 +1,12 @@
 CHANGELOG:
 ==========
+2014-11-25  Enable tagging of logs
+    0.6.11  Enable tagging of requests
+            Include exception traceback if attached to log.error()
+            Increase resolution of time for logging
+            Migrate all tests to py.test
+
+
 2014-08-26  Handle some POST serialization better
     0.6.10  Enable local variable information by default
             Additional control over framelocal amount
