@@ -2,6 +2,7 @@ import logging
 import inspect
 import os
 import sys
+import datetime
 
 log = logging.getLogger(__name__)
 
@@ -119,3 +120,10 @@ def fullyQualifiedName(obj):
     except Exception:
         pass
     return name
+
+
+def parse_tag(k, v):
+    if isinstance(v, (basestring, datetime.datetime, datetime.date, float, int,)):
+        return (k, v,)
+    else:
+        return (k, unicode(v),)

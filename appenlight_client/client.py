@@ -40,7 +40,7 @@ import uuid
 import os
 from functools import wraps
 from appenlight_client import __version__, __protocol_version__
-from appenlight_client.utils import asbool, aslist, import_from_module
+from appenlight_client.utils import asbool, aslist, import_from_module, parse_tag
 from webob import Request
 
 if PY3:
@@ -417,10 +417,7 @@ class Client(object):
                 for k, v in vars(record).iteritems():
                     if k not in EXCLUDED_LOG_VARS:
                         try:
-                            if isinstance(v, (basestring, datetime.datetime, datetime.date, float, int,)):
-                                tags_list.append((k, v,))
-                            else:
-                                tags_list.append((k, unicode(v),))
+                            tags_list.append(parse_tag(k, v))
                         except Exception as e:
                             log.info(u'Couldn\'t convert attached tag %s' % e)
                 if tags_list:
@@ -483,8 +480,16 @@ class Client(object):
                                 'appenlight.log',
                                 'appenlight.report',
                                 'appenlight.force_logs',
+                                'appenlight.tags',
                                 'appenlight.post_vars'):
                 appenlight_info[key[11:]] = unicode(value)
+            elif key == 'appenlight.tags':
+                appenlight_info['tags'] = []
+                for k, v in value.iteritems():
+                    try:
+                        appenlight_info['tags'].append(parse_tag(k, v))
+                    except Exception as e:
+                        log.info(u'Couldn\'t convert attached tag %s' % e)
             else:
                 whitelisted = key.startswith('HTTP') or key in self.config[
                     'environ_keys_whitelist']
