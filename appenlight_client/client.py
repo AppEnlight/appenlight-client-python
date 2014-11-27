@@ -295,8 +295,8 @@ class Client(object):
         keys_to_check = ()
         if section in ['error_report', 'slow_report']:
             keys_to_check = (
-                structure['report_details']['request'].get('COOKIES'),
-                structure['report_details']['request'].get('POST'),
+                structure['request'].get('COOKIES'),
+                structure['request'].get('POST'),
             )
         for source in filter(None, keys_to_check):
             if hasattr(source, 'iterkeys'):
@@ -305,7 +305,7 @@ class Client(object):
                 filter_dict(source, source.keys)
                 # try to filter local frame vars, to prevent people
                 #  leaking as much data as possible when enabling frameinfo
-        frameinfo = structure['report_details'].get('traceback')
+        frameinfo = structure.get('traceback')
         if frameinfo:
             for f in frameinfo:
                 for source in f.get('vars', []):
@@ -332,10 +332,10 @@ class Client(object):
                                                                     http_status=http_status,
                                                                     include_params=True)
         report_data = self.filter_callable(report_data, 'error_report')
-        url = report_data['report_details']['url']
+        url = report_data['url']
         if not PY3:
             url = url.decode('utf8', 'ignore')
-        report_data['report_details']['request_stats'] = request_stats
+        report_data['request_stats'] = request_stats
         with self.report_queue_lock:
             self.report_queue.append(report_data)
         if traceback:
@@ -349,10 +349,10 @@ class Client(object):
             except Exception:
                 pass
         del traceback
-        report_data['report_details']['start_time'] = start_time
-        report_data['report_details']['end_time'] = end_time
-        report_data['report_details']['request_stats'] = request_stats
-        report_data['report_details']['slow_calls'] = []
+        report_data['start_time'] = start_time
+        report_data['end_time'] = end_time
+        report_data['request_stats'] = request_stats
+        report_data['slow_calls'] = []
         if slow_calls:
             for record in slow_calls:
                 # we don't need that and json will barf anyways
@@ -365,7 +365,7 @@ class Client(object):
                 # convert to datetime before json payload gets created
                 r['start'] = datetime.datetime.utcfromtimestamp(r['start'])
                 r['end'] = datetime.datetime.utcfromtimestamp(r['end'])
-                report_data['report_details']['slow_calls'].append(r)
+                report_data['slow_calls'].append(r)
             try:
                 log.info('slow request/queries detected: %s' % url.encode('utf8', 'ignore'))
             except Exception:
@@ -582,16 +582,15 @@ class Client(object):
             traceback,
             include_params,
             http_status)
-        report_data = {'client': 'appenlight-python', 'language':'python', 'report_details': {}}
+        report_data = {'client': 'appenlight-python', 'language':'python'}
         report_data['error'] = ''
-        detail_entry = {}
         if traceback:
             exception_text = traceback.exception
             report_data['error'] = exception_text
             local_vars = (self.config['report_local_vars'] or
                           environ.get('appenlight.report_local_vars'))
             skip_existing = self.config['report_local_vars_skip_existing']
-            detail_entry['traceback'] = traceback.frameinfo(
+            report_data['traceback'] = traceback.frameinfo(
                 include_vars=local_vars, skip_existing=skip_existing)
 
         report_data['http_status'] = http_status
@@ -600,23 +599,22 @@ class Client(object):
         report_data['priority'] = 5
         report_data['server'] = (server or
                                  environ.get('SERVER_NAME', 'unknown server'))
-        detail_entry['request'] = parsed_environ
+        report_data['request'] = parsed_environ
         # fill in all other required info
-        detail_entry['ip'] = parsed_environ.get('REMOTE_ADDR', u'')
-        detail_entry['user_agent'] = parsed_environ['HTTP_USER_AGENT']
-        detail_entry['username'] = appenlight_info.pop('username')
-        detail_entry['url'] = appenlight_info.pop('URL', 'unknown')
+        report_data['ip'] = parsed_environ.get('REMOTE_ADDR', u'')
+        report_data['user_agent'] = parsed_environ['HTTP_USER_AGENT']
+        report_data['username'] = appenlight_info.pop('username')
+        report_data['url'] = appenlight_info.pop('URL', 'unknown')
         if 'request_id' in appenlight_info:
-            detail_entry['request_id'] = appenlight_info.pop('request_id',
+            report_data['request_id'] = appenlight_info.pop('request_id',
                                                              None)
-        detail_entry['message'] = message or appenlight_info.get('message',
+        report_data['message'] = message or appenlight_info.get('message',
                                                                  u'')
         # conserve bandwidth pop keys that we dont need in request details
         exclude_keys = ('HTTP_USER_AGENT', 'REMOTE_ADDR', 'HTTP_COOKIE',
                         'appenlight.client')
         for k in exclude_keys:
-            detail_entry['request'].pop(k, None)
-        report_data['report_details'] = detail_entry
+            report_data['request'].pop(k, None)
         report_data.update(appenlight_info)
         del traceback
         return report_data, appenlight_info
