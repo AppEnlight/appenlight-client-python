@@ -295,8 +295,8 @@ class Client(object):
         keys_to_check = ()
         if section in ['error_report', 'slow_report']:
             keys_to_check = (
-                structure['report_details'][0]['request'].get('COOKIES'),
-                structure['report_details'][0]['request'].get('POST'),
+                structure['report_details']['request'].get('COOKIES'),
+                structure['report_details']['request'].get('POST'),
             )
         for source in filter(None, keys_to_check):
             if hasattr(source, 'iterkeys'):
@@ -305,7 +305,7 @@ class Client(object):
                 filter_dict(source, source.keys)
                 # try to filter local frame vars, to prevent people
                 #  leaking as much data as possible when enabling frameinfo
-        frameinfo = structure['report_details'][0].get('traceback')
+        frameinfo = structure['report_details'].get('traceback')
         if frameinfo:
             for f in frameinfo:
                 for source in f.get('vars', []):
@@ -332,10 +332,10 @@ class Client(object):
                                                                     http_status=http_status,
                                                                     include_params=True)
         report_data = self.filter_callable(report_data, 'error_report')
-        url = report_data['report_details'][0]['url']
+        url = report_data['report_details']['url']
         if not PY3:
             url = url.decode('utf8', 'ignore')
-        report_data['report_details'][0]['request_stats'] = request_stats
+        report_data['report_details']['request_stats'] = request_stats
         with self.report_queue_lock:
             self.report_queue.append(report_data)
         if traceback:
@@ -349,10 +349,10 @@ class Client(object):
             except Exception:
                 pass
         del traceback
-        report_data['report_details'][0]['start_time'] = start_time
-        report_data['report_details'][0]['end_time'] = end_time
-        report_data['report_details'][0]['request_stats'] = request_stats
-        report_data['report_details'][0]['slow_calls'] = []
+        report_data['report_details']['start_time'] = start_time
+        report_data['report_details']['end_time'] = end_time
+        report_data['report_details']['request_stats'] = request_stats
+        report_data['report_details']['slow_calls'] = []
         if slow_calls:
             for record in slow_calls:
                 # we don't need that and json will barf anyways
@@ -365,7 +365,7 @@ class Client(object):
                 # convert to datetime before json payload gets created
                 r['start'] = datetime.datetime.utcfromtimestamp(r['start'])
                 r['end'] = datetime.datetime.utcfromtimestamp(r['end'])
-                report_data['report_details'][0]['slow_calls'].append(r)
+                report_data['report_details']['slow_calls'].append(r)
             try:
                 log.info('slow request/queries detected: %s' % url.encode('utf8', 'ignore'))
             except Exception:
@@ -582,7 +582,7 @@ class Client(object):
             traceback,
             include_params,
             http_status)
-        report_data = {'client': 'appenlight-python', 'language':'python', 'report_details': []}
+        report_data = {'client': 'appenlight-python', 'language':'python', 'report_details': {}}
         report_data['error'] = ''
         detail_entry = {}
         if traceback:
@@ -616,7 +616,7 @@ class Client(object):
                         'appenlight.client')
         for k in exclude_keys:
             detail_entry['request'].pop(k, None)
-        report_data['report_details'].append(detail_entry)
+        report_data['report_details'] = detail_entry
         report_data.update(appenlight_info)
         del traceback
         return report_data, appenlight_info
