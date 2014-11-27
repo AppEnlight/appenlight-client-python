@@ -70,34 +70,38 @@ REQ_END_TIME = datetime.datetime.utcnow() + datetime.timedelta(seconds=1)
 SERVER_NAME = socket.getfqdn()  # different on every machine
 
 PARSED_REPORT_404 = {
-    'report_details': [{'username': u'foo',
-                        'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
-                        'ip': '127.0.0.1',
-                        'start_time': REQ_START_TIME,
-                        'slow_calls': [],
-                        'request': {'COOKIES': {u'country': u'US',
-                                                u'sessionId': u'***',
-                                                u'test_group_id': u'5',
-                                                u'http_referer': u'http://localhost:5000/'},
-                                    'POST': {},
-                                    'GET': {u'aaa': [u'1'], u'bbb': [u'2']},
-                                    'HTTP_METHOD': 'GET',
-                        },
-                        'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
-                        'message': u'',
-                        'end_time': REQ_END_TIME,
-                        'request_stats': {}
-                       }],
     'error': '404 Not Found',
     'server': SERVER_NAME,
     'priority': 5,
     'client': 'appenlight-python',
     'language': 'python',
+    'username': u'foo',
+     'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
+     'ip': '127.0.0.1',
+     'start_time': REQ_START_TIME,
+     'slow_calls': [],
+     'request': {'COOKIES': {u'country': u'US',
+                             u'sessionId': u'***',
+                             u'test_group_id': u'5',
+                             u'http_referer': u'http://localhost:5000/'},
+                 'POST': {},
+                 'GET': {u'aaa': [u'1'], u'bbb': [u'2']},
+                 'HTTP_METHOD': 'GET',
+                 },
+     'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
+     'message': u'',
+     'end_time': REQ_END_TIME,
+     'request_stats': {},
     'http_status': 404}
 
-PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
+PARSED_REPORT_500 = {
                      # this will be different everywhere
-                     'report_details': [{'traceback': [
+                     'error': u'Exception: Test Exception',
+                     'server': SERVER_NAME,
+                     'priority': 5,
+                     'client': 'appenlight-python',
+                     'language': 'python',
+                     'traceback': [
                          {'cline': u"raise Exception('Test Exception')",
                           'file': 'appenlight_client/tests.py',
                           'fn': 'test_py_report_500_traceback',
@@ -108,73 +112,68 @@ PARSED_REPORT_500 = {'traceback': u'Traceback (most recent call last):',
                           'fn': '',
                           'line': '',
                           'vars': []}],
-                                         'username': u'foo',
-                                         'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
-                                         'ip': '127.0.0.1',
-                                         'start_time': REQ_START_TIME,
-                                         'slow_calls': [],
-                                         'request': {
-                                             'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                                             'COOKIES': {u'country': u'US',
-                                                         u'sessionId': u'***',
-                                                         u'test_group_id': u'5',
-                                                         u'http_referer': u'http://localhost:5000/'},
-                                             'SERVER_NAME': u'localhost',
-                                             'GET': {u'aaa': [u'1'],
-                                                     u'bbb': [u'2']},
-                                             'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                                             'HTTP_ACCEPT_ENCODING': u'gzip, deflate',
-                                             'HTTP_ACCEPT_LANGUAGE': u'en-us,en;q=0.5',
-                                             'HTTP_CACHE_CONTROL': u'max-age=0',
-                                             'HTTP_HOST': u'localhost:6543',
-                                             'HTTP_METHOD': 'GET',
-                                             'REMOTE_USER': u'foo',
-                                             'HTTP_HOST': u'localhost:6543',
-                                             'POST': {},
-                                             'HTTP_CACHE_CONTROL': u'max-age=0',
-                                             'HTTP_ACCEPT_ENCODING': u'gzip, deflate',
-                                             'HTTP_METHOD': 'GET'},
-                                         'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
-                                         'message': u'',
-                                         'end_time': REQ_END_TIME,
-                                         'request_stats': {}}],
-                     'error': u'Exception: Test Exception',
-                     'server': SERVER_NAME,
-                     'priority': 5,
-                     'client': 'appenlight-python',
-                     'language': 'python',
+                     'username': u'foo',
+                     'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
+                     'ip': '127.0.0.1',
+                     'start_time': REQ_START_TIME,
+                     'slow_calls': [],
+                     'request': {
+                         'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                         'COOKIES': {u'country': u'US',
+                                     u'sessionId': u'***',
+                                     u'test_group_id': u'5',
+                                     u'http_referer': u'http://localhost:5000/'},
+                         'SERVER_NAME': u'localhost',
+                         'GET': {u'aaa': [u'1'],
+                                 u'bbb': [u'2']},
+                         'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                         'HTTP_ACCEPT_ENCODING': u'gzip, deflate',
+                         'HTTP_ACCEPT_LANGUAGE': u'en-us,en;q=0.5',
+                         'HTTP_CACHE_CONTROL': u'max-age=0',
+                         'HTTP_HOST': u'localhost:6543',
+                         'HTTP_METHOD': 'GET',
+                         'REMOTE_USER': u'foo',
+                         'HTTP_HOST': u'localhost:6543',
+                         'POST': {},
+                         'HTTP_CACHE_CONTROL': u'max-age=0',
+                         'HTTP_ACCEPT_ENCODING': u'gzip, deflate',
+                         'HTTP_METHOD': 'GET'},
+                     'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
+                     'message': u'',
+                     'end_time': REQ_END_TIME,
+                     'request_stats': {},
                      'http_status': 500}
 
 PARSED_SLOW_REPORT = {
-    'report_details': [{'username': u'foo',
-                        'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
-                        'ip': '127.0.0.1',
-                        'start_time': REQ_START_TIME,
-                        'slow_calls': [],
-                        'request': {'COOKIES': {u'country': u'US',
-                                                u'sessionId': u'***',
-                                                u'test_group_id': u'5',
-                                                u'http_referer': u'http://localhost:5000/'},
-                                    'POST': {},
-                                    'GET': {u'aaa': [u'1'], u'bbb': [u'2'], },
-                                    'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                                    'HTTP_ACCEPT_ENCODING': u'gzip, deflate',
-                                    'HTTP_ACCEPT_LANGUAGE': u'en-us,en;q=0.5',
-                                    'HTTP_CACHE_CONTROL': u'max-age=0',
-                                    'HTTP_HOST': u'localhost:6543',
-                                    'HTTP_METHOD': 'GET',
-                                    'REMOTE_USER': u'foo',
-                                    'SERVER_NAME': u'localhost',
-                        },
-                        'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
-                        'message': u'',
-                        'end_time': REQ_END_TIME,
-                        'request_stats': {}}],
     'error': '',
     'server': SERVER_NAME,
     'priority': 5,
     'client': 'appenlight-python',
     'language': 'python',
+    'username': u'foo',
+    'url': 'http://localhost:6543/test/error?aaa=1&bbb=2',
+    'ip': '127.0.0.1',
+    'start_time': REQ_START_TIME,
+    'slow_calls': [],
+    'request': {'COOKIES': {u'country': u'US',
+                            u'sessionId': u'***',
+                            u'test_group_id': u'5',
+                            u'http_referer': u'http://localhost:5000/'},
+                'POST': {},
+                'GET': {u'aaa': [u'1'], u'bbb': [u'2'], },
+                'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'HTTP_ACCEPT_ENCODING': u'gzip, deflate',
+                'HTTP_ACCEPT_LANGUAGE': u'en-us,en;q=0.5',
+                'HTTP_CACHE_CONTROL': u'max-age=0',
+                'HTTP_HOST': u'localhost:6543',
+                'HTTP_METHOD': 'GET',
+                'REMOTE_USER': u'foo',
+                'SERVER_NAME': u'localhost',
+                },
+    'user_agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20100101 Firefox/10.0.1',
+    'message': u'',
+    'end_time': REQ_END_TIME,
+    'request_stats': {},
     'http_status': 200}
 
 
@@ -568,8 +567,7 @@ class TestErrorParsing(object):
         bogus_500_report['http_status'] = 500
         bogus_500_report['error'] = ''
         del bogus_500_report['traceback']
-        del bogus_500_report['report_details'][0]['traceback']
-        bogus_500_report['report_details'][0]['request_stats'] = {}
+        bogus_500_report['request_stats'] = {}
         subset = bogus_500_report
         superset = self.client.report_queue[0].items()
         for i in subset.iteritems():
@@ -588,13 +586,11 @@ class TestErrorParsing(object):
                               http_status=500,
                               start_time=REQ_START_TIME,
                               end_time=REQ_END_TIME)
-        self.client.report_queue[0]['traceback'] = \
-            'Traceback (most recent call last):'
         line_no = \
-            self.client.report_queue[0]['report_details'][0]['traceback'][0]['line']
+            self.client.report_queue[0]['traceback'][0]['line']
         assert int(line_no) > 0
         # set line number to match as this will change over time
-        bogus_report['report_details'][0]['traceback'][0]['line'] = line_no
+        bogus_report['traceback'][0]['line'] = line_no
         subset = bogus_report
         superset = self.client.report_queue[0].items()
         for i in subset.iteritems():
@@ -617,7 +613,7 @@ class TestErrorParsing(object):
                                               ignore_system_exceptions=True)
         self.client.py_report(TEST_ENVIRON, traceback=traceback,
                               http_status=500)
-        assert len(self.client.report_queue[0]['report_details'][0]['traceback'][0]['vars']) == 9
+        assert len(self.client.report_queue[0]['traceback'][0]['vars']) == 9
 
 
 class TestLogs(object):
@@ -1454,7 +1450,7 @@ class TestWSGI(object):
         app.appenlight_client.config['reraise_exceptions'] = False
         app.appenlight_client.last_submit = datetime.datetime.now()
         req.get_response(app)
-        assert {'a': u'a', 'b': [u'2', u'1']} == app.appenlight_client.report_queue[0]['report_details'][0]['request']['POST']
+        assert {'a': u'a', 'b': [u'2', u'1']} == app.appenlight_client.report_queue[0]['request']['POST']
 
     def test_tags_support(self):
         now = datetime.datetime.utcnow()
