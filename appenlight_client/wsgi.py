@@ -50,6 +50,8 @@ class AppenlightWSGIWrapper(object):
             environ['appenlight.log'] = local_log
         if 'appenlight.tags' not in environ:
             environ['appenlight.tags'] = {}
+        if 'appenlight.extra' not in environ:
+            environ['appenlight.extra'] = {}
 
         try:
             app_iter = self.app(environ, detect_headers)

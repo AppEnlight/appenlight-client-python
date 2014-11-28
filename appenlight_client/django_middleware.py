@@ -32,6 +32,8 @@ class AppenlightMiddleware(object):
             environ['appenlight.client'] = self.appenlight_client
         if 'appenlight.tags' not in environ:
             environ['appenlight.tags'] = {}
+        if 'appenlight.extra' not in environ:
+            environ['appenlight.extra'] = {}
         environ['appenlight.post_vars'] = request.POST
         appenlight_storage = get_local_storage(local_timing)
         # clear out thread stats on request start
