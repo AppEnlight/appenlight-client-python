@@ -130,6 +130,14 @@ class Client(object):
         self.config['request_keys_blacklist'].extend(
             filter(lambda x: x, req_blacklist)
         )
+        self.config['cookie_keys_whitelist'] = []
+        cookie_whitelist = aslist(config.get('appenlight.cookie_keys_whitelist',
+                                          config.get(
+                                              'appenlight.cookie_keys_whitelist')),
+                               ',')
+        self.config['cookie_keys_whitelist'].extend(
+            filter(lambda x: x, cookie_whitelist)
+        )
         if config.get('appenlight.bad_request_keys'):
             log.warning('appenlight.bad_request_keys is deprecated use '
                         'request_keys_blacklist')  # pragma: nocover
@@ -481,6 +489,7 @@ class Client(object):
                                 'appenlight.report',
                                 'appenlight.force_logs',
                                 'appenlight.tags',
+                                'appenlight.extra',
                                 'appenlight.post_vars'):
                 appenlight_info[key[11:]] = unicode(value)
             elif key == 'appenlight.tags':
@@ -490,6 +499,13 @@ class Client(object):
                         appenlight_info['tags'].append(parse_tag(k, v))
                     except Exception as e:
                         log.info(u'Couldn\'t convert attached tag %s' % e)
+            elif key == 'appenlight.extra':
+                appenlight_info['extra'] = []
+                for k, v in value.iteritems():
+                    try:
+                        appenlight_info['extra'].append(parse_tag(k, v))
+                    except Exception as e:
+                        log.info(u'Couldn\'t convert attached extra value %s' % e)
             else:
                 whitelisted = key.startswith('HTTP') or key in self.config[
                     'environ_keys_whitelist']
@@ -559,6 +575,8 @@ class Client(object):
                 environ.get("HTTP_X_REAL_IP") or environ.get('REMOTE_ADDR'))
         parsed_environ['HTTP_USER_AGENT'] = environ.get("HTTP_USER_AGENT", '')
         parsed_environ['REMOTE_ADDR'] = remote_addr
+        if 'message' in appenlight_info:
+            appenlight_info['extra'].append(('message', appenlight_info['message']),)
         try:
             username = appenlight_info.get('username', environ.get('REMOTE_USER', u''))
             appenlight_info['username'] = u'%s' % username
