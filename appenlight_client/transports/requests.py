@@ -25,6 +25,14 @@ class HTTPTransport(BaseTransport):
         update_options['timeout'] = float(update_options.get('timeout', 5))
         self.transport_config.update(update_options)
 
+    def feed_report(self, report_data):
+        with self.report_queue_lock:
+            self.report_queue.append(report_data)
+
+    def feed_log(self, log_data):
+        with self.log_queue_lock:
+            self.log_queue.append(log_data)
+
     def submit(self, *args, **kwargs):
         if self.transport_config['threaded']:
             submit_data_t = threading.Thread(target=self.send_to_endpoints,

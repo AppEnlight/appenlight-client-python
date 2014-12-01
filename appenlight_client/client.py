@@ -286,8 +286,6 @@ class Client(object):
         if not PY3:
             url = url.decode('utf8', 'ignore')
         report_data['request_stats'] = request_stats
-        with self.transport.report_queue_lock:
-            self.transport.report_queue.append(report_data)
         if traceback:
             try:
                 log.warning('%s code: %s @%s' % (http_status,
@@ -320,10 +318,10 @@ class Client(object):
                 log.info('slow request/queries detected: %s' % url.encode('utf8', 'ignore'))
             except Exception:
                 pass
+        self.transport.feed_report(report_data)
         return True
 
     def py_log(self, environ, records=None, r_uuid=None, created_report=None):
-        log_entries = []
         if not records:
             records = self.log_handler.get_records()
             self.log_handler.clear_records()
@@ -372,40 +370,17 @@ class Client(object):
                             log.info(u'Couldn\'t convert attached tag %s' % e)
                 if tags_list:
                     log_dict['tags'] = tags_list
-                log_entries.append(log_dict)
+                self.transport.feed_log(log_dict)
             except (TypeError, UnicodeDecodeError, UnicodeEncodeError) as e:
                 # handle some weird case where record.getMessage() fails
                 log.warning(e)
-        with self.transport.log_queue_lock:
-            self.transport.log_queue.extend(log_entries)
         log.debug('add %s log entries to queue' % len(records))
         return True
 
     def save_request_stats(self, stats, view_name=None):
         if not view_name:
             view_name = 'unresolved_view'
-        with self.transport.request_stats_lock:
-            req_time = datetime.datetime.utcnow().replace(second=0,
-                                                          microsecond=0)
-            if req_time not in self.transport.request_stats:
-                self.transport.request_stats[req_time] = {}
-            if view_name not in self.transport.request_stats[req_time]:
-                self.transport.request_stats[req_time][view_name] = {'main': 0,
-                                                           'sql': 0,
-                                                           'nosql': 0,
-                                                           'remote': 0,
-                                                           'tmpl': 0,
-                                                           'unknown': 0,
-                                                           'requests': 0,
-                                                           'custom': 0,
-                                                           'sql_calls': 0,
-                                                           'nosql_calls': 0,
-                                                           'remote_calls': 0,
-                                                           'tmpl_calls': 0,
-                                                           'custom_calls': 0}
-            self.transport.request_stats[req_time][view_name]['requests'] += 1
-            for k, v in stats.iteritems():
-                self.transport.request_stats[req_time][view_name][k] += v
+        self.transport.save_request_stats(stats, view_name)
 
     def process_environ(self, environ, traceback=None, include_params=False,
                         http_status=200):
