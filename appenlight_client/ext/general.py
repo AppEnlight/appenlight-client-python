@@ -20,8 +20,7 @@ def gather_data(client, environ=None, gather_exception=True,
     http_status = 200
     traceback = None
     if gather_exception and not exc_info:
-        traceback = get_current_traceback(skip=1, show_hidden_frames=True,
-                                          ignore_system_exceptions=True)
+        traceback = client.get_current_traceback()
         if traceback:
             http_status = 500
     elif exc_info:

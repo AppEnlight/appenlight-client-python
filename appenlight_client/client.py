@@ -40,6 +40,7 @@ import uuid
 import os
 from functools import wraps
 from appenlight_client import __version__, __protocol_version__
+from appenlight_client.exceptions import get_current_traceback
 from appenlight_client.utils import asbool, aslist, import_from_module, parse_tag
 from webob import Request
 
@@ -637,6 +638,11 @@ class Client(object):
         report_data.update(appenlight_info)
         del traceback
         return report_data, appenlight_info
+
+    def get_current_traceback(self):
+        tb = get_current_traceback(skip=1, show_hidden_frames=True,
+                              ignore_system_exceptions=True)
+        return tb
 
 
 def get_config(config=None, path_to_config=None, section_name='appenlight'):

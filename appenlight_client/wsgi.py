@@ -1,6 +1,5 @@
 import uuid
 import datetime
-from appenlight_client.exceptions import get_current_traceback
 from appenlight_client.timing import local_timing, get_local_storage
 from appenlight_client.timing import default_timer
 from appenlight_client.client import PY3
@@ -61,8 +60,7 @@ class AppenlightWSGIWrapper(object):
                 app_iter.close()
                 # we need that here
 
-            traceback = get_current_traceback(skip=1, show_hidden_frames=True,
-                                              ignore_system_exceptions=True)
+            traceback = self.appenlight_client.get_current_traceback()
             # by default reraise exceptions for app/FW to handle
             if self.appenlight_client.config['reraise_exceptions']:
                 raise

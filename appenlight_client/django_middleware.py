@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.http import Http404
-from appenlight_client.exceptions import get_current_traceback
 from appenlight_client.timing import local_timing, get_local_storage
 from appenlight_client.timing import default_timer
 from appenlight_client.client import Client
@@ -62,9 +61,7 @@ class AppenlightMiddleware(object):
                 environ['appenlight.username'] = unicode(user.pk)
         if not isinstance(exception, Http404):
             http_status = 500
-            traceback = get_current_traceback(skip=1,
-                                              show_hidden_frames=True,
-                                              ignore_system_exceptions=True)
+            traceback = self.appenlight_client.get_current_traceback()
             appenlight_storage = get_local_storage(local_timing)
             appenlight_storage.thread_stats['main'] = end_time - request.__start_time__
             stats, slow_calls = appenlight_storage.get_thread_stats()
