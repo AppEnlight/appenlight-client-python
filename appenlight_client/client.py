@@ -173,8 +173,7 @@ class Client(object):
 
         if self.config['buffer_flush_interval'] < 1:
             self.config['buffer_flush_interval'] = 1
-        self.config['buffer_flush_interval'] = datetime.timedelta(
-            seconds=self.config['buffer_flush_interval'])
+        self.config['buffer_flush_interval'] = datetime.timedelta(seconds=self.config['buffer_flush_interval'])
         # register logging
         import appenlight_client.logger
 
@@ -204,24 +203,7 @@ class Client(object):
         if self.config['enabled']:
             self.register_hooks()
 
-        self.config['endpoints'] = {
-            "reports": '/api/reports',
-            "logs": '/api/logs',
-            "metrics": '/api/metrics'
-        }
-
-        self.report_queue = []
-        self.report_queue_lock = threading.RLock()
-        self.log_queue = []
-        self.log_queue_lock = threading.RLock()
-        self.request_stats = {}
-        self.request_stats_lock = threading.RLock()
         self.uuid = uuid.uuid4()
-        self.last_submit = datetime.datetime.utcnow() - datetime.timedelta(
-            seconds=50)
-        self.last_request_stats_submit = datetime.datetime.utcnow() - datetime.timedelta(
-            seconds=50)
-
         try:
             parts = self.config['transport'].split(':')
             _tmp = __import__(parts[0], globals(), locals(),
@@ -251,48 +233,7 @@ class Client(object):
                 log.warning("Couln't attach hook: %s" % hook)
 
     def check_if_deliver(self, force_send=False):
-        delta = datetime.datetime.utcnow() - self.last_submit
-        metrics = []
-        reports = []
-        logs = []
-        # should we send
-        if delta > self.config['buffer_flush_interval'] or force_send:
-            # build data to feed the transport
-            with self.report_queue_lock:
-                reports = self.report_queue[:250]
-                if self.config['buffer_clear_on_send']:
-                    self.report_queue = []
-                else:
-                    self.report_queue = self.report_queue[250:]
-
-            with self.log_queue_lock:
-                logs = self.log_queue[:2000]
-                if self.config['buffer_clear_on_send']:
-                    self.log_queue = []
-                else:
-                    self.log_queue = self.log_queue[2000:]
-            # mark times
-            self.last_submit = datetime.datetime.utcnow()
-
-        # metrics we should send every 60s
-        delta = datetime.datetime.utcnow() - self.last_request_stats_submit
-        if delta >= datetime.timedelta(seconds=60):
-            with self.request_stats_lock:
-                request_stats = self.request_stats
-                self.request_stats = {}
-            for k, v in request_stats.iteritems():
-                metrics.append({
-                    "server": self.config['server_name'],
-                    "metrics": v.items(),
-                    "timestamp": k.isoformat()
-                })
-            # mark times
-            self.last_request_stats_submit = datetime.datetime.utcnow()
-
-        if reports or logs or metrics:
-            self.transport.feed(reports=reports, logs=logs, metrics=metrics)
-            return True
-        return False
+        return self.transport.check_if_deliver(force_send=force_send)
 
     def data_filter(self, structure, section=None):
         def filter_dict(f_input, dict_method):
@@ -345,8 +286,8 @@ class Client(object):
         if not PY3:
             url = url.decode('utf8', 'ignore')
         report_data['request_stats'] = request_stats
-        with self.report_queue_lock:
-            self.report_queue.append(report_data)
+        with self.transport.report_queue_lock:
+            self.transport.report_queue.append(report_data)
         if traceback:
             try:
                 log.warning('%s code: %s @%s' % (http_status,
@@ -435,21 +376,21 @@ class Client(object):
             except (TypeError, UnicodeDecodeError, UnicodeEncodeError) as e:
                 # handle some weird case where record.getMessage() fails
                 log.warning(e)
-        with self.log_queue_lock:
-            self.log_queue.extend(log_entries)
+        with self.transport.log_queue_lock:
+            self.transport.log_queue.extend(log_entries)
         log.debug('add %s log entries to queue' % len(records))
         return True
 
     def save_request_stats(self, stats, view_name=None):
         if not view_name:
             view_name = 'unresolved_view'
-        with self.request_stats_lock:
+        with self.transport.request_stats_lock:
             req_time = datetime.datetime.utcnow().replace(second=0,
                                                           microsecond=0)
-            if req_time not in self.request_stats:
-                self.request_stats[req_time] = {}
-            if view_name not in self.request_stats[req_time]:
-                self.request_stats[req_time][view_name] = {'main': 0,
+            if req_time not in self.transport.request_stats:
+                self.transport.request_stats[req_time] = {}
+            if view_name not in self.transport.request_stats[req_time]:
+                self.transport.request_stats[req_time][view_name] = {'main': 0,
                                                            'sql': 0,
                                                            'nosql': 0,
                                                            'remote': 0,
@@ -462,9 +403,9 @@ class Client(object):
                                                            'remote_calls': 0,
                                                            'tmpl_calls': 0,
                                                            'custom_calls': 0}
-            self.request_stats[req_time][view_name]['requests'] += 1
+            self.transport.request_stats[req_time][view_name]['requests'] += 1
             for k, v in stats.iteritems():
-                self.request_stats[req_time][view_name][k] += v
+                self.transport.request_stats[req_time][view_name][k] += v
 
     def process_environ(self, environ, traceback=None, include_params=False,
                         http_status=200):

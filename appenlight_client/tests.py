@@ -452,7 +452,7 @@ class TestClientTransport(object):
 
     def test_check_if_deliver_forced(self):
         self.setUpClient()
-        self.client.log_queue = ['dummy']
+        self.client.transport.log_queue = ['dummy']
         assert self.client.check_if_deliver(force_send=True) is True
 
     def test_send_error_failure_queue(self):
@@ -460,12 +460,12 @@ class TestClientTransport(object):
         self.client.py_report(TEST_ENVIRON, http_status=404)
         self.client.check_if_deliver(force_send=True)
         get_local_storage(local_timing).clear()
-        assert self.client.report_queue == []
+        assert self.client.transport.report_queue == []
 
     def test_http_transport_failure(self):
         self.setUpClient()
         self.client.py_report(TEST_ENVIRON, http_status=404)
-        result = self.client.transport.send(self.client.report_queue, 'reports')
+        result = self.client.transport.send(self.client.transport.report_queue, 'reports')
         get_local_storage(local_timing).clear()
         assert result is False
 
@@ -476,7 +476,7 @@ class TestClientTransport(object):
             {'appenlight.api_key': 'XXX',
              'appenlight.transport_config': 'http://127.0.0.1:6543?threaded=1&timeout=5'})
         self.client.py_report(TEST_ENVIRON, http_status=404)
-        result = self.client.transport.send(self.client.report_queue, 'reports')
+        result = self.client.transport.send(self.client.transport.report_queue, 'reports')
         get_local_storage(local_timing).clear()
         assert result is True
 
@@ -486,7 +486,7 @@ class TestClientTransport(object):
             {'appenlight.api_key': 'XXX',
              'appenlight.transport_config': 'http://127.0.0.1:6543?threaded=1&timeout=0.0001'})
         self.client.py_report(TEST_ENVIRON, http_status=404)
-        result = self.client.transport.send(self.client.report_queue, 'reports')
+        result = self.client.transport.send(self.client.transport.report_queue, 'reports')
         get_local_storage(local_timing).clear()
         assert result is False
 
@@ -496,7 +496,7 @@ class TestClientTransport(object):
             {'appenlight.api_key': 'XXX',
              'appenlight.transport_config': 'http://foo.bar.baz.com:6543?threaded=1&timeout=5'})
         self.client.py_report(TEST_ENVIRON, http_status=404)
-        result = self.client.transport.send(self.client.report_queue, 'reports')
+        result = self.client.transport.send(self.client.transport.report_queue, 'reports')
         get_local_storage(local_timing).clear()
         assert result is False
 
@@ -508,7 +508,7 @@ class TestClientTransport(object):
             self.client.py_report(TEST_ENVIRON, http_status=404)
         result = self.client.check_if_deliver(force_send=True)
         get_local_storage(local_timing).clear()
-        assert len(self.client.report_queue) == 0
+        assert len(self.client.transport.report_queue) == 0
 
     def test_default_buffer_non_empty(self):
         self.setUpClient(
@@ -518,7 +518,7 @@ class TestClientTransport(object):
             self.client.py_report(TEST_ENVIRON, http_status=404)
         result = self.client.check_if_deliver(force_send=True)
         get_local_storage(local_timing).clear()
-        assert len(self.client.report_queue) > 0
+        assert len(self.client.transport.report_queue) > 0
 
     def test_custom_buffer_clear(self):
         self.setUpClient(
@@ -530,7 +530,7 @@ class TestClientTransport(object):
             self.client.py_report(TEST_ENVIRON, http_status=404)
         result = self.client.check_if_deliver(force_send=True)
         get_local_storage(local_timing).clear()
-        assert len(self.client.report_queue) == 0
+        assert len(self.client.transport.report_queue) == 0
 
 
 class TestErrorParsing(object):
@@ -545,7 +545,7 @@ class TestErrorParsing(object):
         self.client.py_report(TEST_ENVIRON, http_status=404,
                               start_time=REQ_START_TIME, end_time=REQ_END_TIME)
         subset = PARSED_REPORT_404
-        superset = self.client.report_queue[0].items()
+        superset = self.client.transport.report_queue[0].items()
         for i in subset.iteritems():
             assert i in superset
 
@@ -560,7 +560,7 @@ class TestErrorParsing(object):
         del bogus_500_report['traceback']
         bogus_500_report['request_stats'] = {}
         subset = bogus_500_report
-        superset = self.client.report_queue[0].items()
+        superset = self.client.transport.report_queue[0].items()
         for i in subset.iteritems():
             assert i in superset
 
@@ -578,12 +578,12 @@ class TestErrorParsing(object):
                               start_time=REQ_START_TIME,
                               end_time=REQ_END_TIME)
         line_no = \
-            self.client.report_queue[0]['traceback'][0]['line']
+            self.client.transport.report_queue[0]['traceback'][0]['line']
         assert int(line_no) > 0
         # set line number to match as this will change over time
         bogus_report['traceback'][0]['line'] = line_no
         subset = bogus_report
-        superset = self.client.report_queue[0].items()
+        superset = self.client.transport.report_queue[0].items()
         for i in subset.iteritems():
             assert i in superset
 
@@ -604,7 +604,7 @@ class TestErrorParsing(object):
                                               ignore_system_exceptions=True)
         self.client.py_report(TEST_ENVIRON, traceback=traceback,
                               http_status=500)
-        assert len(self.client.report_queue[0]['traceback'][0]['vars']) == 9
+        assert len(self.client.transport.report_queue[0]['traceback'][0]['vars']) == 9
 
     def test_cookie_parsing(self):
         self.setUpClient(config={'appenlight.cookie_keys_whitelist': 'country, sessionId, test_group_id, http_referer'})
@@ -619,7 +619,7 @@ class TestErrorParsing(object):
                                               ignore_system_exceptions=True)
         self.client.py_report(TEST_ENVIRON, traceback=traceback,
                               http_status=500)
-        assert self.client.report_queue[0]['request']['COOKIES'] == proper_values
+        assert self.client.transport.report_queue[0]['request']['COOKIES'] == proper_values
 
 
 class TestLogs(object):
@@ -645,9 +645,9 @@ class TestLogs(object):
                     'date': '2012-08-13T21:20:37.418.307066',
                     'message': 'test entry'}
         # update fields depenand on machine
-        self.client.log_queue[0]['date'] = fake_log['date']
-        self.client.log_queue[0]['server'] = fake_log['server']
-        assert self.client.log_queue[0] == fake_log
+        self.client.transport.log_queue[0]['date'] = fake_log['date']
+        self.client.transport.log_queue[0]['server'] = fake_log['server']
+        assert self.client.transport.log_queue[0] == fake_log
 
     def test_errors_attached_to_logs(self):
         self.setUpClient()
@@ -665,9 +665,9 @@ class TestLogs(object):
                     'date': '2012-08-13T21:20:37.418.307066',
                     'message': 'Exception happened\nTraceback (most recent call last):'}
         # update fields depenand on machine
-        self.client.log_queue[0]['date'] = fake_log['date']
-        self.client.log_queue[0]['server'] = fake_log['server']
-        assert self.client.log_queue[0]['message'].startswith(fake_log['message'])
+        self.client.transport.log_queue[0]['date'] = fake_log['date']
+        self.client.transport.log_queue[0]['server'] = fake_log['server']
+        assert self.client.transport.log_queue[0]['message'].startswith(fake_log['message'])
 
     def test_errors_not_attached_to_logs(self):
         self.setUpClient({'appenlight.logging_attach_exc_text': 'false',
@@ -686,9 +686,9 @@ class TestLogs(object):
                     'date': '2012-08-13T21:20:37.418.307066',
                     'message': 'Exception happened'}
         # update fields depenand on machine
-        self.client.log_queue[0]['date'] = fake_log['date']
-        self.client.log_queue[0]['server'] = fake_log['server']
-        assert self.client.log_queue[0]['message'] == fake_log['message']
+        self.client.transport.log_queue[0]['date'] = fake_log['date']
+        self.client.transport.log_queue[0]['server'] = fake_log['server']
+        assert self.client.transport.log_queue[0]['message'] == fake_log['message']
 
     def test_tags_attached_to_logs(self):
         self.setUpClient()
@@ -724,9 +724,9 @@ class TestLogs(object):
                              ("dictionary", u"{'a': '5'}")
                     ]}
         # update fields depenand on machine
-        self.client.log_queue[0]['server'] = fake_log['server']
-        self.client.log_queue[0]['date'] = fake_log['date']
-        new_log = self.client.log_queue[0]
+        self.client.transport.log_queue[0]['server'] = fake_log['server']
+        self.client.transport.log_queue[0]['date'] = fake_log['date']
+        new_log = self.client.transport.log_queue[0]
         assert new_log['log_level'] == fake_log['log_level']
         assert new_log['namespace'] == fake_log['namespace']
         assert new_log['server'] == fake_log['server']
@@ -743,7 +743,7 @@ class TestLogs(object):
         self.client.py_report(TEST_ENVIRON, start_time=REQ_START_TIME,
                               end_time=REQ_END_TIME)
         self.client.py_log(TEST_ENVIRON, records=handler.get_records())
-        assert len(self.client.log_queue) == 0
+        assert len(self.client.transport.log_queue) == 0
 
 
 class TestSlowReportParsing(object):
@@ -759,7 +759,7 @@ class TestSlowReportParsing(object):
         self.client.py_report(TEST_ENVIRON, start_time=REQ_START_TIME,
                               end_time=REQ_END_TIME)
         subset = PARSED_SLOW_REPORT
-        superset = self.client.report_queue[0].items()
+        superset = self.client.transport.report_queue[0].items()
         for i in subset.iteritems():
             assert i in superset
 
@@ -1283,7 +1283,7 @@ class TestWSGI(object):
         req = Request.blank('http://localhost/test')
         app = make_appenlight_middleware(app, global_config=timing_conf)
         req.get_response(app)
-        assert len(app.appenlight_client.report_queue) == 0
+        assert len(app.appenlight_client.transport.report_queue) == 0
 
     def test_normal_request_decorator(self):
         from appenlight_client.client import decorate
@@ -1295,7 +1295,7 @@ class TestWSGI(object):
 
         req = Request.blank('http://localhost/test')
         req.get_response(app)
-        assert len(app.appenlight_client.report_queue) == 0
+        assert len(app.appenlight_client.transport.report_queue) == 0
 
     def test_error_request_decorator(self):
         from appenlight_client.client import decorate
@@ -1307,10 +1307,10 @@ class TestWSGI(object):
             raise Exception('WTF?')
             return ['Hello World!']
 
-        app.appenlight_client.last_submit = datetime.datetime.now()
+        app.appenlight_client.transport.last_submit = datetime.datetime.now()
         req = Request.blank('http://localhost/test')
         req.get_response(app)
-        assert len(app.appenlight_client.report_queue) == 1
+        assert len(app.appenlight_client.transport.report_queue) == 1
 
     def test_error_request(self):
         def app(environ, start_response):
@@ -1321,10 +1321,10 @@ class TestWSGI(object):
         req = Request.blank('http://localhost/test')
         app = make_appenlight_middleware(app, global_config=timing_conf)
         app.appenlight_client.config['reraise_exceptions'] = False
-        app.appenlight_client.last_submit = datetime.datetime.now()
+        app.appenlight_client.transport.last_submit = datetime.datetime.now()
         req.get_response(app)
-        assert len(app.appenlight_client.report_queue) == 1
-        assert app.appenlight_client.report_queue[0]['http_status'] == 500
+        assert len(app.appenlight_client.transport.report_queue) == 1
+        assert app.appenlight_client.transport.report_queue[0]['http_status'] == 500
 
 
     def test_not_found_request(self):
@@ -1340,10 +1340,10 @@ class TestWSGI(object):
         app = make_appenlight_middleware(app, global_config=timing_conf)
         app.appenlight_client.config['report_404'] = True
         app.appenlight_client.config['reraise_exceptions'] = False
-        app.appenlight_client.last_submit = datetime.datetime.now()
+        app.appenlight_client.transport.last_submit = datetime.datetime.now()
         req.get_response(app)
-        assert len(app.appenlight_client.report_queue) == 1
-        assert app.appenlight_client.report_queue[0]['http_status'] == 404
+        assert len(app.appenlight_client.transport.report_queue) == 1
+        assert app.appenlight_client.transport.report_queue[0]['http_status'] == 404
 
     def test_ignored_error_request(self):
         def app(environ, start_response):
@@ -1355,9 +1355,9 @@ class TestWSGI(object):
         req.environ['appenlight.ignore_error'] = 1
         app = make_appenlight_middleware(app, global_config=timing_conf)
         app.appenlight_client.config['reraise_exceptions'] = False
-        app.appenlight_client.last_submit = datetime.datetime.now()
+        app.appenlight_client.transport.last_submit = datetime.datetime.now()
         req.get_response(app)
-        assert len(app.appenlight_client.report_queue) == 0
+        assert len(app.appenlight_client.transport.report_queue) == 0
 
     def test_view_name_request(self):
         def app(environ, start_response):
@@ -1369,9 +1369,9 @@ class TestWSGI(object):
         req = Request.blank('http://localhost/test')
         app = make_appenlight_middleware(app, global_config=timing_conf)
         app.appenlight_client.config['reraise_exceptions'] = False
-        app.appenlight_client.last_submit = datetime.datetime.now()
+        app.appenlight_client.transport.last_submit = datetime.datetime.now()
         req.get_response(app)
-        assert app.appenlight_client.report_queue[0].get('view_name') == 'foo:app'
+        assert app.appenlight_client.transport.report_queue[0].get('view_name') == 'foo:app'
 
     def test_slow_request(self):
         def app(environ, start_response):
@@ -1381,9 +1381,9 @@ class TestWSGI(object):
 
         req = Request.blank('http://localhost/test')
         app = make_appenlight_middleware(app, global_config=timing_conf)
-        app.appenlight_client.last_submit = datetime.datetime.now()
+        app.appenlight_client.transport.last_submit = datetime.datetime.now()
         req.get_response(app)
-        assert len(app.appenlight_client.report_queue) == 1
+        assert len(app.appenlight_client.transport.report_queue) == 1
 
     def test_ignored_slow_request(self):
         def app(environ, start_response):
@@ -1394,9 +1394,9 @@ class TestWSGI(object):
         req = Request.blank('http://localhost/test')
         req.environ['appenlight.ignore_slow'] = 1
         app = make_appenlight_middleware(app, global_config=timing_conf)
-        app.appenlight_client.last_submit = datetime.datetime.now()
+        app.appenlight_client.transport.last_submit = datetime.datetime.now()
         req.get_response(app)
-        assert len(app.appenlight_client.report_queue) == 0
+        assert len(app.appenlight_client.transport.report_queue) == 0
 
     def test_logging_request(self):
         def app(environ, start_response):
@@ -1407,9 +1407,10 @@ class TestWSGI(object):
 
         req = Request.blank('http://localhost/test')
         app = make_appenlight_middleware(app, global_config=timing_conf)
-        app.appenlight_client.last_submit = datetime.datetime.now()
+        app.appenlight_client.transport.last_submit = datetime.datetime.now()
         req.get_response(app)
-        assert len(app.appenlight_client.log_queue) >= 2
+
+        assert len(app.appenlight_client.transport.log_queue) >= 2
 
     def test_timing_request(self):
         try:
@@ -1454,9 +1455,9 @@ class TestWSGI(object):
         req = Request.blank('http://localhost/test', POST=[("a", "a"), ("b", "2"), ("b", "1")])
         app = make_appenlight_middleware(app, global_config=timing_conf)
         app.appenlight_client.config['reraise_exceptions'] = False
-        app.appenlight_client.last_submit = datetime.datetime.now()
+        app.appenlight_client.transport.last_submit = datetime.datetime.now()
         req.get_response(app)
-        assert {'a': u'a', 'b': [u'2', u'1']} == app.appenlight_client.report_queue[0]['request']['POST']
+        assert {'a': u'a', 'b': [u'2', u'1']} == app.appenlight_client.transport.report_queue[0]['request']['POST']
 
     def test_tags_support(self):
         now = datetime.datetime.utcnow()
@@ -1471,9 +1472,9 @@ class TestWSGI(object):
         req = Request.blank('http://localhost/test', POST=[("a", "a"), ("b", "2"), ("b", "1")])
         app = make_appenlight_middleware(app, global_config=timing_conf)
         app.appenlight_client.config['reraise_exceptions'] = False
-        app.appenlight_client.last_submit = datetime.datetime.now()
+        app.appenlight_client.transport.last_submit = datetime.datetime.now()
         req.get_response(app)
-        assert set([('foo', u'bar'), ('baz', 5), ('now', now)]) == set(app.appenlight_client.report_queue[0]['tags'])
+        assert set([('foo', u'bar'), ('baz', 5), ('now', now)]) == set(app.appenlight_client.transport.report_queue[0]['tags'])
 
     def test_extra_support(self):
         now = datetime.datetime.utcnow()
@@ -1488,9 +1489,10 @@ class TestWSGI(object):
         req = Request.blank('http://localhost/test', POST=[("a", "a"), ("b", "2"), ("b", "1")])
         app = make_appenlight_middleware(app, global_config=timing_conf)
         app.appenlight_client.config['reraise_exceptions'] = False
-        app.appenlight_client.last_submit = datetime.datetime.now()
+        app.appenlight_client.transport.last_submit = datetime.datetime.now()
         req.get_response(app)
-        assert set([('foo', u'bar'), ('baz', 5), ('now', now)]) == set(app.appenlight_client.report_queue[0]['extra'])
+        print 'Q',app.appenlight_client.transport.report_queue
+        assert set([('foo', u'bar'), ('baz', 5), ('now', now)]) == set(app.appenlight_client.transport.report_queue[0]['extra'])
 
 
 class TestCallableName(object):

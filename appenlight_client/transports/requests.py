@@ -4,15 +4,15 @@ import requests
 import urlparse
 import threading
 from appenlight_client.ext_json import json
+from appenlight_client.transports import BaseTransport
 from appenlight_client import __protocol_version__, __version__
-
 
 log = logging.getLogger(__name__)
 
 
-class HTTPTransport(object):
+class HTTPTransport(BaseTransport):
     def __init__(self, config_string, client_config):
-        self.client_config = client_config
+        super(HTTPTransport, self).__init__(client_config)
         self.transport_config = {'endpoints': {"reports": '/api/reports',
                                                "logs": '/api/logs',
                                                "metrics": '/api/metrics'}
@@ -25,16 +25,16 @@ class HTTPTransport(object):
         update_options['timeout'] = float(update_options.get('timeout', 5))
         self.transport_config.update(update_options)
 
-    def feed(self, *args, **kwargs):
+    def submit(self, *args, **kwargs):
         if self.transport_config['threaded']:
-            submit_data_t = threading.Thread(target=self.submit,
+            submit_data_t = threading.Thread(target=self.send_to_endpoints,
                                              args=args, kwargs=kwargs)
             submit_data_t.start()
         else:
-            self.submit(*args, **kwargs)
+            self.send_to_endpoints(*args, **kwargs)
         return True
 
-    def submit(self, *args, **kwargs):
+    def send_to_endpoints(self, *args, **kwargs):
         self.send(kwargs.get('reports') or [], 'reports')
         self.send(kwargs.get('logs') or [], 'logs')
         self.send(kwargs.get('metrics') or [], 'metrics')
@@ -43,7 +43,7 @@ class HTTPTransport(object):
         if to_send_items:
             try:
                 return self.remote_call(to_send_items,
-                                        self.client_config['endpoints'][
+                                        self.transport_config['endpoints'][
                                             endpoint])
             except KeyboardInterrupt as exc:
                 raise KeyboardInterrupt()
