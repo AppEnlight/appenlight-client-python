@@ -118,7 +118,7 @@ def appenlight_tween_factory(handler, registry):
             if 'appenlight.client' in request.environ:
                 # pass the traceback object to middleware
                 request.environ[
-                    'appenlight.__traceback'] = request.environ['appenlight_client'].get_current_traceback()
+                    'appenlight.__traceback'] = request.environ['appenlight.client'].get_current_traceback()
             raise
         # finally:
         #     appenlight_storage = get_local_storage(local_timing)
