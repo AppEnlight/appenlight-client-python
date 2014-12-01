@@ -1475,6 +1475,23 @@ class TestWSGI(object):
         req.get_response(app)
         assert set([('foo', u'bar'), ('baz', 5), ('now', now)]) == set(app.appenlight_client.report_queue[0]['tags'])
 
+    def test_extra_support(self):
+        now = datetime.datetime.utcnow()
+        def app(environ, start_response):
+            environ['appenlight.extra']['foo'] = u'bar'
+            environ['appenlight.extra']['baz'] = 5
+            environ['appenlight.extra']['now'] = now
+            start_response('200 OK', [('Content-Type', 'text/html')])
+            raise Exception('WTF?')
+            return ['Hello World!']
+
+        req = Request.blank('http://localhost/test', POST=[("a", "a"), ("b", "2"), ("b", "1")])
+        app = make_appenlight_middleware(app, global_config=timing_conf)
+        app.appenlight_client.config['reraise_exceptions'] = False
+        app.appenlight_client.last_submit = datetime.datetime.now()
+        req.get_response(app)
+        assert set([('foo', u'bar'), ('baz', 5), ('now', now)]) == set(app.appenlight_client.report_queue[0]['extra'])
+
 
 class TestCallableName(object):
     def setUpClient(self, config={}):

@@ -1,5 +1,10 @@
 CHANGELOG:
 ==========
+2014-12-01  Enable "extra" keyword for data storage
+    0.6.12  Use 0.5 API format
+            Require explicit cookie key whitelisting
+
+
 2014-11-25  Enable tagging of logs
     0.6.11  Enable tagging of requests
             Include exception traceback if attached to log.error()
