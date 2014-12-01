@@ -527,7 +527,8 @@ class Client(object):
             pass
         if include_params and req:
             try:
-                parsed_environ['COOKIES'] = dict(req.cookies)
+                parsed_environ['COOKIES'] = dict([(k, v,) for k, v in req.cookies.items()
+                                                  if k in self.config['cookie_keys_whitelist']])
             except Exception:
                 parsed_environ['COOKIES'] = {}
             try:

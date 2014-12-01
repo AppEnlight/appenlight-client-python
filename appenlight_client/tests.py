@@ -80,10 +80,7 @@ PARSED_REPORT_404 = {
      'ip': '127.0.0.1',
      'start_time': REQ_START_TIME,
      'slow_calls': [],
-     'request': {'COOKIES': {u'country': u'US',
-                             u'sessionId': u'***',
-                             u'test_group_id': u'5',
-                             u'http_referer': u'http://localhost:5000/'},
+     'request': {'COOKIES': {},
                  'POST': {},
                  'GET': {u'aaa': [u'1'], u'bbb': [u'2']},
                  'HTTP_METHOD': 'GET',
@@ -119,10 +116,7 @@ PARSED_REPORT_500 = {
                      'slow_calls': [],
                      'request': {
                          'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                         'COOKIES': {u'country': u'US',
-                                     u'sessionId': u'***',
-                                     u'test_group_id': u'5',
-                                     u'http_referer': u'http://localhost:5000/'},
+                         'COOKIES': {},
                          'SERVER_NAME': u'localhost',
                          'GET': {u'aaa': [u'1'],
                                  u'bbb': [u'2']},
@@ -155,10 +149,7 @@ PARSED_SLOW_REPORT = {
     'ip': '127.0.0.1',
     'start_time': REQ_START_TIME,
     'slow_calls': [],
-    'request': {'COOKIES': {u'country': u'US',
-                            u'sessionId': u'***',
-                            u'test_group_id': u'5',
-                            u'http_referer': u'http://localhost:5000/'},
+    'request': {'COOKIES': {},
                 'POST': {},
                 'GET': {u'aaa': [u'1'], u'bbb': [u'2'], },
                 'HTTP_ACCEPT': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -614,6 +605,21 @@ class TestErrorParsing(object):
         self.client.py_report(TEST_ENVIRON, traceback=traceback,
                               http_status=500)
         assert len(self.client.report_queue[0]['traceback'][0]['vars']) == 9
+
+    def test_cookie_parsing(self):
+        self.setUpClient(config={'appenlight.cookie_keys_whitelist': 'country, sessionId, test_group_id, http_referer'})
+        proper_values = {u'country': u'US',
+             u'sessionId': u'***',
+             u'test_group_id': u'5',
+             u'http_referer': u'http://localhost:5000/'}
+        try:
+            raise Exception('Test Exception')
+        except:
+            traceback = get_current_traceback(skip=1, show_hidden_frames=True,
+                                              ignore_system_exceptions=True)
+        self.client.py_report(TEST_ENVIRON, traceback=traceback,
+                              http_status=500)
+        assert self.client.report_queue[0]['request']['COOKIES'] == proper_values
 
 
 class TestLogs(object):
