@@ -32,6 +32,7 @@ class HTTPTransport(BaseTransport):
         update_options = dict(urlparse.parse_qsl(parsed_url.query))
         update_options['threaded'] = int(update_options.get('threaded', 1))
         update_options['timeout'] = int(update_options.get('timeout', 5))
+        update_options['error_log_level'] = update_options.get('error_log_level', 'INFO').lower()
         self.transport_config.update(update_options)
 
     def feed_report(self, report_data):
@@ -83,7 +84,7 @@ class HTTPTransport(BaseTransport):
                                   headers=headers)
         except IOError as exc:
             message = 'APPENLIGHT: problem: %s' % exc
-            log.error(message)
+            getattr(log, self.transport_config['error_log_level'])(message)
             return False
         try:
             conn = urllib2.urlopen(req,
@@ -96,5 +97,5 @@ class HTTPTransport(BaseTransport):
             return True
         if conn.getcode() != 200:
             message = 'APPENLIGHT: response code: %s' % conn.getcode()
-            log.error(message)
+            getattr(log, self.transport_config['error_log_level'])(message)
         return False

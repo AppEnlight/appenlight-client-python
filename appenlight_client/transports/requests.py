@@ -23,6 +23,7 @@ class HTTPTransport(BaseTransport):
         update_options = dict(urlparse.parse_qsl(parsed_url.query))
         update_options['threaded'] = int(update_options.get('threaded', 1))
         update_options['timeout'] = float(update_options.get('timeout', 5))
+        update_options['error_log_level'] = update_options.get('error_log_level', 'INFO').lower()
         self.transport_config.update(update_options)
 
     def feed_report(self, report_data):
@@ -78,10 +79,10 @@ class HTTPTransport(BaseTransport):
                                    verify=True)
         except requests.exceptions.RequestException as e:
             message = 'APPENLIGHT: problem: %s' % e
-            log.error(message)
+            getattr(log, self.transport_config['error_log_level'])(message)
             return False
         if result.status_code != 200:
             message = 'APPENLIGHT: response code: %s' % result.status_code
-            log.error(message)
+            getattr(log, self.transport_config['error_log_level'])(message)
             return False
         return True
