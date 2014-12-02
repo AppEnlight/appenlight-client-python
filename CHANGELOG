@@ -1,6 +1,6 @@
 CHANGELOG:
 ==========
-2014-12-01  Enable "extra" keyword for data storage
+2014-12-02  Enable "extra" keyword for data storage
     0.6.12  Use 0.5 API format
             Require explicit cookie key whitelisting
 
