@@ -1,6 +1,8 @@
 import threading
 import datetime
-import urlparse
+import logging
+
+log = logging.getLogger(__name__)
 
 class BaseTransport(object):
 
@@ -81,6 +83,9 @@ class BaseTransport(object):
             self.last_request_stats_submit = datetime.datetime.utcnow()
 
         if reports or logs or metrics:
-            self.submit(reports=reports, logs=logs, metrics=metrics)
+            try:
+                self.submit(reports=reports, logs=logs, metrics=metrics)
+            except Exception as exc:
+                log.error('APPENLIGHT: problem with transport submit: %s' % exc)
             return True
         return False
