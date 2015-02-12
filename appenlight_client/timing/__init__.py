@@ -22,9 +22,9 @@ class AppenlightLocalStorage(object):
         stack = []
 
         for node in data:
-            node['parents'] = [n['type'] for n in stack]
             while stack and not self.contains(stack[-1], node):
                 stack.pop()
+            node['parents'] = [n['type'] for n in stack]
             stack.append(node)
         return data
 
