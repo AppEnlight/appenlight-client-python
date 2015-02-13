@@ -1537,5 +1537,91 @@ class TestCallableName(object):
         assert Bar.test._appenlight_name == 'appenlight_client/tests:Bar.test'
 
 
+    def test_stack_parsing(self):
+        from operator import itemgetter
+        slow_calls = [
+            {'count': True, 'end': 1423818165.447647, 'subtype': 'redispy',
+             'min_duration': 0.1, 'start': 1423818165.447433,
+             'statement': 'exists', 'type': 'nosql',
+             'ignore_in': frozenset([])},
+            {'count': True, 'end': 1423818165.447962, 'subtype': 'redispy',
+             'min_duration': 0.1, 'start': 1423818165.447676,
+             'statement': 'get', 'type': 'nosql', 'ignore_in': frozenset([])},
+            {'count': True, 'end': 1423818165.448502, 'subtype': 'redispy',
+             'min_duration': 0.1, 'start': 1423818165.448153,
+             'statement': 'expire', 'type': 'nosql',
+             'ignore_in': frozenset([])},
+            {'count': True, 'end': 1423818165.448746, 'subtype': 'redispy',
+             'min_duration': 0.1, 'start': 1423818165.448527,
+             'statement': 'expire', 'type': 'nosql',
+             'ignore_in': frozenset([])},
+            {'count': True, 'end': 1423818165.454726, 'subtype': 'redispy',
+             'min_duration': 0.1, 'start': 1423818165.454365,
+             'statement': 'expire', 'type': 'nosql',
+             'ignore_in': frozenset([])},
+            {'count': False, 'end': 1423818165.464405, 'subtype': 'psycopg2',
+             'min_duration': 0.1, 'start': 1423818165.464372,
+             'statement': 'fetchall', 'type': 'sql',
+             'ignore_in': frozenset([])},
+            {'count': True, 'end': 1423818165.755851,
+             'parameters': 'http://ubuntu.com', 'min_duration': 3,
+             'start': 1423818165.487422, 'statement': 'requests.request',
+             'type': 'remote', 'ignore_in': frozenset(['remote', 'nosql'])},
+            {'count': True, 'end': 1423818167.419324, 'parameters': '',
+             'subtype': 'user_defined', 'min_duration': 0.1,
+             'start': 1423818165.756119, 'statement': 'foo_func',
+             'type': 'custom', 'ignore_in': set([])},
+            {'count': True, 'end': 1423818166.577326,
+             'parameters': 'http://ubuntu.com/nested', 'min_duration': 3,
+             'start': 1423818166.277095, 'statement': 'requests.request',
+             'type': 'remote', 'ignore_in': frozenset(['remote', 'nosql'])},
+            {'count': True, 'end': 1423818167.419318, 'parameters': '',
+             'subtype': 'user_defined', 'min_duration': 0.1,
+             'start': 1423818166.577698, 'statement': 'bar_func',
+             'type': 'custom', 'ignore_in': set([])},
+            {'count': True, 'end': 1423818167.419286, 'parameters': '',
+             'subtype': 'user_defined', 'min_duration': 0.1,
+             'start': 1423818167.098667, 'statement': 'baz_func',
+             'type': 'custom', 'ignore_in': set([])},
+            {'count': True, 'end': 1423818167.419649, 'subtype': 'redispy',
+             'min_duration': 0.1, 'start': 1423818167.419642,
+             'statement': 'set', 'type': 'nosql', 'ignore_in': frozenset([])},
+            {'count': True, 'end': 1423818167.419667, 'subtype': 'redispy',
+             'min_duration': 0.1, 'start': 1423818167.419662,
+             'statement': 'expire', 'type': 'nosql',
+             'ignore_in': frozenset([])},
+            {'count': True, 'end': 1423818167.420036, 'subtype': 'redispy',
+             'min_duration': 0.1, 'start': 1423818167.420032,
+             'statement': 'set', 'type': 'nosql', 'ignore_in': frozenset([])},
+            {'count': True, 'end': 1423818167.42005, 'subtype': 'redispy',
+             'min_duration': 0.1, 'start': 1423818167.420047,
+             'statement': 'expire', 'type': 'nosql',
+             'ignore_in': frozenset([])},
+            {'count': True, 'end': 1423818167.420323, 'subtype': 'redispy',
+             'min_duration': 0.1, 'start': 1423818167.42032, 'statement': 'set',
+             'type': 'nosql', 'ignore_in': frozenset([])},
+            {'count': True, 'end': 1423818167.420332, 'subtype': 'redispy',
+             'min_duration': 0.1, 'start': 1423818167.420329,
+             'statement': 'expire', 'type': 'nosql',
+             'ignore_in': frozenset([])},
+            {'count': False, 'end': 1423818167.448087, 'subtype': 'psycopg2',
+             'min_duration': 0.1, 'start': 1423818167.448086,
+             'statement': 'fetchall', 'type': 'sql',
+             'ignore_in': frozenset([])},
+            {'count': False, 'end': 1423818167.448974, 'subtype': 'psycopg2',
+             'min_duration': 0.1, 'start': 1423818167.448735,
+             'statement': 'ROLLBACK', 'type': 'sql',
+             'ignore_in': frozenset([])}]
+
+        storage = get_local_storage(local_timing)
+
+        for row in storage.get_stack(slow_calls):
+            if row.get('parameters') == 'http://ubuntu.com/nested':
+                assert row['parents'] == ['custom']
+            elif row['statement'] == 'bar_func':
+                assert row['parents'] == ['custom']
+
+
+
 if __name__ == '__main__':
     pass

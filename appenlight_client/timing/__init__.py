@@ -17,8 +17,11 @@ class AppenlightLocalStorage(object):
         return (child['start'] >= parent['start'] and
                 child['end'] <= parent['end'])
 
-    def get_stack(self):
-        data = sorted(self.slow_calls, key=itemgetter('start'))
+    def get_stack(self, slow_calls=None):
+        if not slow_calls:
+            data = sorted(self.slow_calls, key=itemgetter('start'))
+        else:
+            data = slow_calls
         stack = []
 
         for node in data:
