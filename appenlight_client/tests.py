@@ -735,6 +735,21 @@ class TestLogs(object):
         assert new_log['message'] == fake_log['message']
         assert set(new_log['tags']) == set(fake_log['tags'])
 
+    def test_primary_key_attached(self):
+        self.setUpClient()
+        handler = register_logging()
+        logger = logging.getLogger('testing')
+        logger.critical('test entry',
+                        extra={"foobar": "baz",
+                               "count": 15,
+                               "price": 5.5,
+                               'ae_primary_key': 15,
+                               "dictionary": {"a": "5"}
+                        }
+        )
+        self.client.py_log(TEST_ENVIRON, records=handler.get_records())
+        new_log = self.client.transport.log_queue[0]
+        assert new_log['primary_key'] == '15'
 
     def test_ignore_self_logs(self):
         self.setUpClient()

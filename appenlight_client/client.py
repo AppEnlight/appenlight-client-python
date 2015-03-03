@@ -366,6 +366,8 @@ class Client(object):
                     if k not in EXCLUDED_LOG_VARS:
                         try:
                             tags_list.append(parse_tag(k, v))
+                            if k == 'ae_primary_key':
+                                log_dict['primary_key'] = unicode(v)
                         except Exception as e:
                             log.info(u'Couldn\'t convert attached tag %s' % e)
                 if tags_list:
