@@ -368,6 +368,11 @@ class Client(object):
                             tags_list.append(parse_tag(k, v))
                             if k == 'ae_primary_key':
                                 log_dict['primary_key'] = unicode(v)
+                            if k == 'ae_permanent':
+                                try:
+                                    log_dict['permanent'] = asbool(v)
+                                except Exception:
+                                    log_dict['permanent'] = True
                         except Exception as e:
                             log.info(u'Couldn\'t convert attached tag %s' % e)
                 if tags_list:
