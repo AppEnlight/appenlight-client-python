@@ -90,7 +90,8 @@ class Client(object):
         self.config['transport'] = config.get('appenlight.transport',
                                               'appenlight_client.transports.requests:HTTPTransport')
 
-        self.config['transport_config'] = config.get('appenlight.transport_config', 'https://api.appenlight.com?threaded=1&timeout=5')
+        self.config['transport_config'] = config.get('appenlight.transport_config',
+                                                     'https://api.appenlight.com?threaded=1&timeout=5')
         self.config['reraise_exceptions'] = asbool(
             config.get('appenlight.reraise_exceptions', True))
         self.config['slow_requests'] = asbool(

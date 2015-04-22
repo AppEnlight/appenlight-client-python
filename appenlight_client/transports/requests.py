@@ -23,7 +23,7 @@ class HTTPTransport(BaseTransport):
         update_options = dict(urlparse.parse_qsl(parsed_url.query))
         update_options['threaded'] = int(update_options.get('threaded', 1))
         update_options['timeout'] = float(update_options.get('timeout', 5))
-        update_options['error_log_level'] = update_options.get('error_log_level', 'INFO').lower()
+        update_options['error_log_level'] = update_options.get('error_log_level', 'ERROR').lower()
         self.transport_config.update(update_options)
 
     def feed_report(self, report_data):
