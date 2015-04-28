@@ -31,6 +31,7 @@ import sys
 # are we running python 3.x ?
 PY3 = sys.version_info[0] == 3
 
+
 import datetime
 import logging
 import threading
@@ -41,6 +42,7 @@ import os
 from functools import wraps
 from appenlight_client import __version__, __protocol_version__
 from appenlight_client.exceptions import get_current_traceback
+from appenlight_client.logger import register_logging
 from appenlight_client.utils import asbool, aslist, import_from_module, parse_tag
 from webob import Request
 
@@ -104,6 +106,7 @@ class Client(object):
             seconds=self.config['slow_request_time'])
         self.config['logging'] = asbool(config.get('appenlight.logging', True))
         self.config['logging_attach_exc_text'] = asbool(config.get('appenlight.logging_attach_exc_text', True))
+        self.config['logging_level'] = config.get('appenlight.logging.level', 'WARNING').lower()
         self.config['logging_on_error'] = asbool(
             config.get('appenlight.logging_on_error', False))
         self.config['report_404'] = asbool(config.get('appenlight.report_404',
@@ -175,14 +178,8 @@ class Client(object):
         if self.config['buffer_flush_interval'] < 1:
             self.config['buffer_flush_interval'] = 1
         self.config['buffer_flush_interval'] = datetime.timedelta(seconds=self.config['buffer_flush_interval'])
-        # register logging
-        import appenlight_client.logger
-
         if self.config['logging'] and self.config['enabled']:
-            self.log_handler = appenlight_client.logger.register_logging()
-            level = LEVELS.get(config.get('appenlight.logging.level',
-                                          'WARNING').lower(), logging.WARNING)
-            self.log_handler.setLevel(level)
+            self.register_logger()
 
         # register slow call metrics
         if self.config['slow_requests'] and self.config['enabled']:
@@ -218,6 +215,11 @@ class Client(object):
 
         self.transport = selected_transport(self.config['transport_config'],
                                             self.config)
+
+    def register_logger(self, logger=logging.root):
+        self.log_handler = register_logging(logger)
+        level = LEVELS.get(self.config['logging_level'], logging.WARNING)
+        self.log_handler.setLevel(level)
 
     def register_hooks(self):
         for hook in self.hooks:

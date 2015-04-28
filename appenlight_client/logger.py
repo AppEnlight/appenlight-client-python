@@ -1,5 +1,5 @@
 """
-"taken from pyramid_debugtoolbar - special kudos for raydeo and pyramid team ;)
+"taken from pyramid_debugtoolbar - special kudos to raydeo and pyramid team ;)
 
 Copyright (c) Rob Hudson, the Werkzeug Team, and individual contributors.
 All rights reserved.
@@ -223,7 +223,7 @@ class ThreadTrackingHandler(logging.Handler):
         if threading is None:
             raise NotImplementedError(
                 "threading module is not available, "
-                "the logging panel cannot be used without it")
+                "the logging module cannot be used without it")
         logging.Handler.__init__(self)
         self.records = {}  # a dictionary that maps threads to log records
 
@@ -248,7 +248,13 @@ class ThreadTrackingHandler(logging.Handler):
             del self.records[thread]
 
 
-def register_logging():
-    thread_tracking_handler = ThreadTrackingHandler()
-    logging.root.addHandler(thread_tracking_handler)
+def register_logging(logger):
+    found = False
+    for handler in logger.handlers:
+        if isinstance(handler, ThreadTrackingHandler):
+            found = True
+            thread_tracking_handler = handler
+    if not found:
+        thread_tracking_handler = ThreadTrackingHandler()
+        logger.addHandler(thread_tracking_handler)
     return thread_tracking_handler

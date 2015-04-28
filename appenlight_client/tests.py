@@ -634,7 +634,8 @@ class TestLogs(object):
 
     def test_py_log(self):
         self.setUpClient()
-        handler = register_logging()
+        handler = register_logging(logging.root)
+        handler.clear_records()
         logger = logging.getLogger('testing')
         logger.critical('test entry')
         self.client.py_log(TEST_ENVIRON, records=handler.get_records())
@@ -651,7 +652,8 @@ class TestLogs(object):
 
     def test_errors_attached_to_logs(self):
         self.setUpClient()
-        handler = register_logging()
+        handler = register_logging(logging.root)
+        handler.clear_records()
         logger = logging.getLogger('testing')
         try:
             raise Exception('This is a test')
@@ -672,7 +674,8 @@ class TestLogs(object):
     def test_errors_not_attached_to_logs(self):
         self.setUpClient({'appenlight.logging_attach_exc_text': 'false',
                           'appenlight.api_key': '12345'})
-        handler = register_logging()
+        handler = register_logging(logging.root)
+        handler.clear_records()
         logger = logging.getLogger('testing')
         try:
             raise Exception('This is a test')
@@ -692,7 +695,8 @@ class TestLogs(object):
 
     def test_tags_attached_to_logs(self):
         self.setUpClient()
-        handler = register_logging()
+        handler = register_logging(logging.root)
+        handler.clear_records()
         logger = logging.getLogger('testing')
         utcnow = datetime.datetime.utcnow()
 
@@ -737,7 +741,8 @@ class TestLogs(object):
 
     def test_primary_key_attached(self):
         self.setUpClient()
-        handler = register_logging()
+        handler = register_logging(logging.root)
+        handler.clear_records()
         logger = logging.getLogger('testing')
         logger.critical('test entry',
                         extra={"foobar": "baz",
@@ -753,7 +758,8 @@ class TestLogs(object):
 
     def test_permanent_log(self):
         self.setUpClient()
-        handler = register_logging()
+        handler = register_logging(logging.root)
+        handler.clear_records()
         logger = logging.getLogger('testing')
         logger.critical('test entry',
                         extra={"foobar": "baz",
@@ -769,7 +775,8 @@ class TestLogs(object):
 
     def test_ignore_self_logs(self):
         self.setUpClient()
-        handler = register_logging()
+        handler = register_logging(logging.root)
+        handler.clear_records()
         self.client.py_report(TEST_ENVIRON, http_status=500)
         self.client.py_report(TEST_ENVIRON, start_time=REQ_START_TIME,
                               end_time=REQ_END_TIME)
