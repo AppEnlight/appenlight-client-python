@@ -64,7 +64,23 @@ EXCLUDED_LOG_VARS = ['threadName', 'name', 'thread', 'created', 'process', 'proc
 log = logging.getLogger(__name__)
 
 
+def singleton(cls):
+
+    def getinstance(*args, **kwargs):
+        if cls.allow_multiple:
+            return cls(*args, **kwargs)
+
+        if cls.self_instance is None:
+            cls.self_instance = cls(*args, **kwargs)
+        return cls.self_instance
+    return getinstance
+
+@singleton
 class Client(object):
+
+    self_instance = None
+    allow_multiple = False
+
     __version__ = __version__
     __protocol_version__ = __protocol_version__
 
@@ -634,7 +650,11 @@ def make_appenlight_middleware(app, global_config=None, **kw):
     config = get_config(config=config, path_to_config=ini_path)
     client = Client(config)
     from appenlight_client.wsgi import AppenlightWSGIWrapper
-
+    try:
+        app.appenlight_client = client
+    except Exception:
+        logging.warning('Couldn\'t set appenlight_client propery on app object')
+        pass
     if client.config['enabled']:
         app = AppenlightWSGIWrapper(app, client)
     return app

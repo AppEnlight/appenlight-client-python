@@ -51,6 +51,10 @@ def import_from_module(name):
 
 
 def deco_func_or_method(module, name, deco_f, single_attach_marker='_e_attached_tracer', **kwargs):
+    """
+    accepts a module and decorator factory function, then passes kwargs to the
+    decorator factory and decorates the `name` object/method from module
+    """
     _tmp = name.split('.')
     e_callable = getattr(module, _tmp[0], None)
     # decorate and set new value for foo.bar
