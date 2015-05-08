@@ -35,8 +35,8 @@ def gather_data(client, environ=None, gather_exception=True,
     del traceback
     if client.config['logging']:
         if gather_logs:
-            records = client.log_handler.get_records()
-            client.log_handler.clear_records()
+            records = client.log_handlers_get_records()
+            client.log_handlers_clear_records()
             client.py_log(environ, records=records, r_uuid=environ['appenlight.request_id'])
     if clear_storage:
         appenlight_storage.clear()

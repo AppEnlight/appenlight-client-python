@@ -111,8 +111,8 @@ class AppenlightMiddleware(object):
                                                          slow_calls=slow_calls)
 
                 if self.appenlight_client.config['logging']:
-                    records = self.appenlight_client.log_handler.get_records()
-                    self.appenlight_client.log_handler.clear_records()
+                    records = self.appenlight_client.log_handlers_get_records()
+                    self.appenlight_client.log_handlers_clear_records()
                     self.appenlight_client.py_log(environ,
                                                   records=records,
                                                   r_uuid=environ['appenlight.request_id'],

@@ -397,22 +397,22 @@ class TestClientConfig(BaseTest):
 
     def test_default_logging_handler_present(self):
         self.setUpClient()
-        assert hasattr(self.client, 'log_handler') is True
+        assert len(self.client.log_handlers) > 0
 
     def test_custom_logging_handler_present(self):
         config = {'appenlight.logging': "false"}
         self.setUpClient(config)
-        assert hasattr(self.client, 'log_handler') is False
+        assert len(self.client.log_handlers) == 0
 
     def test_default_logging_handler_level(self):
         self.setUpClient()
-        assert self.client.log_handler.level == logging.WARNING
+        assert self.client.log_handlers[0].level == logging.WARNING
 
     def test_custom_logging_handler_level(self):
         config = {'appenlight.logging.level': "CRITICAL",
                   'appenlight.api_key': '12345'}
         self.setUpClient(config)
-        assert self.client.log_handler.level == logging.CRITICAL
+        assert self.client.log_handlers[0].level == logging.CRITICAL
 
     def test_default_timing_config(self):
         self.setUpClient()
@@ -772,6 +772,32 @@ class TestLogs(BaseTest):
                               end_time=REQ_END_TIME)
         self.client.py_log(TEST_ENVIRON, records=handler.get_records())
         assert len(self.client.transport.log_queue) == 0
+
+    def test_multiple_handlers(self):
+        self.setUpClient()
+        logger = logging.getLogger('testing')
+        logger2 = logging.getLogger('other logger')
+        handler2 = register_logging(logger2)
+        handler2.setLevel(logging.DEBUG)
+        self.client.log_handlers.append(handler2)
+
+        logger.critical('test entry',
+                        extra={"foobar": "baz",
+                               "count": 15,
+                               "price": 5.5,
+                               'ae_permanent': 1,
+                               "dictionary": {"a": "5"}
+                        }
+        )
+        logger.info('this is info')
+        logger.debug('debug d')
+        logger2.debug('debug d2')
+        logger2.info('this is info')
+        logger2.warning('this is warning')
+        records = self.client.log_handlers_get_records()
+        new_log = records[0]
+        assert new_log.ae_permanent == 1
+        assert len(records) == 2
 
 
 class TestSlowReportParsing(BaseTest):

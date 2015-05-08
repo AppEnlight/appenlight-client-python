@@ -89,6 +89,7 @@ class BaseClient(object):
 
         """
         self.uuid = uuid.uuid4()
+        self.log_handlers = []
         self.update_config(config)
         self.reinitialize()
 
@@ -239,9 +240,10 @@ class BaseClient(object):
 
 
     def register_logger(self, logger=logging.root):
-        self.log_handler = register_logging(logger)
+        log_handler = register_logging(logger)
         level = LEVELS.get(self.config['logging_level'], logging.WARNING)
-        self.log_handler.setLevel(level)
+        log_handler.setLevel(level)
+        self.log_handlers.append(log_handler)
 
     def register_hooks(self):
         for hook in self.hooks:
@@ -257,14 +259,27 @@ class BaseClient(object):
                 raise
                 log.warning("Couln't attach hook: %s" % hook)
 
+    def log_handlers_get_records(self):
+        logs = []
+        for handler in self.log_handlers:
+            logs.extend([r for r in handler.get_records() if r not in logs])
+        return logs
+        #
+        # for handler in self.log_handlers:
+        #     for record in handler.get_records():
+        #         yield record
+
+    def log_handlers_clear_records(self):
+        for handler in self.log_handlers:
+            handler.clear_records()
+
     def check_if_deliver(self, force_send=False):
         return self.transport.check_if_deliver(force_send=force_send)
 
     def purge_data(self):
         storage = get_local_storage(local_timing)
         storage.clear()
-        if getattr(self, 'log_handler', None):
-            self.log_handler.clear_records()
+        self.log_handlers_clear_records()
         self.transport.purge()
 
     def data_filter(self, structure, section=None):
@@ -355,14 +370,15 @@ class BaseClient(object):
 
     def py_log(self, environ, records=None, r_uuid=None, created_report=None):
         if not records:
-            records = self.log_handler.get_records()
-            self.log_handler.clear_records()
+            records = self.log_handlers_get_records()
+            self.log_handlers_clear_records()
 
         if not environ.get('appenlight.force_logs') and \
                 (self.config['logging_on_error'] and created_report is None):
             return False
-
+        count = 0
         for record in records:
+            count += 1
             if record.name in self.config['log_namespace_blacklist']:
                 continue
             if not getattr(record, 'created'):
@@ -413,7 +429,7 @@ class BaseClient(object):
             except (TypeError, UnicodeDecodeError, UnicodeEncodeError) as e:
                 # handle some weird case where record.getMessage() fails
                 log.warning(e)
-        log.debug('add %s log entries to queue' % len(records))
+        log.debug('add %s log entries to queue' % count)
         return True
 
     def save_request_stats(self, stats, view_name=None):
