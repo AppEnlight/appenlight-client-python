@@ -68,17 +68,13 @@ log = logging.getLogger(__name__)
 def singleton(cls):
 
     def getinstance(*args, **kwargs):
-        allow_multiple = kwargs.pop('allow_multiple_clients', False)
-        if allow_multiple is True:
-            return cls(*args, **kwargs)
-
         if cls.self_instance is None:
             cls.self_instance = cls(*args, **kwargs)
         return cls.self_instance
     return getinstance
 
-# @singleton
-class Client(object):
+
+class BaseClient(object):
 
     self_instance = None
 
@@ -92,11 +88,16 @@ class Client(object):
             appenlight.api_key = YOUR_API_KEY
 
         """
+        self.uuid = uuid.uuid4()
+        self.update_config(config)
+        self.reinitialize()
+
+    def update_config(self, config):
         self.config = {}
         # general options
         self.config['enabled'] = asbool(config.get('appenlight', True))
         self.config['server_name'] = config.get('appenlight.server_name') \
-            or socket.getfqdn()
+                                     or socket.getfqdn()
         if PY3:
             default_client = 'python3'
         else:
@@ -154,9 +155,9 @@ class Client(object):
         )
         self.config['cookie_keys_whitelist'] = []
         cookie_whitelist = aslist(config.get('appenlight.cookie_keys_whitelist',
-                                          config.get(
-                                              'appenlight.cookie_keys_whitelist')),
-                               ',')
+                                             config.get(
+                                                 'appenlight.cookie_keys_whitelist')),
+                                  ',')
         self.config['cookie_keys_whitelist'].extend(
             filter(lambda x: x, cookie_whitelist)
         )
@@ -177,11 +178,27 @@ class Client(object):
             config.get('appenlight.log_namespace_blacklist'), ',')
         self.config['log_namespace_blacklist'].extend(filter(
             lambda x: x, log_blacklist))
+        self.config['filter_callable'] = config.get('appenlight.filter_callable')
+        if self.config['buffer_flush_interval'] < 1:
+            self.config['buffer_flush_interval'] = 1
+        self.config['buffer_flush_interval'] = datetime.timedelta(seconds=self.config['buffer_flush_interval'])
+        # register slow call metrics
+        if self.config['slow_requests'] and self.config['enabled']:
+            self.config['timing'] = config.get('appenlight.timing', {})
+            for k, v in config.items():
+                if k.startswith('appenlight.timing'):
+                    try:
+                        self.config['timing'][k[18:]] = float(v)
+                    except (TypeError, ValueError) as e:
+                        self.config['timing'][k[18:]] = False
+        self.hooks_blacklist = aslist(config.get('appenlight.hooks_blacklist'),
+                                      ',')
 
-        self.filter_callable = config.get('appenlight.filter_callable')
-        if self.filter_callable:
+    def reinitialize(self):
+        self.filter_callable = lambda x: x
+        if self.config['filter_callable']:
             try:
-                parts = self.filter_callable.split(':')
+                parts = self.config['filter_callable'].split(':')
                 _tmp = __import__(parts[0], globals(), locals(),
                                   [parts[1], ], 0)
                 self.filter_callable = getattr(_tmp, parts[1])
@@ -192,33 +209,20 @@ class Client(object):
         else:
             self.filter_callable = self.data_filter
 
-        if self.config['buffer_flush_interval'] < 1:
-            self.config['buffer_flush_interval'] = 1
-        self.config['buffer_flush_interval'] = datetime.timedelta(seconds=self.config['buffer_flush_interval'])
+
         if self.config['logging'] and self.config['enabled']:
             self.register_logger()
 
-        # register slow call metrics
         if self.config['slow_requests'] and self.config['enabled']:
-            self.config['timing'] = config.get('appenlight.timing', {})
-            for k, v in config.items():
-                if k.startswith('appenlight.timing'):
-                    try:
-                        self.config['timing'][k[18:]] = float(v)
-                    except (TypeError, ValueError) as e:
-                        self.config['timing'][k[18:]] = False
             import appenlight_client.timing
 
             appenlight_client.timing.register_timing(self.config)
 
         self.hooks = ['hook_pylons']
-        self.hooks_blacklist = aslist(config.get('appenlight.hooks_blacklist'),
-                                      ',')
+
         # register hooks
         if self.config['enabled']:
             self.register_hooks()
-
-        self.uuid = uuid.uuid4()
         try:
             parts = self.config['transport'].split(':')
             _tmp = __import__(parts[0], globals(), locals(),
@@ -232,6 +236,7 @@ class Client(object):
 
         self.transport = selected_transport(self.config['transport_config'],
                                             self.config)
+
 
     def register_logger(self, logger=logging.root):
         self.log_handler = register_logging(logger)
@@ -594,6 +599,9 @@ class Client(object):
                               ignore_system_exceptions=True)
         return tb
 
+# @singleton
+class Client(BaseClient):
+    pass
 
 def get_config(config=None, path_to_config=None, section_name='appenlight'):
     if not config and not path_to_config:

@@ -29,7 +29,7 @@ for k, v in timing_conf.iteritems():
 timing_conf.pop('appenlight.timing.dbapi2_sqlite3', None)
 
 # this sets up timing decoration for us
-client.Client(config=timing_conf)
+client.BaseClient(config=timing_conf)
 from appenlight_client.timing import local_timing, get_local_storage, time_trace
 
 
@@ -173,7 +173,7 @@ class BaseTest(object):
         timing_conf['appenlight.api_key'] = '12345'
         if config is None:
             config = {'appenlight.api_key': '12345'}
-        self.client = client.Client(config)
+        self.client = client.BaseClient(config)
 
     def teardown_method(self, method):
         storage = get_local_storage(local_timing)
@@ -187,7 +187,7 @@ class TestClientConfig(BaseTest):
 
     def test_empty_init(self):
         self.setUpClient()
-        assert isinstance(self.client, client.Client)
+        assert isinstance(self.client, (client.Client,client.BaseClient,))
 
     def test_api_key(self):
         config = {'appenlight.api_key': '12345AAAAA'}
@@ -590,9 +590,9 @@ class TestErrorParsing(BaseTest):
         test = 1
         b = {1: 'a', '2': 2, 'ccc': 'ddd'}
         obj = object()
-        e_obj = client.Client({})
+        e_obj = client.BaseClient({})
         unic = 'grzegżółka'
-        a_list = [1, 2, 4, 5, 6, client.Client({}), 'dupa']
+        a_list = [1, 2, 4, 5, 6, client.BaseClient({}), 'dupa']
         long_val = 'imlong' * 100
         datetest = datetime.datetime.utcnow()
         try:
