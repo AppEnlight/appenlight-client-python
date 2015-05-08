@@ -43,6 +43,7 @@ from functools import wraps
 from appenlight_client import __version__, __protocol_version__
 from appenlight_client.exceptions import get_current_traceback
 from appenlight_client.logger import register_logging
+from appenlight_client.timing import local_timing, get_local_storage
 from appenlight_client.utils import asbool, aslist, import_from_module, parse_tag
 from webob import Request
 
@@ -67,7 +68,8 @@ log = logging.getLogger(__name__)
 def singleton(cls):
 
     def getinstance(*args, **kwargs):
-        if cls.allow_multiple:
+        allow_multiple = kwargs.pop('allow_multiple_clients', False)
+        if allow_multiple is True:
             return cls(*args, **kwargs)
 
         if cls.self_instance is None:
@@ -75,11 +77,10 @@ def singleton(cls):
         return cls.self_instance
     return getinstance
 
-@singleton
+# @singleton
 class Client(object):
 
     self_instance = None
-    allow_multiple = False
 
     __version__ = __version__
     __protocol_version__ = __protocol_version__
@@ -253,6 +254,13 @@ class Client(object):
 
     def check_if_deliver(self, force_send=False):
         return self.transport.check_if_deliver(force_send=force_send)
+
+    def purge_data(self):
+        storage = get_local_storage(local_timing)
+        storage.clear()
+        if getattr(self, 'log_handler', None):
+            self.log_handler.clear_records()
+        self.transport.purge()
 
     def data_filter(self, structure, section=None):
         def filter_dict(f_input, dict_method):

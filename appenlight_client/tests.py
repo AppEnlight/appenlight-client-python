@@ -167,16 +167,23 @@ PARSED_SLOW_REPORT = {
     'request_stats': {},
     'http_status': 200}
 
+class BaseTest(object):
 
-class TestClientConfig(object):
     def setUpClient(self, config=None):
+        timing_conf['appenlight.api_key'] = '12345'
         if config is None:
             config = {'appenlight.api_key': '12345'}
         self.client = client.Client(config)
 
-
     def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
+        storage = get_local_storage(local_timing)
+        storage.clear()
+        if hasattr(self, 'client'):
+            self.client.purge_data()
+
+
+class TestClientConfig(BaseTest):
+
 
     def test_empty_init(self):
         self.setUpClient()
@@ -438,12 +445,7 @@ def generate_error():
     pass
 
 
-class TestClientTransport(object):
-    def setUpClient(self, config={'appenlight.api_key': 'blargh!'}):
-        self.client = client.Client(config)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
+class TestClientTransport(BaseTest):
 
     def test_check_if_deliver_false(self):
         self.setUpClient()
@@ -533,12 +535,7 @@ class TestClientTransport(object):
         assert len(self.client.transport.report_queue) == 0
 
 
-class TestErrorParsing(object):
-    def setUpClient(self, config={'appenlight.report_local_vars': False}):
-        self.client = client.Client(config)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
+class TestErrorParsing(BaseTest):
 
     def test_py_report_404(self):
         self.setUpClient()
@@ -566,7 +563,8 @@ class TestErrorParsing(object):
 
 
     def test_py_report_500_traceback(self):
-        self.setUpClient()
+        self.setUpClient({'appenlight.api_key': 'XXX',
+                          'appenlight.report_local_vars': 'false'})
         bogus_report = copy.deepcopy(PARSED_REPORT_500)
         try:
             raise Exception('Test Exception')
@@ -622,15 +620,7 @@ class TestErrorParsing(object):
         assert self.client.transport.report_queue[0]['request']['COOKIES'] == proper_values
 
 
-class TestLogs(object):
-    def setUpClient(self, config=None):
-        timing_conf['appenlight.api_key'] = '12345'
-        if not config:
-            config = {'appenlight.api_key': '12345'}
-        self.client = client.Client(config)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
+class TestLogs(BaseTest):
 
     def test_py_log(self):
         self.setUpClient()
@@ -784,12 +774,7 @@ class TestLogs(object):
         assert len(self.client.transport.log_queue) == 0
 
 
-class TestSlowReportParsing(object):
-    def setUpClient(self, config={}):
-        self.client = client.Client(config)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
+class TestSlowReportParsing(BaseTest):
 
     def test_py_report_slow(self):
         self.setUpClient()
@@ -802,10 +787,7 @@ class TestSlowReportParsing(object):
             assert i in superset
 
 
-class TestMakeMiddleware(object):
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
+class TestMakeMiddleware(BaseTest):
 
     def test_make_middleware(self):
         def app(environ, start_response):
@@ -824,15 +806,10 @@ class TestMakeMiddleware(object):
         assert isinstance(app, AppenlightWSGIWrapper) is False
 
 
-class TestCustomTiming(object):
-    def setUpClient(self, config={}):
-        self.client = client.Client(config)
+class TestCustomTiming(BaseTest):
 
     def setup_method(self, method):
         self.setUpClient(timing_conf)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
 
     def test_custom_time_trace(self):
         @time_trace(name='foo_func', min_duration=0.1)
@@ -864,15 +841,10 @@ class TestCustomTiming(object):
         assert len(result) == 3
 
 
-class TestTimingHTTPLibs(object):
-    def setUpClient(self, config={}):
-        self.client = client.Client(config)
+class TestTimingHTTPLibs(BaseTest):
 
     def setup_method(self, method):
         self.setUpClient(timing_conf)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
 
     def test_urllib_URLOpener_open(self):
         import urllib
@@ -924,15 +896,10 @@ class TestTimingHTTPLibs(object):
         assert len(result) == 1
 
 
-class TestRedisPY(object):
-    def setUpClient(self, config={}):
-        self.client = client.Client(config)
+class TestRedisPY(BaseTest):
 
     def setup_method(self, method):
         self.setUpClient(timing_conf)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
 
     def test_redis_py_command(self):
         try:
@@ -946,15 +913,10 @@ class TestRedisPY(object):
         assert len(result) == 1
 
 
-class TestMemcache(object):
-    def setUpClient(self, config={}):
-        self.client = client.Client(config)
+class TestMemcache(BaseTest):
 
     def setup_method(self, method):
         self.setUpClient(timing_conf)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
 
     def test_memcache_command(self):
         try:
@@ -968,15 +930,10 @@ class TestMemcache(object):
         assert len(result) == 2
 
 
-class TestPylibMc(object):
-    def setUpClient(self, config={}):
-        self.client = client.Client(config)
+class TestPylibMc(BaseTest):
 
     def setup_method(self, method):
         self.setUpClient(timing_conf)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
 
     def test_memcache_command(self):
         # TODO: not finished
@@ -992,17 +949,12 @@ class TestPylibMc(object):
         assert len(result) == 2
 
 
-class TestDBApi2Drivers(object):
-    def setUpClient(self, config={}):
-        self.client = client.Client(config)
+class TestDBApi2Drivers(BaseTest):
 
     def setup_method(self, method):
         timing_conf['appenlight.timing.dbapi2_sqlite3'] = 0.0000000001
         self.setUpClient(timing_conf)
         self.stmt = '''SELECT 1+2+3 as result'''
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
 
     def test_sqlite(self):
         try:
@@ -1142,15 +1094,10 @@ class TestDBApi2Drivers(object):
         assert len(result) == 2
 
 
-class TestMako(object):
-    def setUpClient(self, config={}):
-        self.client = client.Client(timing_conf)
+class TestMako(BaseTest):
 
     def setup_method(self, method):
         self.setUpClient(timing_conf)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
 
     def test_render(self):
         try:
@@ -1228,12 +1175,7 @@ class TestMako(object):
         assert len(result) == 1
 
 
-class TestChameleon(object):
-    def setUpClient(self, config={}):
-        self.client = client.Client(timing_conf)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
+class TestChameleon(BaseTest):
 
     def test_render(self):
         # TODO: This timer doesnt work for now
@@ -1253,12 +1195,7 @@ class TestChameleon(object):
         assert len(result) == 1
 
 
-class TestJinja2(object):
-    def setUpClient(self, config={}):
-        self.client = client.Client(timing_conf)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
+class TestJinja2(BaseTest):
 
     def test_render(self):
         try:
@@ -1276,15 +1213,10 @@ class TestJinja2(object):
         assert len(result) == 1
 
 
-class TestDjangoTemplates(object):
-    def setUpClient(self, config={}):
-        self.client = client.Client(config)
+class TestDjangoTemplates(BaseTest):
 
-    def setup_method(self, method):
-        self.setUpClient(timing_conf)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
+    # def setup_method(self, method):
+    #     self.setUpClient(timing_conf)
 
     def test_render(self):
         try:
@@ -1306,12 +1238,7 @@ class TestDjangoTemplates(object):
         assert len(result) == 1
 
 
-class TestWSGI(object):
-    def setUpClient(self, config={}):
-        self.client = client.Client(timing_conf)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
+class TestWSGI(BaseTest):
 
     def test_normal_request(self):
         def app(environ, start_response):
@@ -1533,12 +1460,7 @@ class TestWSGI(object):
         assert set([('foo', u'bar'), ('baz', 5), ('now', now)]) == set(app.appenlight_client.transport.report_queue[0]['extra'])
 
 
-class TestCallableName(object):
-    def setUpClient(self, config={}):
-        self.client = client.Client(timing_conf)
-
-    def teardown_method(self, method):
-        get_local_storage(local_timing).clear()
+class TestCallableName(BaseTest):
 
     def test_func(self):
         def some_call():

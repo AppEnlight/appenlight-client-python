@@ -19,6 +19,11 @@ class BaseTransport(object):
             seconds=50)
         self.client_config = client_config
 
+    def purge(self):
+        self.report_queue = []
+        self.log_queue = []
+        self.request_stats = {}
+
     def save_request_stats(self, stats, view_name):
         with self.request_stats_lock:
             req_time = datetime.datetime.utcnow().replace(second=0,
