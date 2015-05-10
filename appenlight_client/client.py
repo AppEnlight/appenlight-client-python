@@ -667,8 +667,17 @@ def decorate(appenlight_config=None):
     return app_decorator
 
 
+def make_appenlight_middleware(*args, **kwargs):
+    """
+    Bw. compatible API
+    """
+    app, client = make_appenlight_middleware_with_client(*args, **kwargs)
+    return app
+
+
 # TODO: refactor this to share the code
-def make_appenlight_middleware(app, global_config=None, **kw):
+def make_appenlight_middleware_with_client(app, global_config=None, **kw):
+    client = kw.pop('appenlight_client', None)
     if global_config:
         config = global_config.copy()
     else:
@@ -680,13 +689,9 @@ def make_appenlight_middleware(app, global_config=None, **kw):
         ini_path = os.environ.get('ERRORMATOR_INI',
                                   config.get('errormator.config_path'))
     config = get_config(config=config, path_to_config=ini_path)
-    client = Client(config)
+    if not client:
+        client = Client(config)
     from appenlight_client.wsgi import AppenlightWSGIWrapper
-    try:
-        app.appenlight_client = client
-    except Exception:
-        logging.warning('Couldn\'t set appenlight_client propery on app object')
-        pass
     if client.config['enabled']:
         app = AppenlightWSGIWrapper(app, client)
-    return app
+    return app, client

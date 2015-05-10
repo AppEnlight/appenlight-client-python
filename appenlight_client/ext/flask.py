@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from flask import request
 from flask.signals import got_request_exception, request_started
-from appenlight_client.client import make_appenlight_middleware
+from appenlight_client.client import make_appenlight_middleware_with_client
 from appenlight_client.ext.general import gather_data
 from appenlight_client.utils import fullyQualifiedName
 
@@ -32,7 +32,7 @@ def populate_post_vars(sender, **extra):
         request.environ['appenlight.post_vars'] = {}
 
 
-def add_appenlight(app, config=None):
+def add_appenlight_with_client(app, config=None):
     """
         Adds Appenlight to Flask,
 
@@ -44,7 +44,16 @@ def add_appenlight(app, config=None):
         pass
     else:
         config = {}
-    app.wsgi_app = make_appenlight_middleware(app.wsgi_app, config)
+    app.wsgi_app, client = make_appenlight_middleware_with_client(app.wsgi_app,
+                                                                  config)
     request_started.connect(populate_post_vars, app)
     got_request_exception.connect(log_exception, app)
+    return app, client
+
+
+def add_appenlight(app, config=None):
+    """
+    Bw. compatible API
+    """
+    app, client = add_appenlight_with_client(app, config)
     return app
