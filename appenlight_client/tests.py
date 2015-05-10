@@ -4,6 +4,8 @@ import datetime
 import logging
 import socket
 import time
+import random
+import pprint
 
 import pkg_resources
 from webob import Request
@@ -29,7 +31,8 @@ for k, v in timing_conf.iteritems():
 timing_conf.pop('appenlight.timing.dbapi2_sqlite3', None)
 
 # this sets up timing decoration for us
-client.BaseClient(config=timing_conf)
+global_client = client.BaseClient(config=timing_conf)
+global_client.unregister_logger()
 from appenlight_client.timing import local_timing, get_local_storage, time_trace
 
 
@@ -170,9 +173,9 @@ PARSED_SLOW_REPORT = {
 class BaseTest(object):
 
     def setUpClient(self, config=None):
-        timing_conf['appenlight.api_key'] = '12345'
+        timing_conf['appenlight.api_key'] = 'default_test_key'
         if config is None:
-            config = {'appenlight.api_key': '12345'}
+            config = {'appenlight.api_key': 'default_test_key'}
         self.client = client.BaseClient(config)
 
     def teardown_method(self, method):
@@ -180,6 +183,7 @@ class BaseTest(object):
         storage.clear()
         if hasattr(self, 'client'):
             self.client.purge_data()
+            self.client.unregister_logger()
 
 
 class TestClientConfig(BaseTest):
@@ -624,17 +628,18 @@ class TestLogs(BaseTest):
 
     def test_py_log(self):
         self.setUpClient()
-        handler = register_logging(logging.root)
+        handler = register_logging(logging.root, self.client.config)
         handler.clear_records()
         logger = logging.getLogger('testing')
-        logger.critical('test entry')
+        msg = 'test entry %s' % random.random()
+        logger.critical(msg)
         self.client.py_log(TEST_ENVIRON, records=handler.get_records())
         fake_log = {'log_level': 'CRITICAL',
                     'namespace': 'testing',
                     'server': 'test-foo',  # this will be different everywhere
                     'request_id': None,
                     'date': '2012-08-13T21:20:37.418.307066',
-                    'message': 'test entry'}
+                    'message': msg}
         # update fields depenand on machine
         self.client.transport.log_queue[0]['date'] = fake_log['date']
         self.client.transport.log_queue[0]['server'] = fake_log['server']
@@ -642,20 +647,21 @@ class TestLogs(BaseTest):
 
     def test_errors_attached_to_logs(self):
         self.setUpClient()
-        handler = register_logging(logging.root)
+        handler = register_logging(logging.root, self.client.config)
         handler.clear_records()
         logger = logging.getLogger('testing')
+        some_num = random.random()
         try:
             raise Exception('This is a test')
         except Exception as e:
-            logger.exception('Exception happened')
+            logger.exception('Exception happened %s' % some_num)
         self.client.py_log(TEST_ENVIRON, records=handler.get_records())
         fake_log = {'log_level': 'ERROR',
                     'namespace': 'testing',
                     'server': 'test-foo',  # this will be different everywhere
                     'request_id': None,
                     'date': '2012-08-13T21:20:37.418.307066',
-                    'message': 'Exception happened\nTraceback (most recent call last):'}
+                    'message': 'Exception happened %s\nTraceback (most recent call last):' % some_num}
         # update fields depenand on machine
         self.client.transport.log_queue[0]['date'] = fake_log['date']
         self.client.transport.log_queue[0]['server'] = fake_log['server']
@@ -663,29 +669,35 @@ class TestLogs(BaseTest):
 
     def test_errors_not_attached_to_logs(self):
         self.setUpClient({'appenlight.logging_attach_exc_text': 'false',
-                          'appenlight.api_key': '12345'})
-        handler = register_logging(logging.root)
+                          'appenlight.api_key': 'test_errors_not_attached_to_logs'})
+        print 'logging_attach_exc_text', self.client.config['logging_attach_exc_text']
+        print self.client.log_handlers
+        handler = register_logging(logging.root, self.client.config)
         handler.clear_records()
+        pprint.pprint(handler.client_config)
         logger = logging.getLogger('testing')
+
+        log_msg = 'Exception happened %s' % random.random()
         try:
             raise Exception('This is a test')
         except Exception as e:
-            logger.exception('Exception happened')
+            logger.exception(log_msg)
         self.client.py_log(TEST_ENVIRON, records=handler.get_records())
         fake_log = {'log_level': 'ERROR',
                     'namespace': 'testing',
                     'server': 'test-foo',  # this will be different everywhere
                     'request_id': None,
                     'date': '2012-08-13T21:20:37.418.307066',
-                    'message': 'Exception happened'}
+                    'message': log_msg}
         # update fields depenand on machine
+        print self.client.transport.log_queue
         self.client.transport.log_queue[0]['date'] = fake_log['date']
         self.client.transport.log_queue[0]['server'] = fake_log['server']
         assert self.client.transport.log_queue[0]['message'] == fake_log['message']
 
     def test_tags_attached_to_logs(self):
         self.setUpClient()
-        handler = register_logging(logging.root)
+        handler = register_logging(logging.root, self.client.config)
         handler.clear_records()
         logger = logging.getLogger('testing')
         utcnow = datetime.datetime.utcnow()
@@ -731,7 +743,7 @@ class TestLogs(BaseTest):
 
     def test_primary_key_attached(self):
         self.setUpClient()
-        handler = register_logging(logging.root)
+        handler = register_logging(logging.root, self.client.config)
         handler.clear_records()
         logger = logging.getLogger('testing')
         logger.critical('test entry',
@@ -748,7 +760,7 @@ class TestLogs(BaseTest):
 
     def test_permanent_log(self):
         self.setUpClient()
-        handler = register_logging(logging.root)
+        handler = register_logging(logging.root, self.client.config)
         handler.clear_records()
         logger = logging.getLogger('testing')
         logger.critical('test entry',
@@ -765,7 +777,7 @@ class TestLogs(BaseTest):
 
     def test_ignore_self_logs(self):
         self.setUpClient()
-        handler = register_logging(logging.root)
+        handler = register_logging(logging.root, self.client.config)
         handler.clear_records()
         self.client.py_report(TEST_ENVIRON, http_status=500)
         self.client.py_report(TEST_ENVIRON, start_time=REQ_START_TIME,
@@ -777,7 +789,7 @@ class TestLogs(BaseTest):
         self.setUpClient()
         logger = logging.getLogger('testing')
         logger2 = logging.getLogger('other logger')
-        handler2 = register_logging(logger2)
+        handler2 = register_logging(logger2, self.client.config)
         handler2.setLevel(logging.DEBUG)
         self.client.log_handlers.append(handler2)
 
@@ -796,7 +808,7 @@ class TestLogs(BaseTest):
         logger2.warning('this is warning')
         records = self.client.log_handlers_get_records()
         new_log = records[0]
-        assert new_log.ae_permanent == 1
+        assert new_log['permanent'] is True
         assert len(records) == 2
 
 

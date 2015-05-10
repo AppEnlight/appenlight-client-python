@@ -216,10 +216,24 @@ following license:
 
 import logging
 import threading
+import datetime
+import time
 
+import sys
+# are we running python 3.x ?
+PY3 = sys.version_info[0] == 3
+
+from appenlight_client.utils import asbool, parse_tag
+
+log = logging.getLogger(__name__)
+
+EXCLUDED_LOG_VARS = ['threadName', 'name', 'thread', 'created', 'process', 'processName', 'args', 'module', 'filename',
+                     'levelno', 'exc_text', 'pathname', 'lineno', 'msg', 'exc_info', 'message', 'funcName',
+                     'relativeCreated', 'levelname', 'msecs', 'asctime']
 
 class ThreadTrackingHandler(logging.Handler):
-    def __init__(self):
+    def __init__(self, client_config=None):
+        self.client_config = client_config
         if threading is None:
             raise NotImplementedError(
                 "threading module is not available, "
@@ -228,7 +242,9 @@ class ThreadTrackingHandler(logging.Handler):
         self.records = {}  # a dictionary that maps threads to log records
 
     def emit(self, record):
-        self.get_records().append(record)
+        r_dict = convert_logging_to_dict(record, self.client_config)
+        if r_dict:
+            self.get_records().append(r_dict)
 
     def get_records(self, thread=None):
         """
@@ -248,13 +264,71 @@ class ThreadTrackingHandler(logging.Handler):
             del self.records[thread]
 
 
-def register_logging(logger):
+def register_logging(logger, client_config):
     found = False
     for handler in logger.handlers:
         if isinstance(handler, ThreadTrackingHandler):
             found = True
             thread_tracking_handler = handler
     if not found:
-        thread_tracking_handler = ThreadTrackingHandler()
+        thread_tracking_handler = ThreadTrackingHandler(client_config=client_config)
         logger.addHandler(thread_tracking_handler)
     return thread_tracking_handler
+
+
+def unregister_logger(logger, handler):
+    logger.removeHandler(handler)
+
+
+def convert_logging_to_dict(record, client_config):
+    if record.name in client_config['log_namespace_blacklist']:
+        return None
+
+    if not getattr(record, 'created'):
+        time_string = datetime.datetime.utcnow().isoformat()
+    else:
+        time_string = time.strftime(
+            '%Y-%m-%dT%H:%M:%S.',
+            time.gmtime(record.created)) + ('%0.3f' % record.msecs).replace('.','').zfill(6)
+    try:
+        message = record.getMessage()
+        tags_list = []
+        log_dict = {'log_level': record.levelname,
+                    "namespace": record.name,
+                    'server': client_config['server_name'],
+                    'date': time_string,
+                    'request_id': None}
+        if PY3:
+            log_dict['message'] = '%s' % message
+        else:
+            msg = message.encode('utf8') if isinstance(message,
+                                                       unicode) else message
+            log_dict['message'] = '%s' % msg
+
+        # TODO: Based on docs, that attribute exists if a formatter
+        # already formatted the traceback, not sure if it is always
+        # there.
+        if client_config['logging_attach_exc_text']:
+            exc_text = getattr(record, 'exc_text', '')
+            if exc_text:
+                log_dict['message'] += '\n%s' % exc_text
+        # populate tags from extra
+        for k, v in vars(record).iteritems():
+            if k not in EXCLUDED_LOG_VARS:
+                try:
+                    tags_list.append(parse_tag(k, v))
+                    if k == 'ae_primary_key':
+                        log_dict['primary_key'] = unicode(v)
+                    if k == 'ae_permanent':
+                        try:
+                            log_dict['permanent'] = asbool(v)
+                        except Exception:
+                            log_dict['permanent'] = True
+                except Exception as e:
+                    log.info(u'Couldn\'t convert attached tag %s' % e)
+        if tags_list:
+            log_dict['tags'] = tags_list
+        return log_dict
+    except (TypeError, UnicodeDecodeError, UnicodeEncodeError) as e:
+        # handle some weird case where record.getMessage() fails
+        log.warning(e)
