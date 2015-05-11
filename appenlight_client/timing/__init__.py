@@ -38,6 +38,7 @@ class AppenlightLocalStorage(object):
                              'tmpl_calls': 0, 'custom': 0, 'custom_calls': 0}
         self.slow_calls = []
         self.view_name = ''
+        self.logs = []
 
     def get_thread_stats(self):
         """ resets thread stats at same time """
