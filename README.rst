@@ -144,8 +144,8 @@ This is how you can handle error handling inside your error_view::
 
     def error_view(exc, request):
         from appenlight_client.exceptions import get_current_traceback
-        from appenlight_client.timing import get_local_storage, local_timing
-        appenlight_storage = get_local_storage(local_timing)
+        from appenlight_client.timing import get_local_storage
+        appenlight_storage = get_local_storage()
         stats, slow_calls = appenlight_storage.get_thread_stats()
         traceback = get_current_traceback(skip=1, show_hidden_frames=True, ignore_system_exceptions=True)
         request.environ['appenlight.client'].py_report(request.environ, traceback, message=None,http_status=500, request_stats=stats)

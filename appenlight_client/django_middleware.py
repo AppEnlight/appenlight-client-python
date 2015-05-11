@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.http import Http404
-from appenlight_client.timing import local_timing, get_local_storage
+from appenlight_client.timing import get_local_storage
 from appenlight_client.timing import default_timer
 from appenlight_client.client import Client
 from appenlight_client.utils import fullyQualifiedName
@@ -34,7 +34,7 @@ class AppenlightMiddleware(object):
         if 'appenlight.extra' not in environ:
             environ['appenlight.extra'] = {}
         environ['appenlight.post_vars'] = request.POST
-        appenlight_storage = get_local_storage(local_timing)
+        appenlight_storage = get_local_storage()
         # clear out thread stats on request start
         appenlight_storage.clear()
         request.__start_time__ = default_timer()
@@ -62,7 +62,7 @@ class AppenlightMiddleware(object):
         if not isinstance(exception, Http404):
             http_status = 500
             traceback = self.appenlight_client.get_current_traceback()
-            appenlight_storage = get_local_storage(local_timing)
+            appenlight_storage = get_local_storage()
             appenlight_storage.thread_stats['main'] = end_time - request.__start_time__
             stats, slow_calls = appenlight_storage.get_thread_stats()
             self.appenlight_client.save_request_stats(stats, view_name=environ.get('appenlight.view_name', ''))
@@ -93,7 +93,7 @@ class AppenlightMiddleware(object):
                 if (http_status == 404 and self.appenlight_client.config['report_404']):
                     request._errormator_create_report = True
                 delta = timedelta(seconds=(end_time - request.__start_time__))
-                appenlight_storage = get_local_storage(local_timing)
+                appenlight_storage = get_local_storage()
                 appenlight_storage.thread_stats['main'] = end_time - request.__start_time__
                 stats, slow_calls = appenlight_storage.get_thread_stats()
                 self.appenlight_client.save_request_stats(stats, view_name=environ.get('appenlight.view_name', ''))

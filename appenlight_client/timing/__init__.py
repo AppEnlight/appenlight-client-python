@@ -9,7 +9,7 @@ from operator import itemgetter
 default_timer = time.time
 
 
-class AppenlightLocalStorage(object):
+class AppenlightLocalStorage(threading.local):
     def __init__(self):
         self.clear()
 
@@ -69,13 +69,13 @@ TIMING_REGISTERED = False
 
 local_timing = threading.local()
 
+appenlight_storage = AppenlightLocalStorage()
+
 log = logging.getLogger(__name__)
 
 
-def get_local_storage(local_timing):
-    if not hasattr(local_timing, '_appenlight_storage'):
-        local_timing._appenlight_storage = AppenlightLocalStorage()
-    return local_timing._appenlight_storage
+def get_local_storage(local_timing=None):
+    return appenlight_storage
 
 
 def _e_trace(info_gatherer, min_duration, e_callable, *args, **kw):
@@ -87,7 +87,7 @@ def _e_trace(info_gatherer, min_duration, e_callable, *args, **kw):
             'end': end,
             'min_duration': min_duration}
     info.update(info_gatherer(*args, **kw))
-    appenlight_storage = get_local_storage(local_timing)
+    appenlight_storage = get_local_storage()
     if len(appenlight_storage.slow_calls) < 1000:
         appenlight_storage.slow_calls.append(info)
     return result
@@ -116,7 +116,7 @@ def time_trace(gatherer=None, min_duration=0.1, is_template=False, name=None):
                     'end': end,
                     'min_duration': min_duration}
             info.update(gatherer(*args, **kwargs))
-            appenlight_storage = get_local_storage(local_timing)
+            appenlight_storage = get_local_storage()
             if len(appenlight_storage.slow_calls) < 500:
                 appenlight_storage.slow_calls.append(info)
             return result

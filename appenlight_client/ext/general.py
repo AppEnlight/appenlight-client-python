@@ -1,5 +1,5 @@
 from appenlight_client.exceptions import get_current_traceback, Traceback
-from appenlight_client.timing import local_timing, get_local_storage
+from appenlight_client.timing import get_local_storage
 import logging
 import uuid
 
@@ -26,7 +26,7 @@ def gather_data(client, environ=None, gather_exception=True,
     elif exc_info:
         traceback = Traceback(*exc_info)
         http_status = 500
-    appenlight_storage = get_local_storage(local_timing)
+    appenlight_storage = get_local_storage()
     stats, slow_calls = appenlight_storage.get_thread_stats()
     if traceback is not None or (slow_calls and gather_slowness):
         client.py_report(environ, traceback, http_status=http_status, request_stats=stats, slow_calls=slow_calls,

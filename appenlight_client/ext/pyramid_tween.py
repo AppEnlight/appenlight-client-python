@@ -1,4 +1,4 @@
-from appenlight_client.timing import get_local_storage, local_timing
+from appenlight_client.timing import get_local_storage
 from appenlight_client.utils import fullyQualifiedName
 from pyramid.tweens import EXCVIEW
 import pkg_resources
@@ -39,7 +39,7 @@ def wrap_pyramid_view_method_name(appenlight_callable):
 
     @wraps(appenlight_callable)
     def view_callable_wrapper(*args, **kwargs):
-        appenlight_storage = get_local_storage(local_timing)
+        appenlight_storage = get_local_storage()
         if hasattr(appenlight_storage, 'view_name'):
             try:
                 split_name = appenlight_storage.view_name.split(':')
@@ -57,7 +57,7 @@ def wrap_pyramid_view_method_name(appenlight_callable):
 def wrap_pyramid_view_name(appenlight_callable):
     @wraps(appenlight_callable)
     def view_callable_wrapper(context, request):
-        appenlight_storage = get_local_storage(local_timing)
+        appenlight_storage = get_local_storage()
         view_name = ''
         try:
             original_view = getattr(appenlight_callable, '__original_view__')
@@ -121,7 +121,7 @@ def appenlight_tween_factory(handler, registry):
                     'appenlight.__traceback'] = request.environ['appenlight.client'].get_current_traceback()
             raise
         # finally:
-        #     appenlight_storage = get_local_storage(local_timing)
+        #     appenlight_storage = get_local_storage()
         #     print appenlight_storage.view_name
         return response
 

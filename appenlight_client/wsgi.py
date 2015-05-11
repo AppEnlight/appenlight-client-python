@@ -1,6 +1,6 @@
 import uuid
 import datetime
-from appenlight_client.timing import local_timing, get_local_storage
+from appenlight_client.timing import get_local_storage
 from appenlight_client.timing import default_timer
 from appenlight_client.client import PY3
 import logging
@@ -20,7 +20,7 @@ class AppenlightWSGIWrapper(object):
         also determine if we got 404
         """
         environ['appenlight.request_id'] = str(uuid.uuid4())
-        appenlight_storage = get_local_storage(local_timing)
+        appenlight_storage = get_local_storage()
         # clear out thread stats on request start
         appenlight_storage.clear()
         app_iter = None

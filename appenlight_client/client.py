@@ -43,7 +43,7 @@ from functools import wraps
 from appenlight_client import __version__, __protocol_version__
 from appenlight_client.exceptions import get_current_traceback
 from appenlight_client.logger import register_logging, unregister_logger
-from appenlight_client.timing import local_timing, get_local_storage
+from appenlight_client.timing import get_local_storage
 from appenlight_client.utils import asbool, aslist, import_from_module, parse_tag
 from webob import Request
 
@@ -281,7 +281,7 @@ class BaseClient(object):
         return self.transport.check_if_deliver(force_send=force_send)
 
     def purge_data(self):
-        storage = get_local_storage(local_timing)
+        storage = get_local_storage()
         storage.clear()
         self.log_handlers_clear_records()
         self.transport.purge()
