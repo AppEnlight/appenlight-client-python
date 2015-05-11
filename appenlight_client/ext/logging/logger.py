@@ -219,11 +219,8 @@ import threading
 import datetime
 import time
 
-import sys
-# are we running python 3.x ?
-PY3 = sys.version_info[0] == 3
 
-from appenlight_client.utils import asbool, parse_tag
+from appenlight_client.utils import asbool, parse_tag, PY3
 from appenlight_client.timing import get_local_storage
 from appenlight_client.ext.logging import EXCLUDED_LOG_VARS
 
@@ -241,7 +238,7 @@ class ThreadTrackingHandler(logging.Handler):
         self.records = {}  # a dictionary that maps threads to log records
 
     def emit(self, record):
-        r_dict = convert_logging_to_dict(record, self.client_config)
+        r_dict = convert_record_to_dict(record, self.client_config)
         if r_dict:
             self.get_records().append(r_dict)
 
@@ -270,7 +267,7 @@ class ThreadLocalHandler(logging.Handler):
 
     def emit(self, record):
         appenlight_storage = get_local_storage()
-        r_dict = convert_logging_to_dict(record, self.client_config)
+        r_dict = convert_record_to_dict(record, self.client_config)
         if r_dict:
             if r_dict not in appenlight_storage.logs:
                 appenlight_storage.logs.append(r_dict)
@@ -287,7 +284,7 @@ class ThreadLocalHandler(logging.Handler):
         appenlight_storage.logs = []
 
 
-def convert_logging_to_dict(record, client_config):
+def convert_record_to_dict(record, client_config):
     if record.name in client_config['log_namespace_blacklist']:
         return None
 

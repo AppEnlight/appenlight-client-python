@@ -4,6 +4,9 @@ import os
 import sys
 import datetime
 
+# are we running python 3.x ?
+PY3 = sys.version_info[0] == 3
+
 log = logging.getLogger(__name__)
 
 
