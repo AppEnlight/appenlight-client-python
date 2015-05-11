@@ -12,9 +12,9 @@ from webob import Request
 
 from appenlight_client import client, make_appenlight_middleware
 from appenlight_client.exceptions import get_current_traceback
-from appenlight_client.logger import register_logging
+from appenlight_client.ext.logging import register_logging
 from appenlight_client.wsgi import AppenlightWSGIWrapper
-from appenlight_client.utils import fullyQualifiedName
+from appenlight_client.utils import fullyQualifiedName, import_from_module
 
 
 logging.basicConfig()
@@ -628,7 +628,8 @@ class TestLogs(BaseTest):
 
     def test_py_log(self):
         self.setUpClient()
-        handler = register_logging(logging.root, self.client.config)
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler = register_logging(logging.root, self.client.config, cls=handler_cls)
         handler.clear_records()
         logger = logging.getLogger('testing')
         msg = 'test entry %s' % random.random()
@@ -647,7 +648,8 @@ class TestLogs(BaseTest):
 
     def test_errors_attached_to_logs(self):
         self.setUpClient()
-        handler = register_logging(logging.root, self.client.config)
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler = register_logging(logging.root, self.client.config, cls=handler_cls)
         handler.clear_records()
         logger = logging.getLogger('testing')
         some_num = random.random()
@@ -672,7 +674,8 @@ class TestLogs(BaseTest):
                           'appenlight.api_key': 'test_errors_not_attached_to_logs'})
         print 'logging_attach_exc_text', self.client.config['logging_attach_exc_text']
         print self.client.log_handlers
-        handler = register_logging(logging.root, self.client.config)
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler = register_logging(logging.root, self.client.config, cls=handler_cls)
         handler.clear_records()
         pprint.pprint(handler.client_config)
         logger = logging.getLogger('testing')
@@ -697,7 +700,8 @@ class TestLogs(BaseTest):
 
     def test_tags_attached_to_logs(self):
         self.setUpClient()
-        handler = register_logging(logging.root, self.client.config)
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler = register_logging(logging.root, self.client.config, cls=handler_cls)
         handler.clear_records()
         logger = logging.getLogger('testing')
         utcnow = datetime.datetime.utcnow()
@@ -743,7 +747,8 @@ class TestLogs(BaseTest):
 
     def test_primary_key_attached(self):
         self.setUpClient()
-        handler = register_logging(logging.root, self.client.config)
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler = register_logging(logging.root, self.client.config, cls=handler_cls)
         handler.clear_records()
         logger = logging.getLogger('testing')
         logger.critical('test entry',
@@ -760,7 +765,8 @@ class TestLogs(BaseTest):
 
     def test_permanent_log(self):
         self.setUpClient()
-        handler = register_logging(logging.root, self.client.config)
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler = register_logging(logging.root, self.client.config, cls=handler_cls)
         handler.clear_records()
         logger = logging.getLogger('testing')
         logger.critical('test entry',
@@ -777,7 +783,8 @@ class TestLogs(BaseTest):
 
     def test_ignore_self_logs(self):
         self.setUpClient()
-        handler = register_logging(logging.root, self.client.config)
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler = register_logging(logging.root, self.client.config, cls=handler_cls)
         handler.clear_records()
         self.client.py_report(TEST_ENVIRON, http_status=500)
         self.client.py_report(TEST_ENVIRON, start_time=REQ_START_TIME,
@@ -789,7 +796,8 @@ class TestLogs(BaseTest):
         self.setUpClient()
         logger = logging.getLogger('testing')
         logger2 = logging.getLogger('other logger')
-        handler2 = register_logging(logger2, self.client.config)
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler2 = register_logging(logger2, self.client.config, cls=handler_cls)
         handler2.setLevel(logging.DEBUG)
         self.client.log_handlers.append(handler2)
 

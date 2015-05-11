@@ -42,7 +42,7 @@ import os
 from functools import wraps
 from appenlight_client import __version__, __protocol_version__
 from appenlight_client.exceptions import get_current_traceback
-from appenlight_client.logger import register_logging, unregister_logger
+from appenlight_client.ext.logging import register_logging, unregister_logger
 from appenlight_client.timing import get_local_storage
 from appenlight_client.utils import asbool, aslist, import_from_module, parse_tag
 from webob import Request
@@ -222,12 +222,10 @@ class BaseClient(object):
         # register hooks
         if self.config['enabled']:
             self.register_hooks()
-        try:
-            parts = self.config['transport'].split(':')
-            _tmp = __import__(parts[0], globals(), locals(),
-                              [parts[1], ], 0)
-            selected_transport = getattr(_tmp, parts[1])
-        except ImportError as e:
+
+        selected_transport = import_from_module(self.config['transport'])
+
+        if not selected_transport:
             from appenlight_client.transports.requests import HTTPTransport as selected_transport
 
             msg = 'Could not import transport %s, using default, %s' % (self.config['transport'], e)
@@ -236,10 +234,11 @@ class BaseClient(object):
         self.transport = selected_transport(self.config['transport_config'],
                                             self.config)
 
-
     def register_logger(self, logger=logging.root):
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
         log_handler = register_logging(logger,
-                                       client_config=self.config)
+                                       client_config=self.config,
+                                       cls=handler_cls)
         level = LEVELS.get(self.config['logging_level'], logging.WARNING)
         log_handler.setLevel(level)
         self.log_handlers.append(log_handler)
@@ -264,9 +263,11 @@ class BaseClient(object):
                 log.warning("Couln't attach hook: %s" % hook)
 
     def log_handlers_get_records(self):
+        appenlight_storage = get_local_storage()
         logs = []
         for handler in self.log_handlers:
             logs.extend([r for r in handler.get_records() if r not in logs])
+        logs.extend(([r for r in appenlight_storage.logs if r not in logs]))
         return logs
         #
         # for handler in self.log_handlers:
@@ -274,6 +275,8 @@ class BaseClient(object):
         #         yield record
 
     def log_handlers_clear_records(self):
+        appenlight_storage = get_local_storage()
+        appenlight_storage.clear_logs()
         for handler in self.log_handlers:
             handler.clear_records()
 

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from appenlight_client.exceptions import get_current_traceback, Traceback
 from appenlight_client.timing import get_local_storage
 import logging

@@ -5,7 +5,7 @@ import pkg_resources
 import time
 from appenlight_client import client, make_appenlight_middleware
 from appenlight_client.exceptions import get_current_traceback
-from appenlight_client.logger import register_logging
+from appenlight_client.logging.logger import register_logging
 from appenlight_client.wsgi import AppenlightWSGIWrapper
 
 

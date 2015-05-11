@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from appenlight_client.timing import get_local_storage
 from appenlight_client.utils import fullyQualifiedName
 from pyramid.tweens import EXCVIEW

@@ -10,6 +10,9 @@ default_timer = time.time
 
 
 class AppenlightLocalStorage(threading.local):
+    initialized = False
+
+
     def __init__(self):
         self.clear()
 
@@ -31,6 +34,9 @@ class AppenlightLocalStorage(threading.local):
             stack.append(node)
         return data
 
+    def clear_logs(self):
+        self.logs = []
+
     def clear(self):
         self.thread_stats = {'main': 0, 'sql': 0, 'nosql': 0, 'remote': 0,
                              'tmpl': 0, 'unknown': 0, 'sql_calls': 0,
@@ -38,7 +44,7 @@ class AppenlightLocalStorage(threading.local):
                              'tmpl_calls': 0, 'custom': 0, 'custom_calls': 0}
         self.slow_calls = []
         self.view_name = ''
-        self.logs = []
+        self.clear_logs()
 
     def get_thread_stats(self):
         """ resets thread stats at same time """
