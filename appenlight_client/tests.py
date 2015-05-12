@@ -630,11 +630,11 @@ class TestLogs(BaseTest):
         self.setUpClient()
         handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
-        handler.clear_records()
         logger = logging.getLogger('testing')
         msg = 'test entry %s' % random.random()
         logger.critical(msg)
-        self.client.py_log(TEST_ENVIRON, records=handler.get_records())
+        records = self.client.log_handlers_get_records()
+        self.client.py_log(TEST_ENVIRON, records=records)
         fake_log = {'log_level': 'CRITICAL',
                     'namespace': 'testing',
                     'server': 'test-foo',  # this will be different everywhere
@@ -650,14 +650,14 @@ class TestLogs(BaseTest):
         self.setUpClient()
         handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
-        handler.clear_records()
         logger = logging.getLogger('testing')
         some_num = random.random()
         try:
             raise Exception('This is a test')
         except Exception as e:
             logger.exception('Exception happened %s' % some_num)
-        self.client.py_log(TEST_ENVIRON, records=handler.get_records())
+        records = self.client.log_handlers_get_records()
+        self.client.py_log(TEST_ENVIRON, records=records)
         fake_log = {'log_level': 'ERROR',
                     'namespace': 'testing',
                     'server': 'test-foo',  # this will be different everywhere
@@ -676,7 +676,6 @@ class TestLogs(BaseTest):
         print self.client.log_handlers
         handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
-        handler.clear_records()
         pprint.pprint(handler.client_config)
         logger = logging.getLogger('testing')
 
@@ -685,7 +684,8 @@ class TestLogs(BaseTest):
             raise Exception('This is a test')
         except Exception as e:
             logger.exception(log_msg)
-        self.client.py_log(TEST_ENVIRON, records=handler.get_records())
+        records = self.client.log_handlers_get_records()
+        self.client.py_log(TEST_ENVIRON, records=records)
         fake_log = {'log_level': 'ERROR',
                     'namespace': 'testing',
                     'server': 'test-foo',  # this will be different everywhere
@@ -702,7 +702,6 @@ class TestLogs(BaseTest):
         self.setUpClient()
         handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
-        handler.clear_records()
         logger = logging.getLogger('testing')
         utcnow = datetime.datetime.utcnow()
 
@@ -719,7 +718,8 @@ class TestLogs(BaseTest):
                                "dictionary": {"a": "5"}
                         }
         )
-        self.client.py_log(TEST_ENVIRON, records=handler.get_records())
+        records = self.client.log_handlers_get_records()
+        self.client.py_log(TEST_ENVIRON, records=records)
         fake_log = {'log_level': 'CRITICAL',
                     'namespace': 'testing',
                     'server': 'test-foo',  # this will be different everywhere
@@ -749,7 +749,6 @@ class TestLogs(BaseTest):
         self.setUpClient()
         handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
-        handler.clear_records()
         logger = logging.getLogger('testing')
         logger.critical('test entry',
                         extra={"foobar": "baz",
@@ -759,7 +758,8 @@ class TestLogs(BaseTest):
                                "dictionary": {"a": "5"}
                         }
         )
-        self.client.py_log(TEST_ENVIRON, records=handler.get_records())
+        records = self.client.log_handlers_get_records()
+        self.client.py_log(TEST_ENVIRON, records=records)
         new_log = self.client.transport.log_queue[0]
         assert new_log['primary_key'] == '15'
 
@@ -767,7 +767,6 @@ class TestLogs(BaseTest):
         self.setUpClient()
         handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
-        handler.clear_records()
         logger = logging.getLogger('testing')
         logger.critical('test entry',
                         extra={"foobar": "baz",
@@ -777,7 +776,8 @@ class TestLogs(BaseTest):
                                "dictionary": {"a": "5"}
                         }
         )
-        self.client.py_log(TEST_ENVIRON, records=handler.get_records())
+        records = self.client.log_handlers_get_records()
+        self.client.py_log(TEST_ENVIRON, records=records)
         new_log = self.client.transport.log_queue[0]
         assert new_log['permanent'] == True
 
@@ -785,11 +785,11 @@ class TestLogs(BaseTest):
         self.setUpClient()
         handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
-        handler.clear_records()
         self.client.py_report(TEST_ENVIRON, http_status=500)
         self.client.py_report(TEST_ENVIRON, start_time=REQ_START_TIME,
                               end_time=REQ_END_TIME)
-        self.client.py_log(TEST_ENVIRON, records=handler.get_records())
+        records = self.client.log_handlers_get_records()
+        self.client.py_log(TEST_ENVIRON, records=records)
         assert len(self.client.transport.log_queue) == 0
 
     def test_multiple_handlers(self):

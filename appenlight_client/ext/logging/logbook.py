@@ -32,13 +32,14 @@ class ThreadLocalHandler(logbook.Handler):
         return appenlight_storage.logs
 
     def clear_records(self, thread=None):
+        """ Clears ALL logs from AE storage """
         appenlight_storage = get_local_storage()
         appenlight_storage.logs = []
 
 
 def convert_record_to_dict(record, client_config):
 
-    if record.channel in client_config['log_namespace_blacklist']:
+    if record.channel in client_config.get('log_namespace_blacklist', []):
         return None
     if not getattr(record, 'time'):
         time_string = datetime.datetime.utcnow().isoformat()
@@ -50,7 +51,7 @@ def convert_record_to_dict(record, client_config):
         print 'AAA'
         log_dict = {'log_level': record.level_name,
                     "namespace": record.channel,
-                    'server': client_config['server_name'],
+                    'server': client_config.get('server_name', 'unknown'),
                     'date': time_string,
                     'request_id': None}
         if PY3:
@@ -60,7 +61,7 @@ def convert_record_to_dict(record, client_config):
                                                        unicode) else message
             log_dict['message'] = '%s' % msg
 
-        if client_config['logging_attach_exc_text']:
+        if client_config.get('logging_attach_exc_text'):
             pass
         # populate tags from extra
         for k, v in record.extra.iteritems():

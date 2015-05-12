@@ -207,7 +207,6 @@ class BaseClient(object):
         else:
             self.filter_callable = self.data_filter
 
-
         self.unregister_logger()
         if self.config['logging'] and self.config['enabled']:
             self.register_logger()
@@ -264,21 +263,11 @@ class BaseClient(object):
 
     def log_handlers_get_records(self):
         appenlight_storage = get_local_storage()
-        logs = []
-        for handler in self.log_handlers:
-            logs.extend([r for r in handler.get_records() if r not in logs])
-        logs.extend(([r for r in appenlight_storage.logs if r not in logs]))
-        return logs
-        #
-        # for handler in self.log_handlers:
-        #     for record in handler.get_records():
-        #         yield record
+        return appenlight_storage.logs
 
     def log_handlers_clear_records(self):
         appenlight_storage = get_local_storage()
         appenlight_storage.logs = []
-        for handler in self.log_handlers:
-            handler.clear_records()
 
     def check_if_deliver(self, force_send=False):
         return self.transport.check_if_deliver(force_send=force_send)

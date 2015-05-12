@@ -31,12 +31,13 @@ class ThreadLocalHandler(logging.Handler):
         return appenlight_storage.logs
 
     def clear_records(self, thread=None):
+        """ Clears ALL logs from AE storage """
         appenlight_storage = get_local_storage()
         appenlight_storage.logs = []
 
 
 def convert_record_to_dict(record, client_config):
-    if record.name in client_config['log_namespace_blacklist']:
+    if record.name in client_config.get('log_namespace_blacklist', []):
         return None
 
     if not getattr(record, 'created'):
@@ -50,7 +51,7 @@ def convert_record_to_dict(record, client_config):
         tags_list = []
         log_dict = {'log_level': record.levelname,
                     "namespace": record.name,
-                    'server': client_config['server_name'],
+                    'server': client_config.get('server_name', 'unknown'),
                     'date': time_string,
                     'request_id': None}
         if PY3:
@@ -63,7 +64,7 @@ def convert_record_to_dict(record, client_config):
         # TODO: Based on docs, that attribute exists if a formatter
         # already formatted the traceback, not sure if it is always
         # there.
-        if client_config['logging_attach_exc_text']:
+        if client_config.get('logging_attach_exc_text'):
             exc_text = getattr(record, 'exc_text', '')
             if exc_text:
                 log_dict['message'] += '\n%s' % exc_text
