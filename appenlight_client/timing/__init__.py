@@ -1,20 +1,20 @@
-from functools import wraps
-from appenlight_client.utils import import_from_module
+from __future__ import absolute_import
 import logging
 import time
 import threading
-from operator import itemgetter
 
+from appenlight_client.utils import import_from_module
+from datetime import datetime, timedelta
+from functools import wraps
+from operator import itemgetter
 
 default_timer = time.time
 
 
-class AppenlightLocalStorage(threading.local):
-    initialized = False
-
+class AppenlightLocalStorage(object):
 
     def __init__(self):
-        self.clear()
+        self.cls_storage = {}
 
     def contains(self, parent, child):
         return (child['start'] >= parent['start'] and
@@ -34,8 +34,49 @@ class AppenlightLocalStorage(threading.local):
             stack.append(node)
         return data
 
-    def clear_logs(self):
-        self.logs = []
+    def get_thread_storage(self, thread=None):
+        if thread is None:
+            thread = threading.currentThread()
+        if thread not in self.cls_storage:
+            self.cls_storage[thread] = {'last_updated': datetime.utcnow()}
+            self.clear()
+        return self.cls_storage[thread]
+
+    @property
+    def logs(self):
+        return self.get_thread_storage()['logs']
+
+    @logs.setter
+    def logs(self, value):
+        self.get_thread_storage()['logs'] = value
+        self.get_thread_storage()['last_updated'] = datetime.utcnow()
+
+    @property
+    def view_name(self):
+        return self.get_thread_storage()['view_name']
+
+    @view_name.setter
+    def view_name(self, value):
+        self.get_thread_storage()['view_name'] = value
+        self.get_thread_storage()['last_updated'] = datetime.utcnow()
+
+    @property
+    def slow_calls(self):
+        return self.get_thread_storage()['slow_calls']
+
+    @slow_calls.setter
+    def slow_calls(self, value):
+        self.get_thread_storage()['slow_calls'] = value
+        self.get_thread_storage()['last_updated'] = datetime.utcnow()
+
+    @property
+    def thread_stats(self):
+        return self.get_thread_storage()['thread_stats']
+
+    @thread_stats.setter
+    def thread_stats(self, value):
+        self.get_thread_storage()['thread_stats'] = value
+        self.get_thread_storage()['last_updated'] = datetime.utcnow()
 
     def clear(self):
         self.thread_stats = {'main': 0, 'sql': 0, 'nosql': 0, 'remote': 0,
@@ -44,7 +85,7 @@ class AppenlightLocalStorage(threading.local):
                              'tmpl_calls': 0, 'custom': 0, 'custom_calls': 0}
         self.slow_calls = []
         self.view_name = ''
-        self.clear_logs()
+        self.logs = []
 
     def get_thread_stats(self):
         """ resets thread stats at same time """
@@ -69,6 +110,12 @@ class AppenlightLocalStorage(threading.local):
         for k, v in stats.iteritems():
             stats[k] = round(v, 5)
         return stats, slow_calls
+
+    def cycle_old_data(self, older_than=60):
+        boundary = datetime.utcnow() - timedelta(minutes=60)
+        for k, v in self.cls_storage.items():
+            if v['last_updated'] < boundary or 1:
+                del self.cls_storage[k]
 
 
 TIMING_REGISTERED = False

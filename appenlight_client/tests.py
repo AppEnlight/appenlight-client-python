@@ -628,7 +628,7 @@ class TestLogs(BaseTest):
 
     def test_py_log(self):
         self.setUpClient()
-        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
         handler.clear_records()
         logger = logging.getLogger('testing')
@@ -648,7 +648,7 @@ class TestLogs(BaseTest):
 
     def test_errors_attached_to_logs(self):
         self.setUpClient()
-        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
         handler.clear_records()
         logger = logging.getLogger('testing')
@@ -674,7 +674,7 @@ class TestLogs(BaseTest):
                           'appenlight.api_key': 'test_errors_not_attached_to_logs'})
         print 'logging_attach_exc_text', self.client.config['logging_attach_exc_text']
         print self.client.log_handlers
-        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
         handler.clear_records()
         pprint.pprint(handler.client_config)
@@ -700,7 +700,7 @@ class TestLogs(BaseTest):
 
     def test_tags_attached_to_logs(self):
         self.setUpClient()
-        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
         handler.clear_records()
         logger = logging.getLogger('testing')
@@ -747,7 +747,7 @@ class TestLogs(BaseTest):
 
     def test_primary_key_attached(self):
         self.setUpClient()
-        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
         handler.clear_records()
         logger = logging.getLogger('testing')
@@ -765,7 +765,7 @@ class TestLogs(BaseTest):
 
     def test_permanent_log(self):
         self.setUpClient()
-        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
         handler.clear_records()
         logger = logging.getLogger('testing')
@@ -783,7 +783,7 @@ class TestLogs(BaseTest):
 
     def test_ignore_self_logs(self):
         self.setUpClient()
-        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
         handler.clear_records()
         self.client.py_report(TEST_ENVIRON, http_status=500)
@@ -796,7 +796,7 @@ class TestLogs(BaseTest):
         self.setUpClient()
         logger = logging.getLogger('testing')
         logger2 = logging.getLogger('other logger')
-        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler2 = register_logging(logger2, self.client.config, cls=handler_cls)
         handler2.setLevel(logging.DEBUG)
         self.client.log_handlers.append(handler2)

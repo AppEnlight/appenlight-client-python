@@ -235,7 +235,7 @@ class BaseClient(object):
                                             self.config)
 
     def register_logger(self, logger=logging.root):
-        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadTrackingHandler')
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         log_handler = register_logging(logger,
                                        client_config=self.config,
                                        cls=handler_cls)
@@ -276,7 +276,7 @@ class BaseClient(object):
 
     def log_handlers_clear_records(self):
         appenlight_storage = get_local_storage()
-        appenlight_storage.clear_logs()
+        appenlight_storage.logs = []
         for handler in self.log_handlers:
             handler.clear_records()
 
