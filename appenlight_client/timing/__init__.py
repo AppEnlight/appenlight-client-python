@@ -38,7 +38,8 @@ class AppenlightLocalStorage(object):
         if thread is None:
             thread = threading.currentThread()
         if thread not in self.cls_storage:
-            self.cls_storage[thread] = {'last_updated': datetime.utcnow()}
+            self.cls_storage[thread] = {'last_updated': datetime.utcnow(),
+                                        'logs': []}
             self.clear()
         return self.cls_storage[thread]
 
@@ -85,7 +86,6 @@ class AppenlightLocalStorage(object):
                              'tmpl_calls': 0, 'custom': 0, 'custom_calls': 0}
         self.slow_calls = []
         self.view_name = ''
-        self.logs = []
 
     def get_thread_stats(self):
         """ resets thread stats at same time """
