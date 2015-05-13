@@ -1,7 +1,13 @@
 CHANGELOG:
 ==========
-2015-03-X   Add support for sending primary key with logs
-            Add support for marking log entries as permanent
+2015-05-13  Add support for sending primary key with logs
+    0.6.13  Add support for marking log entries as permanent
+            Different implementation of appenlight_storage object
+            Added make_appenlight_middleware_with_client
+            Added support for Logbook
+            Added support for multiple log handlers
+            Various bugfixes
+
 
 2014-12-02  Enable "extra" keyword for data storage
     0.6.12  Use 0.5 API format
