@@ -48,7 +48,6 @@ def convert_record_to_dict(record, client_config):
     try:
         message = record.msg
         tags_list = []
-        print 'AAA'
         log_dict = {'log_level': record.level_name,
                     "namespace": record.channel,
                     'server': client_config.get('server_name', 'unknown'),
