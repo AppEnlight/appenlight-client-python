@@ -1,5 +1,7 @@
 CHANGELOG:
 ==========
+2015-05-18  Removed leftover print
+
 2015-05-13  Add support for sending primary key with logs
     0.6.13  Add support for marking log entries as permanent
             Different implementation of appenlight_storage object
