@@ -51,8 +51,7 @@ class CommandRouter(object):
         print 'INI file read - creating client'
         appenlight_client = client.Client(config)
         print 'Client created, sending test entry'
-        record = logging.makeLogRecord({'name': 'appenlight.client.test',
-                                        'message': 'Test entry'})
+        logging.error({'name': 'appenlight.client.test', 'message': 'Test entry'})
         records = appenlight_client.log_handlers_get_records()
         appenlight_client.py_log({}, records)
         result = appenlight_client.transport.send(appenlight_client.transport.log_queue[:], 'logs')
