@@ -53,9 +53,9 @@ class CommandRouter(object):
         print 'Client created, sending test entry'
         record = logging.makeLogRecord({'name': 'appenlight.client.test',
                                         'message': 'Test entry'})
-
-        appenlight_client.py_log({}, [record])
-        result = appenlight_client.transport.send(appenlight_client.log_queue[:], 'logs')
+        records = appenlight_client.log_handlers_get_records()
+        appenlight_client.py_log({}, records)
+        result = appenlight_client.transport.send(appenlight_client.transport.log_queue[:], 'logs')
         if not result:
             print 'something went wrong, please check your API key'
             return False
