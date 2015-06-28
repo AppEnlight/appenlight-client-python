@@ -11,9 +11,9 @@ def add_timing(min_duration=0.15):
 
     from django import template
 
-    def gather_template(template, *args, **kwargs):
+    def gather_template(self, *args, **kwargs):
         try:
-            tmpl_name = str(template.name)
+            tmpl_name = str(self.name)
         except Exception:
             tmpl_name = ''
         return {'type': 'tmpl',

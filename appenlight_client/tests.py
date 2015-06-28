@@ -1155,9 +1155,9 @@ class TestMako(BaseTest):
         import time
         time.sleep(0.01)
         %>
-        xxxxx ${1+2} yyyyyy
+        xxxxx ${1+foo} yyyyyy
         ''')
-        template.render()
+        template.render(foo=5)
         stats, result = get_local_storage(local_timing).get_thread_stats()
         assert len(result) == 1
 
@@ -1252,9 +1252,9 @@ class TestJinja2(BaseTest):
 
         template = jinja2.Template('''
         {{sleep(0.06)}}
-        xxxxx {{1+2}} yyyyyy
+        xxxxx {{1+foo}} yyyyyy
         ''')
-        template.render(sleep=time.sleep)
+        template.render(sleep=time.sleep, foo=5, template='XXXX')
         stats, result = get_local_storage(local_timing).get_thread_stats()
         assert len(result) == 1
 
@@ -1275,7 +1275,7 @@ class TestDjangoTemplates(BaseTest):
         import time
 
         ctx = template.Context()
-        ctx.update({'time': lambda: time.sleep(0.06)})
+        ctx.update({'time': lambda: time.sleep(0.06), 'template':'x'})
         template = template.Template('''
         xxxxx {{ time }} yyyyyy
         ''')
