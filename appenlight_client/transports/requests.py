@@ -23,6 +23,7 @@ class HTTPTransport(BaseTransport):
         update_options = dict(urlparse.parse_qsl(parsed_url.query))
         update_options['threaded'] = int(update_options.get('threaded', 1))
         update_options['timeout'] = float(update_options.get('timeout', 5))
+        update_options['verify'] = bool(int(update_options.get('verify', 1)))
         update_options['error_log_level'] = update_options.get(
             'error_log_level', 'WARNING').lower()
         self.transport_config.update(update_options)
@@ -77,7 +78,7 @@ class HTTPTransport(BaseTransport):
                                    timeout=self.transport_config['timeout'],
                                    params={
                                        'protocol_version': __protocol_version__},
-                                   verify=True)
+                                   verify=self.transport_config['verify'])
         except requests.exceptions.RequestException as e:
             message = 'APPENLIGHT: problem: %s' % e
             getattr(log, self.transport_config['error_log_level'])(message)
