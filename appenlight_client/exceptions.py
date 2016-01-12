@@ -74,7 +74,10 @@ class _Missing(object):
 _missing = _Missing()
 
 def truncate_str(input):
-    return input if len(input) < 255 else input[:255] + '...'
+    try:
+        return unicode(input) if len(input) < 255 else unicode(input[:255]) + '...'
+    except Exception:
+        return '<failed-truncating>'
 
 def serialize_to_unicode(input, treat_as_class=False):
     if hasattr(input, 'iterkeys'):
