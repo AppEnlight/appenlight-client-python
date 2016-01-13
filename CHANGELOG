@@ -1,5 +1,10 @@
 CHANGELOG:
 ==========
+2016-01-13  Minor bugfix
+
+2015-11-24  Fixed a problem with duplicate template variable
+            HTTP transport can now work with non-signed SSL certs
+
 2015-05-18  Removed leftover print
 
 2015-05-13  Add support for sending primary key with logs
