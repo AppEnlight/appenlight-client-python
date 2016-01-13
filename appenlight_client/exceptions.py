@@ -49,7 +49,7 @@ import inspect
 import itertools
 import traceback
 import codecs
-from appenlight_client.client import PY3
+from appenlight_client.utils import PY3
 
 _coding_re = re.compile(r'coding[:=]\s*([-\w.]+)')
 _line_re = re.compile(r'^(.*?)$(?m)')

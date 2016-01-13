@@ -26,16 +26,9 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 from __future__ import with_statement
-import sys
-
-# are we running python 3.x ?
-PY3 = sys.version_info[0] == 3
-
 
 import datetime
 import logging
-import threading
-import time
 import socket
 import uuid
 import os
@@ -44,7 +37,8 @@ from appenlight_client import __version__, __protocol_version__
 from appenlight_client.exceptions import get_current_traceback
 from appenlight_client.ext.logging import register_logging, unregister_logger
 from appenlight_client.timing import get_local_storage
-from appenlight_client.utils import asbool, aslist, import_from_module, parse_tag
+from appenlight_client.utils import asbool, aslist, import_from_module
+from appenlight_client.utils import parse_tag, PY3
 from webob import Request
 
 if PY3:

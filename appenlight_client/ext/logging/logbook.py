@@ -1,9 +1,7 @@
 from __future__ import absolute_import
 import logbook
 import logging
-import threading
 import datetime
-import time
 
 from appenlight_client.ext.logging import EXCLUDED_LOG_VARS
 from appenlight_client.timing import get_local_storage

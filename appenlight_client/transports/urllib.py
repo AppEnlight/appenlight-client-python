@@ -6,8 +6,8 @@ from appenlight_client.ext_json import json
 from appenlight_client import __protocol_version__, __version__
 from appenlight_client.transports import BaseTransport
 
-# are we running python 3.x ?
-PY3 = sys.version_info[0] == 3
+# are we running at least python 3.x ?
+PY3 = sys.version_info[0] >= 3
 
 if PY3:
     import urllib

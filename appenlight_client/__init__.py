@@ -1,4 +1,4 @@
-__version__ = '0.6.15'
+__version__ = '0.6.16'
 __protocol_version__ = '0.5'
 
 
