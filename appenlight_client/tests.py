@@ -672,11 +672,8 @@ class TestLogs(BaseTest):
     def test_errors_not_attached_to_logs(self):
         self.setUpClient({'appenlight.logging_attach_exc_text': 'false',
                           'appenlight.api_key': 'test_errors_not_attached_to_logs'})
-        print 'logging_attach_exc_text', self.client.config['logging_attach_exc_text']
-        print self.client.log_handlers
         handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler = register_logging(logging.root, self.client.config, cls=handler_cls)
-        pprint.pprint(handler.client_config)
         logger = logging.getLogger('testing')
 
         log_msg = 'Exception happened %s' % random.random()
@@ -693,7 +690,6 @@ class TestLogs(BaseTest):
                     'date': '2012-08-13T21:20:37.418.307066',
                     'message': log_msg}
         # update fields depenand on machine
-        print self.client.transport.log_queue
         self.client.transport.log_queue[0]['date'] = fake_log['date']
         self.client.transport.log_queue[0]['server'] = fake_log['server']
         assert self.client.transport.log_queue[0]['message'] == fake_log['message']
@@ -1502,7 +1498,6 @@ class TestWSGI(BaseTest):
         app.appenlight_client.config['reraise_exceptions'] = False
         app.appenlight_client.transport.last_submit = datetime.datetime.now()
         req.get_response(app)
-        print 'Q',app.appenlight_client.transport.report_queue
         assert set([('foo', u'bar'), ('baz', 5), ('now', now)]) == set(app.appenlight_client.transport.report_queue[0]['extra'])
 
 
