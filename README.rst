@@ -1,16 +1,16 @@
 appenlight_client
 =================
 
-.. image:: https://appenlight.com/static/images/logos/python_small.png
+.. image:: http://getappenlight.com/static/images/logos/python_small.png
    :alt: Python Logo
   
-.. image:: https://appenlight.com/static/images/logos/pyramid_small.png
+.. image:: http://getappenlight.com/static/images/logos/pyramid_small.png
    :alt: Pyramid Logo
   
-.. image:: https://appenlight.com/static/images/logos/flask_small.png
+.. image:: http://getappenlight.com/static/images/logos/flask_small.png
    :alt: Flask Logo
      
-.. image:: https://appenlight.com/static/images/logos/django_small.png
+.. image:: http://getappenlight.com/static/images/logos/django_small.png
    :alt: Django Logo
 
 Installation and Setup
@@ -26,7 +26,7 @@ Main Documentation location
 Appenlight developer documentation contains most up to date information,
 including implementation guides in popular python web frameworks. 
 
-https://appenlight.com/page/api/main
+http://getappenlight.com/page/api/main.html
     
 Usage
 =====
