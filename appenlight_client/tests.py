@@ -1339,7 +1339,7 @@ class TestWSGI(BaseTest):
             start_response('404 Not Found', [('Content-Type', 'text/html')])
             try:
                 raise Exception('something wrong')
-            except Exception, e:
+            except Exception:
                 pass
             return ['Hello World!']
 
