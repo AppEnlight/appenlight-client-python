@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='appenlight_client',
-      version='0.6.16',
+      version='0.6.17',
       description='Client for Appenlight reporting - supporting WSGI and django (http://appenlight.com)',
       classifiers=[
           'Intended Audience :: Developers',
@@ -26,8 +26,9 @@ setup(name='appenlight_client',
           'appenlight_client': ['templates/*.ini'],
       },
       install_requires=[
-          "webob",
-          "requests"
+          'webob',
+          'requests',
+          'six'
       ],
       entry_points="""
       [paste.filter_app_factory]
