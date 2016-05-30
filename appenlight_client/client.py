@@ -41,10 +41,7 @@ from appenlight_client.utils import asbool, aslist, import_from_module
 from appenlight_client.utils import parse_tag, PY3
 from webob import Request
 
-if PY3:
-    import configparser
-else:
-    import ConfigParser
+from six.moves import configparser
 
 LEVELS = {'debug': logging.DEBUG,
           'info': logging.INFO,
@@ -326,11 +323,10 @@ class BaseClient(object):
         if traceback:
             try:
                 log.warning('%s code: %s @%s' % (http_status,
-                                                 report_data.get('error').encode('utf8', 'ignore'),
-                                                 url.encode('utf8', 'ignore'),))
-                log.error(
-                    report_data.get('error', '').encode('utf8', 'ignore'))
-                log.error(traceback.plaintext.encode('utf8', 'ignore'))
+                                                 report_data.get('error'),
+                                                 url))
+                log.error(report_data.get('error', ''))
+                log.error(traceback.plaintext)
             except Exception:
                 pass
         del traceback
@@ -577,11 +573,11 @@ def get_config(config=None, path_to_config=None, section_name='appenlight'):
             logging.warning("Couldn't locate %s " % path_to_config)
             return config
         with open(path_to_config) as f:
-            parser = ConfigParser.SafeConfigParser()
+            parser = configparser.SafeConfigParser()
             parser.readfp(f)
             try:
                 file_config = dict(parser.items(section_name))
-            except ConfigParser.NoSectionError:
+            except configparser.NoSectionError:
                 logging.warning('No section name '
                                 'called %s in file' % section_name)
             config.update(file_config)
