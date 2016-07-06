@@ -608,6 +608,25 @@ class TestErrorParsing(BaseTest):
                               http_status=500)
         assert len(self.client.transport.report_queue[0]['traceback'][0]['vars']) == 9
 
+    def test_frameinfo_dict(self):
+        self.setUpClient(config={'appenlight.report_local_vars': 'true'})
+        example_dict = {1: u'a', 'foo': u'bar'}
+        try:
+            raise Exception('Test Exception')
+        except:
+            traceback = get_current_traceback(
+                skip=1,
+                show_hidden_frames=True,
+                ignore_system_exceptions=True
+            )
+        self.client.py_report(
+            TEST_ENVIRON,
+            traceback=traceback,
+            http_status=500
+        )
+        vars = dict(self.client.transport.report_queue[0]['traceback'][0]['vars'])
+        assert vars['example_dict'], {'1': u"u'a'", "'foo'": u"u'bar'"}
+
     def test_cookie_parsing(self):
         self.setUpClient(config={'appenlight.cookie_keys_whitelist': 'country, sessionId, test_group_id, http_referer'})
         proper_values = {u'country': u'US',
