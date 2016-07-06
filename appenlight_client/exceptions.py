@@ -49,6 +49,7 @@ import inspect
 import itertools
 import traceback
 import codecs
+import collections
 from appenlight_client.utils import PY3
 
 _coding_re = re.compile(r'coding[:=]\s*([-\w.]+)')
@@ -80,12 +81,14 @@ def truncate_str(input):
         return '<failed-truncating>'
 
 def serialize_to_unicode(input, treat_as_class=False):
-    if hasattr(input, 'iterkeys'):
-        dict_method = input.iterkeys
-    elif hasattr(input, 'keys'):
-        dict_method = input.keys
+    if isinstance(input, collections.Mapping):
+        if hasattr(input, 'iterkeys'):
+            dict_method = input.iterkeys
+        else:
+            dict_method = input.keys
     else:
         dict_method = None
+
     if dict_method is not None:
         # avoid sending environ
         if input.get('wsgi.version'):
