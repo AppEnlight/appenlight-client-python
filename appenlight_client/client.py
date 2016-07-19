@@ -49,21 +49,19 @@ LEVELS = {'debug': logging.DEBUG,
           'error': logging.ERROR,
           'critical': logging.CRITICAL}
 
-
 log = logging.getLogger(__name__)
 
 
 def singleton(cls):
-
     def getinstance(*args, **kwargs):
         if cls.self_instance is None:
             cls.self_instance = cls(*args, **kwargs)
         return cls.self_instance
+
     return getinstance
 
 
 class BaseClient(object):
-
     self_instance = None
 
     __version__ = __version__
@@ -96,11 +94,14 @@ class BaseClient(object):
         if not self.config['api_key']:
             self.config['enabled'] = False
             logging.warning("Disabling appenlight client, no api key")
-        self.config['transport'] = config.get('appenlight.transport',
-                                              'appenlight_client.transports.requests:HTTPTransport')
+        self.config['transport'] = config.get(
+            'appenlight.transport') or \
+                                   'appenlight_client.transports.requests:HTTPTransport'
 
-        self.config['transport_config'] = config.get('appenlight.transport_config',
-                                                     'https://api.appenlight.com?threaded=1&timeout=5')
+        self.config['transport_config'] = config.get(
+            'appenlight.transport_config') or \
+                                          'https://api.appenlight.com?threaded=1&timeout=5'
+
         self.config['reraise_exceptions'] = asbool(
             config.get('appenlight.reraise_exceptions', True))
         self.config['slow_requests'] = asbool(
@@ -112,8 +113,10 @@ class BaseClient(object):
         self.config['slow_request_time'] = datetime.timedelta(
             seconds=self.config['slow_request_time'])
         self.config['logging'] = asbool(config.get('appenlight.logging', True))
-        self.config['logging_attach_exc_text'] = asbool(config.get('appenlight.logging_attach_exc_text', True))
-        self.config['logging_level'] = config.get('appenlight.logging.level', 'WARNING').lower()
+        self.config['logging_attach_exc_text'] = asbool(
+            config.get('appenlight.logging_attach_exc_text', True))
+        self.config['logging_level'] = config.get('appenlight.logging.level',
+                                                  'WARNING').lower()
         self.config['logging_on_error'] = asbool(
             config.get('appenlight.logging_on_error', False))
         self.config['report_404'] = asbool(config.get('appenlight.report_404',
@@ -130,23 +133,20 @@ class BaseClient(object):
             config.get('appenlight.buffer_clear_on_send', False))
         self.config['force_send'] = asbool(config.get('appenlight.force_send',
                                                       False))
-        self.config['request_keys_blacklist'] = ['password', 'passwd', 'pwd',
-                                                 'auth_tkt', 'secret', 'csrf',
-                                                 'session', 'pass', 'config',
-                                                 'settings', 'environ', 'xsrf',
-                                                 'auth']
-        req_blacklist = aslist(config.get('appenlight.request_keys_blacklist',
-                                          config.get(
-                                              'appenlight.bad_request_keys')),
-                               ',')
+        request_keys_blacklist = [
+            'password', 'passwd', 'pwd', 'auth_tkt', 'secret', 'csrf',
+            'session', 'pass', 'config', 'settings', 'environ', 'xsrf', 'auth']
+        self.config['request_keys_blacklist'] = request_keys_blacklist
+        req_blacklist = aslist(
+            config.get('appenlight.request_keys_blacklist',
+                       config.get('appenlight.bad_request_keys')), ',')
         self.config['request_keys_blacklist'].extend(
             filter(lambda x: x, req_blacklist)
         )
         self.config['cookie_keys_whitelist'] = []
-        cookie_whitelist = aslist(config.get('appenlight.cookie_keys_whitelist',
-                                             config.get(
-                                                 'appenlight.cookie_keys_whitelist')),
-                                  ',')
+        cookie_whitelist = aslist(
+            config.get('appenlight.cookie_keys_whitelist',
+                       config.get('appenlight.cookie_keys_whitelist')), ',')
         self.config['cookie_keys_whitelist'].extend(
             filter(lambda x: x, cookie_whitelist)
         )
@@ -161,16 +161,20 @@ class BaseClient(object):
             config.get('appenlight.environ_keys_whitelist'), ',')
         self.config['environ_keys_whitelist'].extend(
             filter(lambda x: x, environ_whitelist))
-        self.config['log_namespace_blacklist'] = ['appenlight_client.client', 'appenlight_client.transports.requests']
+        self.config['log_namespace_blacklist'] = [
+            'appenlight_client.client',
+            'appenlight_client.transports.requests']
 
         log_blacklist = aslist(
             config.get('appenlight.log_namespace_blacklist'), ',')
         self.config['log_namespace_blacklist'].extend(filter(
             lambda x: x, log_blacklist))
-        self.config['filter_callable'] = config.get('appenlight.filter_callable')
+        self.config['filter_callable'] = config.get(
+            'appenlight.filter_callable')
         if self.config['buffer_flush_interval'] < 1:
             self.config['buffer_flush_interval'] = 1
-        self.config['buffer_flush_interval'] = datetime.timedelta(seconds=self.config['buffer_flush_interval'])
+        self.config['buffer_flush_interval'] = datetime.timedelta(
+            seconds=self.config['buffer_flush_interval'])
         # register slow call metrics
         if self.config['slow_requests'] and self.config['enabled']:
             self.config['timing'] = config.get('appenlight.timing', {})
@@ -180,8 +184,8 @@ class BaseClient(object):
                         self.config['timing'][k[18:]] = float(v)
                     except (TypeError, ValueError) as e:
                         self.config['timing'][k[18:]] = False
-        self.hooks_blacklist = aslist(config.get('appenlight.hooks_blacklist'),
-                                      ',')
+        self.hooks_blacklist = aslist(
+            config.get('appenlight.hooks_blacklist'), ',')
 
     def reinitialize(self):
         self.filter_callable = lambda x: x
@@ -216,16 +220,19 @@ class BaseClient(object):
         selected_transport = import_from_module(self.config['transport'])
 
         if not selected_transport:
-            from appenlight_client.transports.requests import HTTPTransport as selected_transport
+            from appenlight_client.transports.requests import \
+                HTTPTransport as selected_transport
 
-            msg = 'Could not import transport %s, using default, %s' % (self.config['transport'], e)
+            msg = 'Could not import transport %s, using default, %s' % (
+                self.config['transport'], e)
             log.error(msg)
 
         self.transport = selected_transport(self.config['transport_config'],
                                             self.config)
 
     def register_logger(self, logger=logging.root):
-        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
+        handler_cls = import_from_module(
+            'appenlight_client.ext.logging.logger:ThreadLocalHandler')
         log_handler = register_logging(logger,
                                        client_config=self.config,
                                        cls=handler_cls)
@@ -310,11 +317,9 @@ class BaseClient(object):
                   slow_calls=None):
         if not request_stats:
             request_stats = {}
-        report_data, appenlight_info = self.create_report_structure(environ,
-                                                                    traceback,
-                                                                    server=self.config['server_name'],
-                                                                    http_status=http_status,
-                                                                    include_params=True)
+        report_data, appenlight_info = self.create_report_structure(
+            environ, traceback, server=self.config['server_name'],
+            http_status=http_status, include_params=True)
         report_data = self.filter_callable(report_data, 'error_report')
         url = report_data['url']
         if not PY3:
@@ -348,7 +353,9 @@ class BaseClient(object):
                 r['end'] = datetime.datetime.utcfromtimestamp(r['end'])
                 report_data['slow_calls'].append(r)
             try:
-                log.info('slow request/queries detected: %s' % url.encode('utf8', 'ignore'))
+                log.info(
+                    'slow request/queries detected: %s' % url.encode('utf8',
+                                                                     'ignore'))
             except Exception:
                 pass
         self.transport.feed_report(report_data)
@@ -380,7 +387,8 @@ class BaseClient(object):
         # form friendly to json encode
         parsed_environ = {}
         appenlight_info = {}
-        if 'PATH_INFO' in environ or 'SERVER_NAME' in environ or 'wsgi.url_scheme' in environ:
+        if ('PATH_INFO' in environ or 'SERVER_NAME' in environ or
+                    'wsgi.url_scheme' in environ):
             # dummy data for Request to work
             if 'wsgi.url_scheme' not in environ:
                 environ['wsgi.url_scheme'] = 'http'
@@ -391,16 +399,17 @@ class BaseClient(object):
                 req = None
         else:
             req = None
+        reserved_list = ('appenlight.client',
+                         'appenlight.force_send',
+                         'appenlight.log',
+                         'appenlight.report',
+                         'appenlight.force_logs',
+                         'appenlight.tags',
+                         'appenlight.extra',
+                         'appenlight.post_vars')
+
         for key, value in environ.items():
-            if key.startswith('appenlight.') \
-                and key not in ('appenlight.client',
-                                'appenlight.force_send',
-                                'appenlight.log',
-                                'appenlight.report',
-                                'appenlight.force_logs',
-                                'appenlight.tags',
-                                'appenlight.extra',
-                                'appenlight.post_vars'):
+            if key.startswith('appenlight.') and key not in reserved_list:
                 appenlight_info[key[11:]] = unicode(value)
             elif key == 'appenlight.tags':
                 appenlight_info['tags'] = []
@@ -415,7 +424,8 @@ class BaseClient(object):
                     try:
                         appenlight_info['extra'].append(parse_tag(k, v))
                     except Exception as e:
-                        log.info(u'Couldn\'t convert attached extra value %s' % e)
+                        log.info(
+                            u'Couldn\'t convert attached extra value %s' % e)
             else:
                 whitelisted = key.startswith('HTTP') or key in self.config[
                     'environ_keys_whitelist']
@@ -437,16 +447,19 @@ class BaseClient(object):
             pass
         if include_params and req:
             try:
-                parsed_environ['COOKIES'] = dict([(k, v,) for k, v in req.cookies.items()
-                                                  if k in self.config['cookie_keys_whitelist']])
+                parsed_environ['COOKIES'] = dict(
+                    [(k, v,) for k, v in req.cookies.items()
+                     if k in self.config['cookie_keys_whitelist']])
             except Exception:
                 parsed_environ['COOKIES'] = {}
             try:
-                parsed_environ['GET'] = dict([(k, req.GET.getall(k),) for k in req.GET])
+                parsed_environ['GET'] = dict(
+                    [(k, req.GET.getall(k),) for k in req.GET])
             except Exception:
                 parsed_environ['GET'] = {}
             try:
-                # handle situation where something already did seek() on wsgi.input
+                # handle situation where something already did seek()
+                # on wsgi.input
                 parsed_environ['POST'] = {}
                 post_vars = req.environ.get('appenlight.post_vars', None)
                 if post_vars is None:
@@ -461,7 +474,6 @@ class BaseClient(object):
                 else:
                     post_vars = post_vars.items()
 
-
                 # if django request object use "lists()" to get multiple values
                 for k, v in post_vars:
                     try:
@@ -469,7 +481,8 @@ class BaseClient(object):
                             parsed_environ['POST'][k] = v
                         else:
                             try:
-                                parsed_environ['POST'][k] = [unicode(val) for val in v]
+                                parsed_environ['POST'][k] = [
+                                    unicode(val) for val in v]
                             except Exception:
                                 parsed_environ['POST'][k] = unicode(v)
                     except Exception as e:
@@ -487,9 +500,11 @@ class BaseClient(object):
         parsed_environ['HTTP_USER_AGENT'] = environ.get("HTTP_USER_AGENT", '')
         parsed_environ['REMOTE_ADDR'] = remote_addr
         if 'message' in appenlight_info:
-            appenlight_info['extra'].append(('message', appenlight_info['message']),)
+            appenlight_info['extra'].append(
+                ('message', appenlight_info['message']), )
         try:
-            username = appenlight_info.get('username', environ.get('REMOTE_USER', u''))
+            username = appenlight_info.get('username',
+                                           environ.get('REMOTE_USER', u''))
             appenlight_info['username'] = u'%s' % username
         except (UnicodeEncodeError, UnicodeDecodeError):
             appenlight_info['username'] = "undecodable"
@@ -511,7 +526,7 @@ class BaseClient(object):
             traceback,
             include_params,
             http_status)
-        report_data = {'client': 'appenlight-python', 'language':'python'}
+        report_data = {'client': 'appenlight-python', 'language': 'python'}
         report_data['error'] = ''
         if traceback:
             exception_text = traceback.exception
@@ -536,9 +551,9 @@ class BaseClient(object):
         report_data['url'] = appenlight_info.pop('URL', 'unknown')
         if 'request_id' in appenlight_info:
             report_data['request_id'] = appenlight_info.pop('request_id',
-                                                             None)
+                                                            None)
         report_data['message'] = message or appenlight_info.get('message',
-                                                                 u'')
+                                                                u'')
         # conserve bandwidth pop keys that we dont need in request details
         exclude_keys = ('HTTP_USER_AGENT', 'REMOTE_ADDR', 'HTTP_COOKIE',
                         'appenlight.client')
@@ -550,12 +565,14 @@ class BaseClient(object):
 
     def get_current_traceback(self):
         tb = get_current_traceback(skip=1, show_hidden_frames=True,
-                              ignore_system_exceptions=True)
+                                   ignore_system_exceptions=True)
         return tb
+
 
 # @singleton
 class Client(BaseClient):
     pass
+
 
 def get_config(config=None, path_to_config=None, section_name='appenlight'):
     if not config and not path_to_config:
