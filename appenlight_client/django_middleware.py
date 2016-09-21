@@ -2,6 +2,12 @@ import uuid
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.http import Http404
+try:
+    from django.utils.deprecation import MiddlewareMixin
+except ImportError:
+    # Not required for Django <= 1.9, see:
+    # https://docs.djangoproject.com/en/1.10/topics/http/middleware/#upgrading-pre-django-1-10-style-middleware
+    MiddlewareMixin = object
 from appenlight_client.timing import get_local_storage
 from appenlight_client.timing import default_timer
 from appenlight_client.client import Client
@@ -12,10 +18,11 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class AppenlightMiddleware(object):
+class AppenlightMiddleware(MiddlewareMixin):
     __version__ = '0.3'
 
-    def __init__(self):
+    def __init__(self, get_response=None):
+        self.get_response = get_response
         log.debug('setting appenlight middleware')
         if not hasattr(AppenlightMiddleware, 'client'):
             base_config = getattr(settings, 'APPENLIGHT') or {}
