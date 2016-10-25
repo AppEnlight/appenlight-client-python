@@ -1,3 +1,5 @@
+.. image:: http://getappenlight.com/static/images/sections/index/devices.png
+
 appenlight_client
 =================
 
