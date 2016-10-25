@@ -1,6 +1,9 @@
 CHANGELOG:
 ==========
 
+2016-10-25  Support django 1.10 style middlewares
+            (thanks George Leszczynski)
+
 2016-07-19  Improved dictionary handling for local variables
             (thanks Łukasz Fidosz)
 
