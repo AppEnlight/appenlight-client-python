@@ -2,7 +2,7 @@ import appenlight_client
 from setuptools import setup, find_packages
 
 setup(name='appenlight_client',
-      version=appenlight_client.__version__,
+      version='0.6.19',
       description='Client for AppEnlight reporting - WSGI applications and django monitoring (http://getappenlight.com)',
       long_description=open("README.rst").read(),
       keywords = "monitoring, wsgi, django, flask, pylons, pyramid, debugging, debug, reporting, errors, errormator, appenlight client, sentry alternative",
