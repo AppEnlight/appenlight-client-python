@@ -911,21 +911,21 @@ class TestTimingHTTPLibs(BaseTest):
         import urllib
 
         opener = urllib.URLopener()
-        opener.open("http://www.ubuntu.com/")
+        opener.open("https://www.ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
         assert len(result) == 1
 
     def test_urllib_urlretrieve(self):
         import urllib
 
-        urllib.urlretrieve("http://www.ubuntu.com/")
+        urllib.urlretrieve("https://www.ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
         assert len(result) == 1
 
     def test_urllib2(self):
         import urllib2
 
-        urllib2.urlopen("http://www.ubuntu.com/")
+        urllib2.urlopen("https://www.ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
         assert len(result) == 1
 
@@ -935,7 +935,7 @@ class TestTimingHTTPLibs(BaseTest):
         except ImportError:
             return
         http = urllib3.PoolManager()
-        http.request('GET', "http://www.ubuntu.com/")
+        http.request('GET', "https://www.ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
         assert len(result) == 1
 
@@ -944,7 +944,7 @@ class TestTimingHTTPLibs(BaseTest):
             import requests
         except ImportError:
             return
-        requests.get("http://www.ubuntu.com/")
+        requests.get("https://www.ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
         assert len(result) == 1
 
@@ -1636,7 +1636,7 @@ class TestCallableName(BaseTest):
         storage = get_local_storage(local_timing)
 
         for row in storage.get_stack(slow_calls):
-            if row.get('parameters') == 'http://ubuntu.com/nested':
+            if row.get('parameters') == 'https://ubuntu.com/nested':
                 assert row['parents'] == ['custom']
             elif row['statement'] == 'bar_func':
                 assert row['parents'] == ['custom']
