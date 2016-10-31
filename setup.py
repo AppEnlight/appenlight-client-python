@@ -1,4 +1,3 @@
-import appenlight_client
 from setuptools import setup, find_packages
 
 setup(name='appenlight_client',
