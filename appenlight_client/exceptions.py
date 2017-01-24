@@ -388,13 +388,15 @@ class Frame(object):
 
         if source is None:
             try:
-                f = open(self.filename)
-            except IOError:
+                with open(self.filename) as f:
+                    source = f.read()
+            except (IOError, OSError) as e:
                 return []
-            try:
-                source = f.read()
-            finally:
-                f.close()
+            except UnicodeDecodeError:
+                #since there's no io/os exception we can assume that the file exists
+                #so we will force it in utf-8
+                with open(self.filename, encoding='utf-8') as f:
+                    source = f.read()
 
         # already unicode?  return right away
         if isinstance(source, unicode):
