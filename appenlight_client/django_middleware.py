@@ -73,7 +73,7 @@ class AppenlightMiddleware(MiddlewareMixin):
         
         if getattr(request, '_errormator_ignore_path', False):
             log.debug('ignore path in effect')
-            enabled = False
+            return None
 
         environ = request.environ
         if not self.appenlight_client.config['report_errors'] or environ.get('appenlight.ignore_error'):
