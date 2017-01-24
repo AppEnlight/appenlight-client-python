@@ -31,6 +31,18 @@ class AppenlightMiddleware(MiddlewareMixin):
     def process_request(self, request):
         request._errormator_create_report = False
         request.__traceback__ = None
+
+        request._errormator_ignore_path = False
+        request._errormator_ignore_slow_path = False
+
+        if self.appenlight_client.config.get('ignore_paths'):
+            request._errormator_ignore_path = any(p in request.path for p in  \
+                self.appenlight_client.config.get('ignore_paths'))
+
+        if self.appenlight_client.config.get('ignore_slow_paths'):
+            request._errormator_ignore_slow_path = any(p in request.path for p in  \
+                self.appenlight_client.config.get('ignore_slow_paths'))
+        
         environ = request.environ
         environ['appenlight.request_id'] = str(uuid.uuid4())
         # inject client instance reference to environ
@@ -58,6 +70,11 @@ class AppenlightMiddleware(MiddlewareMixin):
     def process_exception(self, request, exception):
         if (not getattr(self, 'appenlight_client') or not self.appenlight_client.config.get('enabled')):
             return None
+        
+        if getattr(request, '_errormator_ignore_path', False):
+            log.debug('ignore path in effect')
+            enabled = False
+
         environ = request.environ
         if not self.appenlight_client.config['report_errors'] or environ.get('appenlight.ignore_error'):
             return None
@@ -90,6 +107,15 @@ class AppenlightMiddleware(MiddlewareMixin):
         finally:
             environ = request.environ
             enabled = self.appenlight_client.config.get('enabled')
+
+            if getattr(request, '_errormator_ignore_slow_path', False):
+                log.debug('ignore slow path in effect')
+                enabled = False
+
+            if getattr(request, '_errormator_ignore_path', False):
+                log.debug('ignore path in effect')
+                enabled = False
+
             if enabled and not request._errormator_create_report and not environ.get('appenlight.ignore_slow'):
                 end_time = default_timer()
                 user = getattr(request, 'user', None)
