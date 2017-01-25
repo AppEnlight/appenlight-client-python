@@ -33,11 +33,11 @@ class AppenlightMiddleware(MiddlewareMixin):
         request.__traceback__ = None
 
         if any(p in request.path for p in self.appenlight_client.config.get('ignore_slow_paths', [])):                
-            log.debug('ignore slow path in effect')
+            log.debug('ignore_slow_path in effect')
             environ['appenlight.ignore_slow'] = True
 
         if any(p in request.path for p in self.appenlight_client.config.get('ignore_paths', [])):
-            log.debug('ignore path in effect')
+            log.debug('ignore_path in effect')
             environ['appenlight.ignore_error'] = True
 
         environ = request.environ
