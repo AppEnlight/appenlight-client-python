@@ -85,11 +85,11 @@ class AppenlightWSGIWrapper(object):
                 environ['appenlight.view_name'] = getattr(appenlight_storage, 'view_name', '')
 
             if any(p in environ.get('PATH_INFO', '') for p in self.appenlight_client.config.get('ignore_slow_paths', [])):                
-                log.debug('ignore_slow_path in effect')
+                log.debug('appenlight.ignore_slow_path in effect')
                 environ['appenlight.ignore_slow'] = True
 
             if any(p in environ.get('PATH_INFO', '') for p in self.appenlight_client.config.get('ignore_paths', [])):
-                log.debug('ignore_path in effect')
+                log.debug('appenlight.ignore_path in effect')
                 environ['appenlight.ignore_error'] = True
 
             if detected_data and detected_data[0]:
