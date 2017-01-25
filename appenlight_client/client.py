@@ -186,6 +186,11 @@ class BaseClient(object):
                         self.config['timing'][k[18:]] = False
         self.hooks_blacklist = aslist(
             config.get('appenlight.hooks_blacklist'), ',')
+        self.config['ignore_slow_paths'] = \
+            config.get('appenlight.ignore_slow_paths', [])
+        self.config['ignore_paths'] = \
+            config.get('appenlight.ignore_paths', [])
+
 
     def reinitialize(self):
         self.filter_callable = lambda x: x

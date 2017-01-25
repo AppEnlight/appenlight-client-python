@@ -31,7 +31,17 @@ class AppenlightMiddleware(MiddlewareMixin):
     def process_request(self, request):
         request._errormator_create_report = False
         request.__traceback__ = None
+
         environ = request.environ
+
+        if any(p in request.path for p in self.appenlight_client.config.get('ignore_slow_paths', [])):                
+            log.debug('appenlight.ignore_slow_path in effect')
+            environ['appenlight.ignore_slow'] = True
+
+        if any(p in request.path for p in self.appenlight_client.config.get('ignore_paths', [])):
+            log.debug('appenlight.ignore_path in effect')
+            environ['appenlight.ignore_error'] = True
+
         environ['appenlight.request_id'] = str(uuid.uuid4())
         # inject client instance reference to environ
         if 'appenlight.client' not in environ:
@@ -58,6 +68,7 @@ class AppenlightMiddleware(MiddlewareMixin):
     def process_exception(self, request, exception):
         if (not getattr(self, 'appenlight_client') or not self.appenlight_client.config.get('enabled')):
             return None
+
         environ = request.environ
         if not self.appenlight_client.config['report_errors'] or environ.get('appenlight.ignore_error'):
             return None
@@ -90,6 +101,7 @@ class AppenlightMiddleware(MiddlewareMixin):
         finally:
             environ = request.environ
             enabled = self.appenlight_client.config.get('enabled')
+
             if enabled and not request._errormator_create_report and not environ.get('appenlight.ignore_slow'):
                 end_time = default_timer()
                 user = getattr(request, 'user', None)
