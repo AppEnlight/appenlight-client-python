@@ -92,6 +92,7 @@ class AppenlightWSGIWrapper(object):
             if 'appenlight.view_name' not in environ:
                 environ['appenlight.view_name'] = getattr(appenlight_storage, 'view_name', '')
 
+
             if detected_data and detected_data[0]:
                 http_status = int(detected_data[0])
             if self.appenlight_client.config['slow_requests'] and not environ.get('appenlight.ignore_slow'):
