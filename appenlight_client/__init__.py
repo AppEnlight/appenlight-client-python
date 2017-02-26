@@ -1,5 +1,8 @@
-__version__ = '0.6.19'
-__protocol_version__ = '0.5'
+import pkg_resources
+from appenlight_client.utils import Version
+str_version = pkg_resources.get_distribution('appenlight_client').version
+__version__ = Version(str_version)
+__protocol_version__ = Version('0.5.0')
 
 
 class AppenlightException(Exception):

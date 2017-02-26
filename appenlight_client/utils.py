@@ -1,8 +1,9 @@
-import logging
+import datetime
 import inspect
+import logging
 import os
 import sys
-import datetime
+import pkg_resources
 
 # are we running python 3.x ?
 PY3 = sys.version_info[0] >= 3
@@ -89,6 +90,7 @@ def resolveModule(module_name):
         filename = os.path.splitext(filename)[0]
     return filename
 
+
 # from http://twistedmatrix.com/trac/browser/trunk/twisted/python/deprecate.py
 # License MIT: http://twistedmatrix.com/trac/browser/trunk/LICENSE
 
@@ -134,3 +136,14 @@ def parse_tag(k, v):
         return (k, v,)
     else:
         return (k, unicode(v),)
+
+
+class Version(object):
+    def __init__(self, version_str):
+        data = version_str.strip().split('.')
+        self.major = int(data[0])
+        self.minor = int(data[1])
+        self.patch = int(data[2])
+
+    def __str__(self):
+        return '{}.{}.{}'.format(self.major, self.minor, self.patch)
