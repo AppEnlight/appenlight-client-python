@@ -2,10 +2,11 @@ import logging
 
 log = logging.getLogger(__name__)
 
-EXCLUDED_LOG_VARS = ['threadName', 'name', 'thread', 'created', 'process', 'processName', 'args', 'module', 'filename',
-                     'levelno', 'exc_text', 'pathname', 'lineno', 'msg', 'exc_info', 'message', 'funcName',
-                     'relativeCreated', 'levelname', 'msecs', 'asctime']
-
+EXCLUDED_LOG_VARS = [
+    'threadName', 'name', 'thread', 'created', 'process', 'processName', 'args',
+    'module', 'filename', 'levelno', 'exc_text', 'pathname', 'lineno', 'msg',
+    'exc_info', 'message', 'funcName', 'relativeCreated', 'levelname',
+    'msecs', 'asctime', 'stack_info']
 
 
 def register_logging(logger, client_config, cls):
