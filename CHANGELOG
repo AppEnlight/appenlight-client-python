@@ -1,11 +1,17 @@
 CHANGELOG:
 ==========
 
+2017-04-XX  Change filter_callable signature (BW. incompatible change)
+    0.6.20  Enable options to ignore certain slow paths or any path
+
+2016-10-31  Small bugfixes
+    0.6.19
+
 2016-10-25  Support django 1.10 style middlewares
-            (thanks George Leszczynski)
+    0.6.18  (thanks George Leszczynski)
 
 2016-07-19  Improved dictionary handling for local variables
-            (thanks Łukasz Fidosz)
+    0.6.17  (thanks Łukasz Fidosz)
 
 2016-01-13  Minor bugfix
 
