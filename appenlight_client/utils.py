@@ -147,3 +147,39 @@ class Version(object):
 
     def __str__(self):
         return '{}.{}.{}'.format(self.major, self.minor, self.patch)
+
+def filter_callable(config, structure, section=None):
+    def filter_dict(f_input, dict_method):
+        for k in dict_method():
+            for bad_key in config['request_keys_blacklist']:
+                if bad_key in k.lower():
+                    f_input[k] = u'***'
+
+    keys_to_check = ()
+    if section in ['error_report', 'slow_report']:
+        keys_to_check = (
+            structure['request'].get('COOKIES'),
+            structure['request'].get('POST'),
+        )
+    for source in filter(None, keys_to_check):
+        if hasattr(source, 'iterkeys'):
+            filter_dict(source, source.iterkeys)
+        elif hasattr(source, 'keys'):
+            filter_dict(source, source.keys)
+            # try to filter local frame vars, to prevent people
+            #  leaking as much data as possible when enabling frameinfo
+    frameinfo = structure.get('traceback')
+    if frameinfo:
+        for f in frameinfo:
+            for source in f.get('vars', []):
+                # filter dict likes
+                if hasattr(source[1], 'iterkeys'):
+                    filter_dict(source[1], source[1].iterkeys)
+                elif hasattr(source, 'keys'):
+                    filter_dict(source[1], source[1].keys)
+                # filter flat values
+                else:
+                    for bad_key in config['request_keys_blacklist']:
+                        if bad_key in source[0].lower():
+                            source[1] = u'***'
+    return structure

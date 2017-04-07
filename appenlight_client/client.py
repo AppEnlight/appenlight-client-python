@@ -38,7 +38,7 @@ from appenlight_client.exceptions import get_current_traceback
 from appenlight_client.ext.logging import register_logging, unregister_logger
 from appenlight_client.timing import get_local_storage
 from appenlight_client.utils import asbool, aslist, import_from_module
-from appenlight_client.utils import parse_tag, PY3
+from appenlight_client.utils import parse_tag, PY3, filter_callable
 from webob import Request
 
 from six.moves import configparser
@@ -201,11 +201,11 @@ class BaseClient(object):
                                   [parts[1], ], 0)
                 self.filter_callable = getattr(_tmp, parts[1])
             except ImportError as e:
-                self.filter_callable = self.data_filter
+                self.filter_callable = filter_callable
                 msg = 'Could not import filter callable, using default, %s' % e
                 log.error(msg)
         else:
-            self.filter_callable = self.data_filter
+            self.filter_callable = filter_callable
 
         self.unregister_logger()
         if self.config['logging'] and self.config['enabled']:
@@ -281,42 +281,6 @@ class BaseClient(object):
         self.log_handlers_clear_records()
         self.transport.purge()
 
-    def data_filter(self, structure, section=None):
-        def filter_dict(f_input, dict_method):
-            for k in dict_method():
-                for bad_key in self.config['request_keys_blacklist']:
-                    if bad_key in k.lower():
-                        f_input[k] = u'***'
-
-        keys_to_check = ()
-        if section in ['error_report', 'slow_report']:
-            keys_to_check = (
-                structure['request'].get('COOKIES'),
-                structure['request'].get('POST'),
-            )
-        for source in filter(None, keys_to_check):
-            if hasattr(source, 'iterkeys'):
-                filter_dict(source, source.iterkeys)
-            elif hasattr(source, 'keys'):
-                filter_dict(source, source.keys)
-                # try to filter local frame vars, to prevent people
-                #  leaking as much data as possible when enabling frameinfo
-        frameinfo = structure.get('traceback')
-        if frameinfo:
-            for f in frameinfo:
-                for source in f.get('vars', []):
-                    # filter dict likes
-                    if hasattr(source[1], 'iterkeys'):
-                        filter_dict(source[1], source[1].iterkeys)
-                    elif hasattr(source, 'keys'):
-                        filter_dict(source[1], source[1].keys)
-                    # filter flat values
-                    else:
-                        for bad_key in self.config['request_keys_blacklist']:
-                            if bad_key in source[0].lower():
-                                source[1] = u'***'
-        return structure
-
     def py_report(self, environ, traceback=None, message=None, http_status=200,
                   start_time=None, end_time=None, request_stats=None,
                   slow_calls=None):
@@ -325,7 +289,7 @@ class BaseClient(object):
         report_data, appenlight_info = self.create_report_structure(
             environ, traceback, server=self.config['server_name'],
             http_status=http_status, include_params=True)
-        report_data = self.filter_callable(report_data, 'error_report')
+        report_data = self.filter_callable(self.config, report_data, 'error_report')
         url = report_data['url']
         if not PY3:
             url = url.decode('utf8', 'ignore')

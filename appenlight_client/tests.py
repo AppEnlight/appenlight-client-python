@@ -14,7 +14,7 @@ from appenlight_client import client, make_appenlight_middleware
 from appenlight_client.exceptions import get_current_traceback
 from appenlight_client.ext.logging import register_logging
 from appenlight_client.wsgi import AppenlightWSGIWrapper
-from appenlight_client.utils import fullyQualifiedName, import_from_module
+from appenlight_client.utils import fullyQualifiedName, import_from_module, filter_callable
 
 
 logging.basicConfig()
@@ -386,12 +386,12 @@ class TestClientConfig(BaseTest):
 
     def test_default_filter_callable(self):
         self.setUpClient()
-        assert self.client.filter_callable == self.client.data_filter
+        assert self.client.filter_callable == filter_callable
 
     def test_bad_filter_callable(self):
         config = {'appenlight.filter_callable': "foo.bar.baz:callable_name"}
         self.setUpClient(config)
-        assert self.client.filter_callable == self.client.data_filter
+        assert self.client.filter_callable == filter_callable
 
     def test_custom_filter_callable(self):
         config = {'appenlight.filter_callable':
