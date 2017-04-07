@@ -191,7 +191,7 @@ class TestClientConfig(BaseTest):
 
     def test_empty_init(self):
         self.setUpClient()
-        assert isinstance(self.client, (client.Client,client.BaseClient,))
+        assert isinstance(self.client, (client.Client, client.BaseClient))
 
     def test_api_key(self):
         config = {'appenlight.api_key': '12345AAAAA'}

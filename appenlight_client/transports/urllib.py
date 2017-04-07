@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import logging
 import sys
 import urlparse
@@ -6,14 +7,7 @@ from appenlight_client.ext_json import json
 from appenlight_client import __protocol_version__, __version__
 from appenlight_client.transports import BaseTransport
 
-# are we running at least python 3.x ?
-PY3 = sys.version_info[0] >= 3
-
-if PY3:
-    import urllib
-else:
-    import urllib
-    import urllib2
+from six.moves import urllib
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +65,7 @@ class HTTPTransport(BaseTransport):
         if not self.client_config['api_key']:
             log.warning('no api key set - dropping payload')
             return False
-        GET_vars = urllib.urlencode({
+        GET_vars = urllib.parse.urlencode({
             'protocol_version': __protocol_version__})
         server_url = '%s%s?%s' % (self.transport_config['url'], endpoint,
                                   GET_vars,)
@@ -80,20 +74,19 @@ class HTTPTransport(BaseTransport):
                    'User-Agent': 'appenlight-python/%s' % __version__}
         log.info('sending out %s entries to %s' % (len(data), endpoint,))
         try:
-            req = urllib2.Request(server_url,
-                                  json.dumps(data).encode('utf8'),
-                                  headers=headers)
+            req = urllib.request.Request(
+                server_url, json.dumps(data).encode('utf8'), headers=headers)
         except IOError as exc:
             message = 'APPENLIGHT: problem: %s' % exc
             getattr(log, self.transport_config['error_log_level'])(message)
             return False
         try:
-            conn = urllib2.urlopen(req,
-                                   timeout=self.transport_config['timeout'])
+            conn = urllib.request.urlopen(
+                req, timeout=self.transport_config['timeout'])
             conn.close()
             return True
         except TypeError:
-            conn = urllib2.urlopen(req)
+            conn = urllib.request.urlopen(req)
             conn.close()
             return True
         if conn.getcode() != 200:

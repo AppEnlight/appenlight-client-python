@@ -113,7 +113,7 @@ def fullyQualifiedName(obj):
         name = "%s:%s" % (moduleName, name)
     elif inspect.ismethod(obj):
         try:
-            cls = obj.im_class
+            cls = obj.__self__.__class__ if PY3 else obj.im_class
         except AttributeError:
             # Python 3 eliminates im_class, substitutes __module__ and
             # __qualname__ to provide similar information.
@@ -132,7 +132,7 @@ def fullyQualifiedName(obj):
 
 
 def parse_tag(k, v):
-    if isinstance(v, (basestring, datetime.datetime, datetime.date, float, int,)):
+    if isinstance(v, (basestring, datetime.datetime, datetime.date, float, int)):
         return (k, v,)
     else:
         return (k, unicode(v),)
