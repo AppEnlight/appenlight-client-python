@@ -96,6 +96,13 @@ def add_timing(module_name, min_duration=0.1):
         def __call__(self, *args, **kwargs):
             return self._e_object(*args, **kwargs)
 
+        def __enter__(self):
+            self._e_object.__enter__()
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            return self._e_object.__exit__(exc_type, exc_value, traceback)
+
     class TimerWrapper(object):
 
         def __init__(self, instance, module_name):

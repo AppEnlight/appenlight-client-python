@@ -1067,6 +1067,22 @@ class TestDBApi2Drivers(BaseTest):
         stats, result = get_local_storage(local_timing).get_thread_stats()
         assert len(result) == 2
 
+    def test_psycopg2_context_manager(self):
+        try:
+            import psycopg2
+        except ImportError:
+            return
+        conn = psycopg2.connect(
+            "user=test host=127.0.0.1 dbname=test password=test")
+        with conn.cursor() as c:
+            psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, c)
+            c.execute(self.stmt)
+            c.fetchone()
+        conn.close()
+        stats, result = get_local_storage(local_timing).get_thread_stats()
+        assert len(result) == 2
+
+
     def test_pg8000(self):
         try:
             import pg8000
