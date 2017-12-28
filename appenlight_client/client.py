@@ -229,7 +229,7 @@ class BaseClient(object):
                 HTTPTransport as selected_transport
 
             msg = 'Could not import transport %s, using default, %s' % (
-                self.config['transport'], e)
+                self.config['transport'], str(selected_transport))
             log.error(msg)
 
         self.transport = selected_transport(self.config['transport_config'],
