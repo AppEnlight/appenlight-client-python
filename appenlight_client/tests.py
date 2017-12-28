@@ -538,6 +538,18 @@ class TestClientTransport(BaseTest):
         get_local_storage(local_timing).clear()
         assert len(self.client.transport.report_queue) == 0
 
+    def test_wrong_transport(self):
+        self.setUpClient(
+            {'appenlight.api_key': 'XXX',
+             'appenlight.transport': 'fooblabla.bar.baz:NonExistantTransport'})
+
+    def test_default_transport(self):
+        import appenlight_client.transports.requests as ae_transport
+        self.setUpClient(
+            {'appenlight.api_key': 'XXX',
+             'appenlight.transport': ''})
+        assert isinstance(self.client.transport, ae_transport.HTTPTransport)
+
 
 class TestErrorParsing(BaseTest):
 
