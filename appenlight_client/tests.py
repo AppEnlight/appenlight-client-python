@@ -825,7 +825,7 @@ class TestLogs(BaseTest):
         logger2 = logging.getLogger('other logger')
         handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
         handler2 = register_logging(logger2, self.client.config, cls=handler_cls)
-        handler2.setLevel(logging.DEBUG)
+        handler2.setLevel(logging.WARNING)
         self.client.log_handlers.append(handler2)
 
         logger.critical('test entry',
