@@ -18,6 +18,14 @@ import logging
 log = logging.getLogger(__name__)
 
 
+def user_is_authenticated(user):
+    """ Django 1.10 changes the is_authenticated to a bool from a function and backwards compat was dropped in Django 2
+    """
+    if callable(user.is_authenticated):
+        return user.is_authenticated()
+    return user.is_authenticated
+
+
 class AppenlightMiddleware(MiddlewareMixin):
     __version__ = '0.3'
 
@@ -80,7 +88,7 @@ class AppenlightMiddleware(MiddlewareMixin):
             return None
         user = getattr(request, 'user', None)
         end_time = default_timer()
-        if user and user.is_authenticated():
+        if user and user_is_authenticated(user):
             if 'appenlight.username' not in environ:
                 environ['appenlight.username'] = unicode(user.pk)
         if not isinstance(exception, Http404):
@@ -114,7 +122,7 @@ class AppenlightMiddleware(MiddlewareMixin):
                 end_time = default_timer()
                 user = getattr(request, 'user', None)
                 http_status = response.status_code
-                if user and user.is_authenticated():
+                if user and user_is_authenticated(user):
                     if 'appenlight.username' not in environ:
                         environ['appenlight.username'] = unicode(user.pk)
                 if (http_status == 404 and self.appenlight_client.config[
