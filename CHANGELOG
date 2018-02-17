@@ -1,8 +1,18 @@
 CHANGELOG:
 ==========
 
-2017-04-XX  Change filter_callable signature (BW. incompatible change)
-    0.6.20  Enable options to ignore certain slow paths or any path
+2018-02-17  Fixed compat with Django 2.0 (thanks Volksman)
+    0.6.23  Fix log error message (thanks Abner Campanha)
+
+2017-11-09  Fixed context managers(thanks Tomasz Utracki-Janeta)
+    0.6.22
+
+2017-04-10  Change filter_callable signature (BW. incompatible change)
+    0.6.21  Enable options to ignore certain slow paths or any path
+            Added ignored paths (thanks Tomasz Utracki-Janeta)
+
+2017-02-26  Small bugfixes
+    0.6.20  Exclude stack_info
 
 2016-10-31  Small bugfixes
     0.6.19
