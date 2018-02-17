@@ -1,2 +1,2 @@
-include *.txt *.ini *.cfg *.rst appenlight_client/VERSION
+include *.txt *.ini *.cfg *.rst appenlight_client/VERSION LICENSE
 recursive-include appenlight_client *.txt *.ini *.cfg *.rst

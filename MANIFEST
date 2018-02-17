@@ -1,4 +1,5 @@
 appenlight_client/VERSION
+LICENSE
 README.rst
 setup.py
 *.ini
