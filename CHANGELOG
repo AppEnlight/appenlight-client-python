@@ -1,6 +1,9 @@
 CHANGELOG:
 ==========
 
+2018-02-17  Remove wheel support for
+    0.6.23
+
 2018-02-17  Fixed compat with Django 2.0 (thanks Volksman)
     0.6.23  Fix log error message (thanks Abner Campanha)
 
