@@ -40,7 +40,7 @@ class AppenlightMiddleware(MiddlewareMixin):
         request._errormator_create_report = False
         request.__traceback__ = None
 
-        environ = request.environ
+        environ = getattr(request, 'environ', request.META)
 
         ignored_slow_paths = self.appenlight_client.config.get(
             'ignore_slow_paths', [])
@@ -70,7 +70,7 @@ class AppenlightMiddleware(MiddlewareMixin):
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         try:
-            if 'appenlight.view_name' not in request.environ:
+            if 'appenlight.view_name' not in getattr(request, 'environ', request.META):
                 request.environ['appenlight.view_name'] = '%s.%s' % (
                     fullyQualifiedName(view_func), request.method)
         except Exception:
@@ -82,7 +82,7 @@ class AppenlightMiddleware(MiddlewareMixin):
                 not self.appenlight_client.config.get('enabled')):
             return None
 
-        environ = request.environ
+        environ = getattr(request, 'environ', request.META)
         if not self.appenlight_client.config['report_errors'] \
                 or environ.get('appenlight.ignore_error'):
             return None
@@ -114,7 +114,7 @@ class AppenlightMiddleware(MiddlewareMixin):
         try:
             return response
         finally:
-            environ = request.environ
+            environ = getattr(request, 'environ', request.META)
             enabled = self.appenlight_client.config.get('enabled')
 
             if enabled and not request._errormator_create_report and not environ.get(
