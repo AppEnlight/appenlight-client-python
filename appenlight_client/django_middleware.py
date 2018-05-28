@@ -69,12 +69,13 @@ class AppenlightMiddleware(MiddlewareMixin):
         return None
 
     def process_view(self, request, view_func, view_args, view_kwargs):
+        environ = getattr(request, 'environ', request.META)
         try:
-            if 'appenlight.view_name' not in getattr(request, 'environ', request.META):
-                request.environ['appenlight.view_name'] = '%s.%s' % (
+            if 'appenlight.view_name' not in environ:
+                environ['appenlight.view_name'] = '%s.%s' % (
                     fullyQualifiedName(view_func), request.method)
         except Exception:
-            request.environ['appenlight.view_name'] = ''
+            environ['appenlight.view_name'] = ''
         return None
 
     def process_exception(self, request, exception):
