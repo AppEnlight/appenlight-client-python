@@ -32,7 +32,7 @@ class AppenlightMiddleware(MiddlewareMixin):
     def __init__(self, get_response=None):
         self.get_response = get_response
         log.debug('setting appenlight middleware')
-        if not hasattr(AppenlightMiddleware, 'client'):
+        if not hasattr(AppenlightMiddleware, 'appenlight_client'):
             base_config = getattr(settings, 'APPENLIGHT') or {}
             AppenlightMiddleware.appenlight_client = Client(config=base_config)
 
