@@ -1,6 +1,9 @@
 CHANGELOG:
 ==========
 
+2018-06-16  Reduce the amount of logs stored per request
+    0.6.26
+
 2018-02-17  Remove wheel support for
     0.6.23
 
