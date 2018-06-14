@@ -677,6 +677,20 @@ class TestLogs(BaseTest):
         self.client.transport.log_queue[0]['server'] = fake_log['server']
         assert self.client.transport.log_queue[0] == fake_log
 
+    def test_log_limits(self):
+        self.setUpClient(config={'appenlight.api_key': 'default_test_key',
+                                 'appenlight.logging.max_thread_logs': '15'})
+        pprint.pprint(self.client.config)
+        handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')
+        handler = register_logging(logging.root, self.client.config, cls=handler_cls)
+        logger = logging.getLogger('testing')
+        msg = 'test entry %s' % random.random()
+        for x in range(0, 50):
+            logger.critical(msg)
+        records = self.client.log_handlers_get_records()
+        total_records = len(records)
+        assert total_records == 15
+
     def test_errors_attached_to_logs(self):
         self.setUpClient()
         handler_cls = import_from_module('appenlight_client.ext.logging.logger:ThreadLocalHandler')

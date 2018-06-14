@@ -119,6 +119,9 @@ class BaseClient(object):
                                                   'WARNING').lower()
         self.config['logging_on_error'] = asbool(
             config.get('appenlight.logging_on_error', False))
+        self.config['logging_max_thread_logs'] = int(
+            config.get('appenlight.logging.max_thread_logs', 10000))
+
         self.config['report_404'] = asbool(config.get('appenlight.report_404',
                                                       False))
         self.config['report_local_vars'] = asbool(

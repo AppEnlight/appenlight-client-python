@@ -14,9 +14,12 @@ class ThreadLocalHandler(logbook.Handler):
     def __init__(self, client_config=None, *args, **kwargs):
         logbook.Handler.__init__(self, *args, **kwargs)
         self.ae_client_config = client_config
+        self.max_logs = client_config['logging_max_thread_logs']
 
     def emit(self, record):
         appenlight_storage = get_local_storage()
+        if len(appenlight_storage.logs) >= self.max_logs:
+            return
         r_dict = convert_record_to_dict(record, self.ae_client_config)
         if r_dict:
             if r_dict not in appenlight_storage.logs:
