@@ -1684,6 +1684,27 @@ class TestCallableName(BaseTest):
                 assert row['parents'] == ['custom']
 
 
+class TestPyramidVersionParsing:
+    def _run_test(self, pyramid_version):
+        from appenlight_client.ext.pyramid_tween import can_pyramid_version_append_decorator
+        return can_pyramid_version_append_decorator(pyramid_version)
+
+    def test_pre_1_4_cannot(self):
+        assert self._run_test('1.3') is False
+
+    def test_early_1_4_cannot(self):
+        assert self._run_test('1.4a0') is False
+
+    def test_1_4_after_a4_can(self):
+        assert self._run_test('1.4a5') is True
+
+    def test_1_4_betas_can(self):
+        assert self._run_test('1.4b1') is True
+
+    def test_1_10_can(self):
+        assert self._run_test('1.10') is True
+
+
 
 if __name__ == '__main__':
     pass
