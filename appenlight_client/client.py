@@ -383,7 +383,7 @@ class BaseClient(object):
 
         for key, value in environ.items():
             if key.startswith('appenlight.') and key not in reserved_list:
-                appenlight_info[key[11:]] = unicode(value)
+                appenlight_info[key[11:]] = six.text_type(value)
             elif key == 'appenlight.tags':
                 appenlight_info['tags'] = []
                 for k, v in six.iteritems(value):
@@ -410,7 +410,7 @@ class BaseClient(object):
                             else:
                                 parsed_environ[key] = value.decode('utf8')
                         else:
-                            parsed_environ[key] = unicode(value)
+                            parsed_environ[key] = six.text_type(value)
                     except Exception:
                         pass
                         # provide better details for 500's
@@ -455,9 +455,9 @@ class BaseClient(object):
                         else:
                             try:
                                 parsed_environ['POST'][k] = [
-                                    unicode(val) for val in v]
+                                    six.text_type(val) for val in v]
                             except Exception:
-                                parsed_environ['POST'][k] = unicode(v)
+                                parsed_environ['POST'][k] = six.text_type(v)
                     except Exception as e:
                         pass
             except Exception as e:

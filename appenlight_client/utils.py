@@ -136,7 +136,7 @@ def parse_tag(k, v):
     if isinstance(v, (basestring, datetime.datetime, datetime.date, float, int)):
         return (k, v,)
     else:
-        return (k, unicode(v),)
+        return (k, six.text_type(v),)
 
 
 class Version(object):

@@ -77,7 +77,7 @@ _missing = _Missing()
 
 def truncate_str(input):
     try:
-        return unicode(input) if len(input) < 255 else unicode(input[:255]) + '...'
+        return six.text_type(input) if len(input) < 255 else six.text_type(input[:255]) + '...'
     except Exception:
         return '<failed-truncating>'
 
@@ -366,7 +366,7 @@ class Frame(object):
         info = self.locals.get('__traceback_info__')
         if info is not None:
             try:
-                info = unicode(info)
+                info = six.text_type(info)
             except UnicodeError:
                 info = str(info).decode('utf-8', 'replace')
         self.info = info

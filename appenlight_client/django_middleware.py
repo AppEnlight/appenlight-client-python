@@ -1,3 +1,4 @@
+import six
 import uuid
 from datetime import datetime, timedelta
 from django.conf import settings
@@ -90,7 +91,7 @@ class AppenlightMiddleware(MiddlewareMixin):
         end_time = default_timer()
         if user and user_is_authenticated(user):
             if 'appenlight.username' not in environ:
-                environ['appenlight.username'] = unicode(user.pk)
+                environ['appenlight.username'] = six.text_type(user.pk)
         if not isinstance(exception, Http404):
             http_status = 500
             traceback = self.appenlight_client.get_current_traceback()
@@ -124,7 +125,7 @@ class AppenlightMiddleware(MiddlewareMixin):
                 http_status = response.status_code
                 if user and user_is_authenticated(user):
                     if 'appenlight.username' not in environ:
-                        environ['appenlight.username'] = unicode(user.pk)
+                        environ['appenlight.username'] = six.text_type(user.pk)
                 if (http_status == 404 and self.appenlight_client.config[
                     'report_404']):
                     request._errormator_create_report = True
