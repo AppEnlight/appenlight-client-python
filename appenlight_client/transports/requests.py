@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import logging
 import requests
-import urlparse
+import six.moves.urllib.parse as urlparse
 import threading
 from appenlight_client.ext_json import json
 from appenlight_client.transports import BaseTransport

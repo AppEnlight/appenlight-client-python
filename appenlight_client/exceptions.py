@@ -47,6 +47,7 @@ import re
 import os
 import inspect
 import itertools
+import six
 import traceback
 import codecs
 import collections
@@ -312,7 +313,7 @@ class Traceback(object):
                 if not isinstance(frame.locals, dict):
                     entry['vars'].append({'unknown': '<uninspectable>'})
                     continue
-                for k, v in frame.locals.iteritems():
+                for k, v in six.iteritems(frame.locals):
                     if id(v) not in id_list:
                         id_list.append(id(v))
                     else:

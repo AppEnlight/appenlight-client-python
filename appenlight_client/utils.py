@@ -2,6 +2,7 @@ import datetime
 import inspect
 import logging
 import os
+import six
 import sys
 import pkg_resources
 
@@ -12,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 def asbool(obj):
-    if isinstance(obj, (str, unicode)):
+    if isinstance(obj, six.string_types):
         obj = obj.strip().lower()
         if obj in ['true', 'y', 't', '1']:
             return True
@@ -25,7 +26,7 @@ def asbool(obj):
 
 
 def aslist(obj, sep=None, strip=True):
-    if isinstance(obj, basestring):
+    if isinstance(obj, six.string_types):
         lst = obj.split(sep)
         if strip:
             lst = [v.strip() for v in lst]

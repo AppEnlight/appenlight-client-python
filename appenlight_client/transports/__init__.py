@@ -1,6 +1,7 @@
 import threading
 import datetime
 import logging
+import six
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class BaseTransport(object):
                                                                      'tmpl_calls': 0,
                                                                      'custom_calls': 0}
             self.request_stats[req_time][view_name]['requests'] += 1
-            for k, v in stats.iteritems():
+            for k, v in six.iteritems(stats):
                 self.request_stats[req_time][view_name][k] += v
 
     def check_if_deliver(self, force_send=False):
@@ -78,7 +79,7 @@ class BaseTransport(object):
             with self.request_stats_lock:
                 request_stats = self.request_stats
                 self.request_stats = {}
-            for k, v in request_stats.iteritems():
+            for k, v in six.iteritems(request_stats):
                 metrics.append({
                     "server": self.client_config['server_name'],
                     "metrics": v.items(),
