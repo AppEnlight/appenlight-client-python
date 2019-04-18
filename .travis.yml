@@ -21,7 +21,7 @@ matrix:
       env:
 
 install:
- - pip install flake8 rstcheck
+ - pip install flake8 rstcheck pyramid
 
 script:
   - python setup.py develop
