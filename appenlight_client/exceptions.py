@@ -47,6 +47,7 @@ import re
 import os
 import inspect
 import itertools
+import six
 import traceback
 import codecs
 import collections
@@ -76,7 +77,7 @@ _missing = _Missing()
 
 def truncate_str(input):
     try:
-        return unicode(input) if len(input) < 255 else unicode(input[:255]) + '...'
+        return six.text_type(input) if len(input) < 255 else six.text_type(input[:255]) + '...'
     except Exception:
         return '<failed-truncating>'
 
@@ -312,7 +313,7 @@ class Traceback(object):
                 if not isinstance(frame.locals, dict):
                     entry['vars'].append({'unknown': '<uninspectable>'})
                     continue
-                for k, v in frame.locals.iteritems():
+                for k, v in six.iteritems(frame.locals):
                     if id(v) not in id_list:
                         id_list.append(id(v))
                     else:
@@ -365,7 +366,7 @@ class Frame(object):
         info = self.locals.get('__traceback_info__')
         if info is not None:
             try:
-                info = unicode(info)
+                info = six.text_type(info)
             except UnicodeError:
                 info = str(info).decode('utf-8', 'replace')
         self.info = info

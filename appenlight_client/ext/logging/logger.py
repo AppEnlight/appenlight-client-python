@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import logging
 import datetime
+import six
 import time
 
 
@@ -73,12 +74,12 @@ def convert_record_to_dict(record, client_config):
             if exc_text:
                 log_dict['message'] += '\n%s' % exc_text
         # populate tags from extra
-        for k, v in vars(record).iteritems():
+        for k, v in six.iteritems(vars(record)):
             if k not in EXCLUDED_LOG_VARS:
                 try:
                     tags_list.append(parse_tag(k, v))
                     if k == 'ae_primary_key':
-                        log_dict['primary_key'] = unicode(v)
+                        log_dict['primary_key'] = six.text_type(v)
                     if k == 'ae_permanent':
                         try:
                             log_dict['permanent'] = asbool(v)

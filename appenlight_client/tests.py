@@ -2,6 +2,7 @@
 import copy
 import datetime
 import logging
+import six
 import socket
 import time
 import random
@@ -24,7 +25,7 @@ fname = pkg_resources.resource_filename('appenlight_client',
 timing_conf = client.get_config(path_to_config=fname)
 # set api key
 
-for k, v in timing_conf.iteritems():
+for k, v in six.iteritems(timing_conf):
     if 'appenlight.timing' in k:
         timing_conf[k] = 0.0000001
 
@@ -208,9 +209,8 @@ class TestClientConfig(BaseTest):
         self.setUpClient(config)
         superset = self.client.transport.transport_config.items()
         subset = {'url': 'https://api.appenlight.com', 'timeout': 10, 'threaded': 0}
-        for i in subset.iteritems():
+        for i in six.iteritems(subset):
             assert i in superset
-
 
     def test_enabled_client(self):
         self.setUpClient()
@@ -559,7 +559,7 @@ class TestErrorParsing(BaseTest):
                               start_time=REQ_START_TIME, end_time=REQ_END_TIME)
         subset = PARSED_REPORT_404
         superset = self.client.transport.report_queue[0].items()
-        for i in subset.iteritems():
+        for i in six.iteritems(subset):
             assert i in superset
 
     def test_py_report_500_no_traceback(self):
@@ -574,7 +574,7 @@ class TestErrorParsing(BaseTest):
         bogus_500_report['request_stats'] = {}
         subset = bogus_500_report
         superset = self.client.transport.report_queue[0].items()
-        for i in subset.iteritems():
+        for i in six.iteritems(subset):
             assert i in superset
 
 
@@ -598,7 +598,7 @@ class TestErrorParsing(BaseTest):
         bogus_report['traceback'][0]['line'] = line_no
         subset = bogus_report
         superset = self.client.transport.report_queue[0].items()
-        for i in subset.iteritems():
+        for i in six.iteritems(subset):
             assert i in superset
 
     def test_frameinfo(self):
@@ -870,7 +870,7 @@ class TestSlowReportParsing(BaseTest):
                               end_time=REQ_END_TIME)
         subset = PARSED_SLOW_REPORT
         superset = self.client.transport.report_queue[0].items()
-        for i in subset.iteritems():
+        for i in six.iteritems(subset):
             assert i in superset
 
 
@@ -1682,6 +1682,27 @@ class TestCallableName(BaseTest):
                 assert row['parents'] == ['custom']
             elif row['statement'] == 'bar_func':
                 assert row['parents'] == ['custom']
+
+
+class TestPyramidVersionParsing:
+    def _run_test(self, pyramid_version):
+        from appenlight_client.ext.pyramid_tween import can_pyramid_version_append_decorator
+        return can_pyramid_version_append_decorator(pyramid_version)
+
+    def test_pre_1_4_cannot(self):
+        assert self._run_test('1.3') is False
+
+    def test_early_1_4_cannot(self):
+        assert self._run_test('1.4a0') is False
+
+    def test_1_4_after_a4_can(self):
+        assert self._run_test('1.4a5') is True
+
+    def test_1_4_betas_can(self):
+        assert self._run_test('1.4b1') is True
+
+    def test_1_10_can(self):
+        assert self._run_test('1.10') is True
 
 
 

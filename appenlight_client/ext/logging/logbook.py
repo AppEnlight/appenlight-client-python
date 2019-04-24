@@ -64,12 +64,12 @@ def convert_record_to_dict(record, client_config):
         if client_config.get('logging_attach_exc_text'):
             pass
         # populate tags from extra
-        for k, v in record.extra.iteritems():
+        for k, v in six.iteritems(record.extra):
             if k not in EXCLUDED_LOG_VARS:
                 try:
                     tags_list.append(parse_tag(k, v))
                     if k == 'ae_primary_key':
-                        log_dict['primary_key'] = unicode(v)
+                        log_dict['primary_key'] = six.text_type(v)
                     if k == 'ae_permanent':
                         try:
                             log_dict['permanent'] = asbool(v)

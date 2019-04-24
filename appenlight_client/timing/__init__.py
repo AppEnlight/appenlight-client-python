@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import logging
+import six
 import time
 import threading
 
@@ -107,7 +108,7 @@ class AppenlightLocalStorage(object):
             if duration >= row['min_duration']:
                 slow_calls.append(row)
                 # round stats to 5 digits
-        for k, v in stats.iteritems():
+        for k, v in six.iteritems(stats):
             stats[k] = round(v, 5)
         return stats, slow_calls
 

@@ -23,16 +23,47 @@ def combine(*decorators):
     return decorated
 
 
+def _parse_version(version_str):
+    # not sure how consistently these are installed, just try all of them
+    try:
+        from packaging import version
+        return version.parse(version_str)
+    except ImportError:
+        pass
+
+    try:
+        from distutils.version import LooseVersion, StrictVersion
+        try:
+            return StrictVersion(version_str)
+        except distutils.version.InvalidVersion:
+            return LooseVersion(version_str)
+    except ImportError:
+        pass
+
+    try:
+        from setuptools import parse_version
+        return parse_version(version_str)
+    except ImportError:
+        pass
+
+    try:
+        from pkg_resources import parse_version
+        return parse_version(version_str)
+    except ImportError:
+        pass
+
+    raise NotImplementedError(version_str)
+
+
 # feature sniffing
-pyramid_version_str = pkg_resources.get_distribution('pyramid').version
-pyramid_version = float(pyramid_version_str[:3])
-test_ver = None
-can_append_decorator = False
-for vchar in ['a', 'b']:
-    if vchar in pyramid_version_str:
-        test_ver = pyramid_version_str[pyramid_version_str.index(vchar):]
-if pyramid_version > 1.4 or pyramid_version == 1.4 and test_ver not in ['a0', 'a1', 'a2', 'a3']:
-    can_append_decorator = True
+def can_pyramid_version_append_decorator(pyramid_version_str):
+    last_bad_ver = _parse_version('1.4a3')
+    return _parse_version(pyramid_version_str) > last_bad_ver
+
+
+can_append_decorator = can_pyramid_version_append_decorator(
+    pkg_resources.get_distribution('pyramid').version,
+)
 
 
 def wrap_pyramid_view_method_name(appenlight_callable):
