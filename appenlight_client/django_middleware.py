@@ -32,7 +32,7 @@ class AppenlightMiddleware(MiddlewareMixin):
     def __init__(self, get_response=None):
         self.get_response = get_response
         log.debug('setting appenlight middleware')
-        if not hasattr(AppenlightMiddleware, 'client'):
+        if not hasattr(AppenlightMiddleware, 'appenlight_client'):
             base_config = getattr(settings, 'APPENLIGHT') or {}
             AppenlightMiddleware.appenlight_client = Client(config=base_config)
 
@@ -40,7 +40,7 @@ class AppenlightMiddleware(MiddlewareMixin):
         request._errormator_create_report = False
         request.__traceback__ = None
 
-        environ = request.environ
+        environ = getattr(request, 'environ', request.META)
 
         ignored_slow_paths = self.appenlight_client.config.get(
             'ignore_slow_paths', [])
@@ -69,12 +69,13 @@ class AppenlightMiddleware(MiddlewareMixin):
         return None
 
     def process_view(self, request, view_func, view_args, view_kwargs):
+        environ = getattr(request, 'environ', request.META)
         try:
-            if 'appenlight.view_name' not in request.environ:
-                request.environ['appenlight.view_name'] = '%s.%s' % (
+            if 'appenlight.view_name' not in environ:
+                environ['appenlight.view_name'] = '%s.%s' % (
                     fullyQualifiedName(view_func), request.method)
         except Exception:
-            request.environ['appenlight.view_name'] = ''
+            environ['appenlight.view_name'] = ''
         return None
 
     def process_exception(self, request, exception):
@@ -82,7 +83,7 @@ class AppenlightMiddleware(MiddlewareMixin):
                 not self.appenlight_client.config.get('enabled')):
             return None
 
-        environ = request.environ
+        environ = getattr(request, 'environ', request.META)
         if not self.appenlight_client.config['report_errors'] \
                 or environ.get('appenlight.ignore_error'):
             return None
@@ -114,7 +115,7 @@ class AppenlightMiddleware(MiddlewareMixin):
         try:
             return response
         finally:
-            environ = request.environ
+            environ = getattr(request, 'environ', request.META)
             enabled = self.appenlight_client.config.get('enabled')
 
             if enabled and not request._errormator_create_report and not environ.get(
