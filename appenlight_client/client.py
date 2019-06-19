@@ -149,8 +149,7 @@ class BaseClient(object):
         )
         self.config['cookie_keys_whitelist'] = []
         cookie_whitelist = aslist(
-            config.get('appenlight.cookie_keys_whitelist',
-                       config.get('appenlight.cookie_keys_whitelist')), ',')
+            config.get('appenlight.cookie_keys_whitelist'), ',')
         self.config['cookie_keys_whitelist'].extend(
             filter(lambda x: x, cookie_whitelist)
         )
@@ -191,9 +190,9 @@ class BaseClient(object):
         self.hooks_blacklist = aslist(
             config.get('appenlight.hooks_blacklist'), ',')
         self.config['ignore_slow_paths'] = \
-            config.get('appenlight.ignore_slow_paths', [])
+            aslist(config.get('appenlight.ignore_slow_paths'), ',')
         self.config['ignore_paths'] = \
-            config.get('appenlight.ignore_paths', [])
+            aslist(config.get('appenlight.ignore_paths'), ',')
 
 
     def reinitialize(self):
