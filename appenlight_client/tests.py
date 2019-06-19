@@ -937,21 +937,21 @@ class TestTimingHTTPLibs(BaseTest):
         import urllib
 
         opener = urllib.URLopener()
-        opener.open("https://www.ubuntu.com/")
+        opener.open("https://ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
         assert len(result) == 1
 
     def test_urllib_urlretrieve(self):
         import urllib
 
-        urllib.urlretrieve("https://www.ubuntu.com/")
+        urllib.urlretrieve("https://ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
         assert len(result) == 1
 
     def test_urllib2(self):
         import urllib2
 
-        urllib2.urlopen("https://www.ubuntu.com/")
+        urllib2.urlopen("https://ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
         assert len(result) == 1
 
@@ -961,7 +961,7 @@ class TestTimingHTTPLibs(BaseTest):
         except ImportError:
             return
         http = urllib3.PoolManager()
-        http.request('GET', "https://www.ubuntu.com/")
+        http.request('GET', "https://ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
         assert len(result) == 1
 
@@ -970,14 +970,14 @@ class TestTimingHTTPLibs(BaseTest):
             import requests
         except ImportError:
             return
-        requests.get("https://www.ubuntu.com/")
+        requests.get("https://ubuntu.com/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
         assert len(result) == 1
 
     def test_httplib(self):
         import httplib
 
-        h2 = httplib.HTTPConnection("www.ubuntu.com")
+        h2 = httplib.HTTPConnection("ubuntu.com")
         h2.request("GET", "/")
         stats, result = get_local_storage(local_timing).get_thread_stats()
         assert len(result) == 1
