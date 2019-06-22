@@ -1,6 +1,11 @@
 CHANGELOG:
 ==========
 
+2019-06-XX  Fix pyramid tween for bound views passed to configuration
+            Fix Pyramid 1.10+ version sniffing (Joe Lombrozo)
+    0.6.27  Support Django on ASGI (Matteo Lucchesi)
+            Some code was refactored with six (Joe Lombrozo)
+
 2018-06-16  Reduce the amount of logs stored per request
     0.6.26
 
