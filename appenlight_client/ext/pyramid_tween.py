@@ -23,6 +23,10 @@ def combine(*decorators):
     return decorated
 
 
+def is_bound_method(ob):
+    return inspect.ismethod(ob) and getattr(ob, '__self__', None) is not None
+
+
 def _parse_version(version_str):
     # not sure how consistently these are installed, just try all of them
     try:
@@ -95,6 +99,13 @@ def wrap_pyramid_view_name(appenlight_callable):
             original_view = getattr(appenlight_callable, '__original_view__')
             if original_view:
                 view_name = fullyQualifiedName(appenlight_callable)
+                # fix the problem with bound methods,
+                # we have to attach the resolved view name somehow.
+                if is_bound_method(original_view):
+                    _original_view = original_view
+                    def original_view(context, request):
+                        return _original_view(context, request)
+
                 if not hasattr(original_view, '_appenlight_name'):
                     original_view._appenlight_name = view_name
         except Exception:
