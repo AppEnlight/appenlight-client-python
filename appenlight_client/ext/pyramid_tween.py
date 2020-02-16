@@ -134,16 +134,35 @@ def wrap_pyramid_view_name(appenlight_callable):
 def wrap_view_config(appenlight_callable):
     @wraps(appenlight_callable)
     def wrapper(*args, **kwargs):
-        if kwargs.get('decorator') is None:
-            if can_append_decorator:
-                kwargs['decorator'] = [wrap_pyramid_view_name]
-        else:
-            if can_append_decorator:
-                current = kwargs['decorator']
-                if isinstance(current, (list, tuple)):
-                    kwargs['decorator'] = list(current) + [wrap_pyramid_view_name]
+        view_config_decorator = kwargs.get('decorator', None)
+        if view_config_decorator is not None:
+            if isinstance(view_config_decorator, (list, tuple)):
+                view_config_decorator = list(view_config_decorator)
+            else:
+                view_config_decorator = [view_config_decorator]
+
+        if hasattr((kwargs.get('view')), '__view_defaults__'):
+            view_defaults_decorator = kwargs.get('view').__view_defaults__.get('decorator', None)
+            if view_defaults_decorator is not None:
+                if isinstance(view_defaults_decorator, (list, tuple)):
+                    view_defaults_decorator = list(view_defaults_decorator)
                 else:
-                    kwargs['decorator'] = (current, wrap_pyramid_view_name)
+                    view_defaults_decorator = [view_defaults_decorator]
+        else:
+            view_defaults_decorator = None
+
+        if can_append_decorator:
+            if view_defaults_decorator is not None:
+                if view_config_decorator is not None:
+                    kwargs['decorator'] = view_defaults_decorator + view_config_decorator + [wrap_pyramid_view_name]
+                else:
+                    kwargs['decorator'] = view_defaults_decorator + [wrap_pyramid_view_name]
+            else:
+                if view_config_decorator is not None:
+                    kwargs['decorator'] = view_config_decorator + [wrap_pyramid_view_name]
+                else:
+                    kwargs['decorator'] = [wrap_pyramid_view_name]
+
         return appenlight_callable(*args, **kwargs)
 
     return wrapper
